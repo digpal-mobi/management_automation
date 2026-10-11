@@ -1,0 +1,144 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  PM
+  TECH_LEAD
+  DEVELOPER
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum SenderType {
+  USER
+  AI
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  role      Role      @default(DEVELOPER)
+  avatar    String?
+  createdAt DateTime  @default(now())
+  
+  projects  Project[] @relation("CreatedProjects")
+  tickets   Ticket[]  @relation("AssignedTickets")
+  messages  Message[]
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  prdText     String   @db.Text
+  techStack   String?
+  goals       String?
+  constraints String?
+  createdById String?
+  createdBy   User?    @relation("CreatedProjects", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  boards      Board[]
+  tickets     Ticket[]
+}
+
+model Board {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String   @default("Main Kanban Board")
+  createdAt DateTime @default(now())
+
+  columns   Column[]
+
+  @@index([projectId])
+}
+
+model Column {
+  id        String   @id @default(uuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name      String
+  position  Int      @default(0)
+
+  tickets   Ticket[]
+
+  @@index([boardId])
+}
+
+model Ticket {
+  id                 String     @id @default(uuid())
+  projectId          String
+  project            Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  columnId           String
+  column             Column     @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  title              String
+  description        String     @db.Text
+  acceptanceCriteria Json       @default("[]")
+  technicalNotes     String?    @db.Text
+  prChecklist        Json       @default("[]")
+  priority           Priority   @default(MEDIUM)
+  storyPoints        Int        @default(3)
+  labels             Json       @default("[]")
+  dependencies       Json       @default("[]")
+  position           Int        @default(0)
+  assigneeId         String?
+  assignee           User?      @relation("AssignedTickets", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById        String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  messages           Message[]
+
+  @@index([projectId])
+  @@index([columnId])
+}
+
+model Message {
+  id         String     @id @default(uuid())
+  ticketId   String
+  ticket     Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderType SenderType @default(USER)
+  senderId   String?
+  senderName String     @default("Developer")
+  sender     User?      @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  content    String     @db.Text
+  citations  Json?      @default("[]")
+  createdAt  DateTime   @default(now())
+
+  @@index([ticketId])
+}
+
+model ProjectEmbedding {
+  id         Int                        @id @default(autoincrement())
+  projectId  String                     @map("project_id")
+  chunkText  String                     @map("chunk_text") @db.Text
+  embedding  Unsupported("vector(1536)")
+  metadata   Json?                      @default("{}")
+  createdAt  DateTime?                  @default(now()) @map("created_at")
+
+  @@map("project_embeddings")
+  @@index([projectId], map: "idx_project_embeddings_project_id")
+}
+
+model TicketEmbedding {
+  id         Int                        @id @default(autoincrement())
+  ticketId   String                     @map("ticket_id")
+  embedding  Unsupported("vector(1536)")
+  createdAt  DateTime?                  @default(now()) @map("created_at")
+
+  @@map("ticket_embeddings")
+}
