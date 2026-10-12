@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -14,79 +14,98 @@ import {
   DragOverEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { Board as BoardType, Project, Ticket } from '@/types';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { Ticket, TicketStatus, Project, ProjectMember } from '@/types';
 import { Column } from './Column';
 import { TicketCard } from './TicketCard';
 import { BoardFilters } from './BoardFilters';
+import { CreateTicketModal } from '../ticket/CreateTicketModal';
 import { TicketDetailModal } from '../ticket/TicketDetailModal';
 import { useAppDispatch, useAppSelector } from '@/store/store';
-import {
-  setBoardData,
-  moveTicketOptimistic,
-  updateTicketLocal,
-  removeTicketLocal,
-} from '@/store/boardSlice';
-import { setCurrentProject } from '@/store/projectSlice';
-import { api } from '@/lib/api';
-import { socketClient } from '@/lib/socket';
+import { setFilters } from '@/store/boardSlice';
+import { Button } from '@/components/ui/Button';
+import { Plus, Kanban, Sparkles, AlertCircle } from 'lucide-react';
 
 interface BoardProps {
-  initialBoard: BoardType;
-  initialProject: Project;
+  projectId: string;
+  project: Project;
+  initialTickets?: Ticket[];
+  members?: ProjectMember[];
 }
 
-export function Board({ initialBoard, initialProject }: BoardProps) {
-  const dispatch = useAppDispatch();
-  const { board, project, filters, activeTicket } = useAppSelector(
-    (state) => state.board
-  );
+const COLUMNS: TicketStatus[] = ['To Do', 'In Progress', 'Done'];
 
+export function Board({
+  projectId,
+  project,
+  initialTickets = [],
+  members = [],
+}: BoardProps) {
+  const { fetchWithAuth } = useAuth();
+  const dispatch = useAppDispatch();
+  const { filters } = useAppSelector((state) => state.board);
+
+  // Tickets state
+  const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
+  const [isLoading, setIsLoading] = useState(false);
+  const [semanticResults, setSemanticResults] = useState<Ticket[] | null>(null);
+
+  // Drag state
   const [activeDragTicket, setActiveDragTicket] = useState<Ticket | null>(null);
 
-  // Initialize Redux state from props
+  // Modal states
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createInitialStatus, setCreateInitialStatus] = useState<TicketStatus>('To Do');
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Fetch tickets for project
+  const fetchTickets = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetchWithAuth(`/api/projects/${projectId}/tickets`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTickets(data.tickets);
+      }
+    } catch (err) {
+      console.error('Failed to load tickets:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [projectId, fetchWithAuth]);
+
   useEffect(() => {
-    dispatch(setBoardData({ board: initialBoard, project: initialProject }));
-    dispatch(setCurrentProject(initialProject));
-  }, [initialBoard, initialProject, dispatch]);
+    fetchTickets();
+  }, [fetchTickets]);
 
-  // Connect WebSocket & Join Room
+  // Semantic search handler with debounce
   useEffect(() => {
-    if (!initialProject.id) return;
+    if (!filters.isSemantic || !filters.search.trim()) {
+      setSemanticResults(null);
+      return;
+    }
 
-    socketClient.joinProject(initialProject.id);
-
-    const socket = socketClient.getSocket();
-    if (!socket) return;
-
-    const handleTicketUpdated = (updatedTicket: Ticket) => {
-      dispatch(updateTicketLocal(updatedTicket));
-    };
-
-    const handleTicketCreated = () => {
-      // Refresh board data
-      api.getBoard(initialProject.id).then((res) => {
-        if (res.success && res.board) {
-          dispatch(setBoardData({ board: res.board, project: res.project }));
+    const timer = setTimeout(async () => {
+      try {
+        const query = encodeURIComponent(filters.search.trim());
+        const res = await fetchWithAuth(
+          `/api/projects/${projectId}/tickets/search?q=${query}`
+        );
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setSemanticResults(data.tickets);
         }
-      });
-    };
+      } catch (err) {
+        console.error('Semantic search error:', err);
+      }
+    }, 350);
 
-    const handleTicketDeleted = ({ ticketId }: { ticketId: string }) => {
-      dispatch(removeTicketLocal(ticketId));
-    };
+    return () => clearTimeout(timer);
+  }, [filters.search, filters.isSemantic, projectId, fetchWithAuth]);
 
-    socket.on('ticket:updated', handleTicketUpdated);
-    socket.on('ticket:created', handleTicketCreated);
-    socket.on('ticket:deleted', handleTicketDeleted);
-
-    return () => {
-      socket.off('ticket:updated', handleTicketUpdated);
-      socket.off('ticket:created', handleTicketCreated);
-      socket.off('ticket:deleted', handleTicketDeleted);
-      socketClient.leaveProject(initialProject.id);
-    };
-  }, [initialProject.id, dispatch]);
-
+  // Sensors for drag-and-drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -98,61 +117,63 @@ export function Board({ initialBoard, initialProject }: BoardProps) {
     })
   );
 
-  const currentBoard = board || initialBoard;
-  const currentProj = project || initialProject;
+  // Filtered tickets
+  const filteredTickets = useMemo(() => {
+    const sourceList = semanticResults !== null ? semanticResults : tickets;
 
-  // Filter tickets for each column
-  const filteredColumns = React.useMemo(() => {
-    if (!currentBoard) return [];
+    return sourceList.filter((ticket) => {
+      // If not using semantic search, apply text filter
+      if (!filters.isSemantic && filters.search.trim()) {
+        const q = filters.search.toLowerCase();
+        const matchTitle = ticket.title.toLowerCase().includes(q);
+        const matchDesc = ticket.description?.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc) return false;
+      }
 
-    return currentBoard.columns.map((col) => {
-      const tickets = col.tickets.filter((ticket) => {
-        // 1. Search text filter
-        if (filters.search) {
-          const q = filters.search.toLowerCase();
-          const matchTitle = ticket.title.toLowerCase().includes(q);
-          const matchDesc = ticket.description?.toLowerCase().includes(q);
-          const matchTech = ticket.technicalNotes?.toLowerCase().includes(q);
-          if (!matchTitle && !matchDesc && !matchTech) return false;
-        }
+      // Priority filter
+      if (filters.priority !== 'ALL' && ticket.priority !== filters.priority) {
+        return false;
+      }
 
-        // 2. Priority filter
-        if (filters.priority !== 'ALL' && ticket.priority !== filters.priority) {
-          return false;
-        }
+      // Type filter
+      if (filters.type !== 'ALL' && ticket.type !== filters.type) {
+        return false;
+      }
 
-        // 3. Assignee filter
-        if (filters.assigneeId !== 'ALL' && ticket.assigneeId !== filters.assigneeId) {
-          return false;
-        }
+      // Assignee filter
+      if (filters.assigneeId !== 'ALL' && ticket.assigneeId !== filters.assigneeId) {
+        return false;
+      }
 
-        // 4. Label filter
-        if (filters.label !== 'ALL') {
-          const labels = Array.isArray(ticket.labels) ? ticket.labels : [];
-          if (!labels.includes(filters.label)) return false;
-        }
-
-        return true;
-      });
-
-      return {
-        ...col,
-        tickets,
-      };
+      return true;
     });
-  }, [currentBoard, filters]);
+  }, [tickets, semanticResults, filters]);
 
+  // Group tickets by column status
+  const columnTicketsMap = useMemo(() => {
+    const map: Record<TicketStatus, Ticket[]> = {
+      'To Do': [],
+      'In Progress': [],
+      'Done': [],
+    };
+
+    filteredTickets.forEach((ticket) => {
+      if (map[ticket.status]) {
+        map[ticket.status].push(ticket);
+      } else {
+        map['To Do'].push(ticket);
+      }
+    });
+
+    return map;
+  }, [filteredTickets]);
+
+  // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const ticketId = active.id as string;
-
-    // Find ticket
-    for (const col of currentBoard.columns) {
-      const t = col.tickets.find((t) => t.id === ticketId);
-      if (t) {
-        setActiveDragTicket(t);
-        break;
-      }
+    const ticket = tickets.find((t) => t.id === active.id);
+    if (ticket) {
+      setActiveDragTicket(ticket);
     }
   };
 
@@ -163,37 +184,24 @@ export function Board({ initialBoard, initialProject }: BoardProps) {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    if (activeId === overId) return;
+    const activeTicket = tickets.find((t) => t.id === activeId);
+    if (!activeTicket) return;
 
-    // Determine target column and position
-    let targetColId: string | null = null;
-    let targetPos = 0;
-
-    // Is over a column directly?
-    const isOverColumn = currentBoard.columns.some((c) => c.id === overId);
-    if (isOverColumn) {
-      targetColId = overId;
-      const targetCol = currentBoard.columns.find((c) => c.id === overId);
-      targetPos = targetCol ? targetCol.tickets.length : 0;
+    // Is dropped over a column directly?
+    let targetStatus: TicketStatus | null = null;
+    if (COLUMNS.includes(overId as TicketStatus)) {
+      targetStatus = overId as TicketStatus;
     } else {
-      // Over a ticket
-      for (const col of currentBoard.columns) {
-        const idx = col.tickets.findIndex((t) => t.id === overId);
-        if (idx !== -1) {
-          targetColId = col.id;
-          targetPos = idx;
-          break;
-        }
+      // Over another ticket
+      const overTicket = tickets.find((t) => t.id === overId);
+      if (overTicket) {
+        targetStatus = overTicket.status;
       }
     }
 
-    if (targetColId) {
-      dispatch(
-        moveTicketOptimistic({
-          ticketId: activeId,
-          targetColumnId: targetColId,
-          targetPosition: targetPos,
-        })
+    if (targetStatus && activeTicket.status !== targetStatus) {
+      setTickets((prev) =>
+        prev.map((t) => (t.id === activeId ? { ...t, status: targetStatus! } : t))
       );
     }
   };
@@ -207,67 +215,198 @@ export function Board({ initialBoard, initialProject }: BoardProps) {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Find target column and target position from current state
-    let targetColumnId = '';
-    let targetPosition = 0;
+    const currentTicket = tickets.find((t) => t.id === activeId);
+    if (!currentTicket) return;
 
-    for (const col of currentBoard.columns) {
-      const idx = col.tickets.findIndex((t) => t.id === activeId);
-      if (idx !== -1) {
-        targetColumnId = col.id;
-        targetPosition = idx;
-        break;
+    let targetStatus: TicketStatus = currentTicket.status;
+    if (COLUMNS.includes(overId as TicketStatus)) {
+      targetStatus = overId as TicketStatus;
+    } else {
+      const overTicket = tickets.find((t) => t.id === overId);
+      if (overTicket) {
+        targetStatus = overTicket.status;
       }
     }
 
-    if (targetColumnId) {
-      try {
-        await api.updateTicket(activeId, {
-          columnId: targetColumnId,
-          position: targetPosition,
-        });
-      } catch (err) {
-        console.error('Failed to sync ticket move to API:', err);
+    // Persist status change to API
+    try {
+      const res = await fetchWithAuth(
+        `/api/projects/${projectId}/tickets/${activeId}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: targetStatus }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error('Failed to move ticket');
+        fetchTickets(); // Revert
       }
+    } catch (err) {
+      console.error('Error saving ticket move:', err);
+      toast.error('Failed to save ticket movement');
+      fetchTickets();
     }
+  };
+
+  // Open Create Modal
+  const handleOpenCreate = (status: TicketStatus = 'To Do') => {
+    setCreateInitialStatus(status);
+    setIsCreateOpen(true);
+  };
+
+  // Open Detail Modal
+  const handleOpenDetail = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setIsDetailOpen(true);
+  };
+
+  // Ticket Created Callback
+  const handleTicketCreated = (newTicket: Ticket) => {
+    setTickets((prev) => [newTicket, ...prev]);
+  };
+
+  // Ticket Updated Callback
+  const handleTicketUpdated = (updatedTicket: Ticket) => {
+    setTickets((prev) =>
+      prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
+    );
+    setSelectedTicket(updatedTicket);
+  };
+
+  // Ticket Deleted Callback
+  const handleTicketDeleted = (ticketId: string) => {
+    setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+    setIsDetailOpen(false);
+    setSelectedTicket(null);
   };
 
   return (
     <div className="w-full">
-      {/* Board Filters & Search Bar */}
-      <BoardFilters />
-
-      {/* Kanban Columns Dnd Area */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-5 overflow-x-auto pb-8 pt-2 custom-scrollbar">
-          {filteredColumns.map((col) => (
-            <Column
-              key={col.id}
-              column={col}
-              tickets={col.tickets}
-              projectId={currentProj.id}
-            />
-          ))}
+      {/* Board Header Action Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2.5">
+            <Kanban className="h-5 w-5 text-indigo-400" />
+            <span>Kanban Board</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Manage workflow and drag tickets across columns.
+          </p>
         </div>
 
-        {/* Drag Overlay for smooth card preview while dragging */}
-        <DragOverlay>
-          {activeDragTicket ? (
-            <div className="w-80 pointer-events-none">
-              <TicketCard ticket={activeDragTicket} isOverlay />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+        {/* Prominent Create Ticket Button */}
+        <Button
+          onClick={() => handleOpenCreate('To Do')}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 px-4 py-2 text-xs font-semibold rounded-xl"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Create Ticket</span>
+        </Button>
+      </div>
 
-      {/* Ticket Detail Split-Panel Modal */}
-      {activeTicket && <TicketDetailModal />}
+      {/* Board Filters & Semantic Search Bar */}
+      <BoardFilters members={members} />
+
+      {/* Semantic Search Banner */}
+      {filters.isSemantic && filters.search.trim() && (
+        <div className="mb-4 px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between text-xs text-purple-300">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-purple-400 animate-spin" />
+            <span>
+              Semantic AI search matching: <strong>"{filters.search}"</strong> (
+              {filteredTickets.length} found)
+            </span>
+          </div>
+          <button
+            onClick={() => dispatch(setFilters({ search: '', isSemantic: false }))}
+            className="text-purple-400 hover:text-purple-200 underline text-[11px]"
+          >
+            Clear Search
+          </button>
+        </div>
+      )}
+
+      {/* Empty State when no tickets exist anywhere in project */}
+      {tickets.length === 0 && !isLoading && (
+        <div className="py-20 px-4 text-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-4">
+            <Kanban className="h-6 w-6" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-100 mb-1">
+            No tickets yet
+          </h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto mb-6">
+            Get started by creating your first ticket or feature for this project board.
+          </p>
+          <Button
+            onClick={() => handleOpenCreate('To Do')}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-4 py-2 rounded-xl"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            Create First Ticket
+          </Button>
+        </div>
+      )}
+
+      {/* Kanban Columns with Drag-and-Drop */}
+      {tickets.length > 0 && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex flex-col lg:flex-row gap-5 items-stretch pb-8 pt-1">
+            {COLUMNS.map((colStatus) => (
+              <Column
+                key={colStatus}
+                id={colStatus}
+                title={colStatus}
+                tickets={columnTicketsMap[colStatus]}
+                onTicketClick={handleOpenDetail}
+                onAddTicketClick={handleOpenCreate}
+              />
+            ))}
+          </div>
+
+          {/* Drag Overlay */}
+          <DragOverlay>
+            {activeDragTicket ? (
+              <div className="w-80 pointer-events-none opacity-90 shadow-2xl">
+                <TicketCard ticket={activeDragTicket} isOverlay />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
+
+      {/* Create Ticket Modal */}
+      <CreateTicketModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        projectId={projectId}
+        members={members}
+        initialStatus={createInitialStatus}
+        onTicketCreated={handleTicketCreated}
+      />
+
+      {/* Ticket Detail / Edit / Comments Modal */}
+      <TicketDetailModal
+        ticket={selectedTicket}
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedTicket(null);
+        }}
+        projectId={projectId}
+        members={members}
+        onTicketUpdated={handleTicketUpdated}
+        onTicketDeleted={handleTicketDeleted}
+      />
     </div>
   );
 }

@@ -8,9 +8,8 @@ import {
   CheckCircle2,
   Clock,
   Layers,
-  Zap,
   Kanban,
-  AlertTriangle,
+  CheckSquare,
 } from 'lucide-react';
 
 interface AnalyticsViewProps {
@@ -19,12 +18,16 @@ interface AnalyticsViewProps {
 }
 
 export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
+  const statusCounts: Record<string, number> = {
+    'To Do': analytics.todoTickets || 0,
+    'In Progress': analytics.inProgressTickets || 0,
+    'Done': analytics.completedTickets || 0,
+  };
+
   const statusColors: Record<string, string> = {
-    Backlog: 'bg-slate-500',
     'To Do': 'bg-blue-500',
     'In Progress': 'bg-amber-500',
-    'In Review': 'bg-purple-500',
-    Done: 'bg-emerald-500',
+    'Done': 'bg-emerald-500',
   };
 
   return (
@@ -39,7 +42,7 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
             {project.name}
           </h1>
           <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            {project.description}
+            {project.description || 'No description provided.'}
           </p>
         </div>
 
@@ -64,32 +67,32 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
             {analytics.totalTickets}
           </div>
           <div className="text-[11px] text-slate-500">
-            Autonomously generated & tracked
+            Across all workflow states
           </div>
         </div>
 
-        {/* Total Story Points */}
+        {/* In Progress */}
         <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Total Velocity (Points)</span>
-            <Zap className="h-4 w-4 text-amber-400" />
+            <span>In Progress</span>
+            <Clock className="h-4 w-4 text-amber-400" />
           </div>
           <div className="text-3xl font-extrabold text-amber-400">
-            {analytics.totalStoryPoints}
+            {analytics.inProgressTickets}
           </div>
           <div className="text-[11px] text-slate-500">
-            Estimated sprint effort
+            Active developer tasks
           </div>
         </div>
 
-        {/* Completed Points */}
+        {/* Completed Tickets */}
         <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-            <span>Completed Points</span>
+            <span>Completed Tickets</span>
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           </div>
           <div className="text-3xl font-extrabold text-emerald-400">
-            {analytics.completedStoryPoints}
+            {analytics.completedTickets}
           </div>
           <div className="text-[11px] text-slate-500">
             Moved to Done column
@@ -103,13 +106,13 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
             <BarChart3 className="h-4 w-4 text-cyan-400" />
           </div>
           <div className="text-3xl font-extrabold text-cyan-400">
-            {analytics.completionPercentage}%
+            {analytics.completionRate}%
           </div>
           {/* Progress bar */}
           <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
             <div
               className="h-full bg-cyan-400 rounded-full transition-all duration-500"
-              style={{ width: `${analytics.completionPercentage}%` }}
+              style={{ width: `${analytics.completionRate}%` }}
             />
           </div>
         </div>
@@ -123,11 +126,11 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
             <h3 className="text-sm font-bold text-slate-200">
               Tickets by Board Column
             </h3>
-            <span className="text-xs text-slate-500">Active distribution</span>
+            <span className="text-xs text-slate-500">Workflow distribution</span>
           </div>
 
           <div className="space-y-3">
-            {Object.entries(analytics.statusCounts).map(([status, count]) => {
+            {Object.entries(statusCounts).map(([status, count]) => {
               const pct =
                 analytics.totalTickets > 0
                   ? Math.round((count / analytics.totalTickets) * 100)
@@ -138,7 +141,7 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
                 <div key={status} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-slate-300">{status}</span>
-                    <span className="font-mono text-slate-400">
+                    <span className="text-slate-400 font-mono">
                       {count} ({pct}%)
                     </span>
                   </div>
@@ -160,31 +163,27 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
             <h3 className="text-sm font-bold text-slate-200">
               Tickets by Priority
             </h3>
-            <span className="text-xs text-slate-500">Risk & urgency</span>
+            <span className="text-xs text-slate-500">Urgency breakdown</span>
           </div>
 
           <div className="space-y-3">
-            {[
-              { label: 'HIGH', count: analytics.priorityCounts.HIGH || 0, color: 'bg-red-500', text: 'text-red-400' },
-              { label: 'MEDIUM', count: analytics.priorityCounts.MEDIUM || 0, color: 'bg-amber-500', text: 'text-amber-400' },
-              { label: 'LOW', count: analytics.priorityCounts.LOW || 0, color: 'bg-blue-500', text: 'text-blue-400' },
-            ].map((p) => {
+            {Object.entries(analytics.priorityBreakdown || {}).map(([prio, count]) => {
               const pct =
                 analytics.totalTickets > 0
-                  ? Math.round((p.count / analytics.totalTickets) * 100)
+                  ? Math.round((count / analytics.totalTickets) * 100)
                   : 0;
 
               return (
-                <div key={p.label} className="space-y-1">
+                <div key={prio} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className={`font-semibold ${p.text}`}>{p.label} Priority</span>
-                    <span className="font-mono text-slate-400">
-                      {p.count} tickets ({pct}%)
+                    <span className="font-medium text-slate-300">{prio}</span>
+                    <span className="text-slate-400 font-mono">
+                      {count} ({pct}%)
                     </span>
                   </div>
                   <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${p.color} rounded-full transition-all duration-300`}
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-300"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -194,28 +193,6 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
           </div>
         </div>
       </div>
-
-      {/* Label Distribution */}
-      {Object.keys(analytics.labelCounts).length > 0 && (
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <h3 className="text-sm font-bold text-slate-200">
-            Feature & Domain Tag Breakdown
-          </h3>
-          <div className="flex flex-wrap gap-2.5">
-            {Object.entries(analytics.labelCounts).map(([label, count]) => (
-              <div
-                key={label}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs"
-              >
-                <span className="text-indigo-400 font-medium">#{label}</span>
-                <span className="font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">
-                  {count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

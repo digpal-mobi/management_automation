@@ -1,52 +1,44 @@
-export type Priority = 'HIGH' | 'MEDIUM' | 'LOW';
+export type ProjectMemberRole = 'owner' | 'manager' | 'developer' | 'editor';
 
-export type Role = 'ADMIN' | 'PM' | 'TECH_LEAD' | 'DEVELOPER';
+export type TicketStatus = 'To Do' | 'In Progress' | 'Done';
+
+export type TicketPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+export type Priority = TicketPriority;
+
+export type TicketType = 'Feature' | 'Bug' | 'Task' | 'Improvement';
 
 export interface User {
   id: string;
-  name: string;
   email: string;
-  role: Role;
-  avatar?: string | null;
+  username: string;
+  role?: string;
+  avatarUrl?: string | null;
   createdAt?: string;
 }
 
-export interface ChecklistItem {
-  id: string;
-  text: string;
-  completed: boolean;
-}
-
-export interface Ticket {
+export interface ProjectMember {
   id: string;
   projectId: string;
-  columnId: string;
-  title: string;
-  description: string;
-  acceptanceCriteria: ChecklistItem[];
-  technicalNotes?: string | null;
-  prChecklist: ChecklistItem[];
-  priority: Priority;
-  storyPoints: number;
-  labels: string[];
-  dependencies: string[];
-  position: number;
-  assigneeId?: string | null;
-  assignee?: User | null;
-  createdById?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  _count?: {
-    messages: number;
-  };
+  userId: string;
+  user: User;
+  role: ProjectMemberRole;
+  invitedAt: string;
+  acceptedAt?: string | null;
 }
 
-export interface Column {
+export interface Project {
   id: string;
-  boardId: string;
-  name: string; // 'Backlog' | 'To Do' | 'In Progress' | 'In Review' | 'Done'
-  position: number;
-  tickets: Ticket[];
+  name: string;
+  description?: string | null;
+  ownerId: string;
+  owner?: User;
+  userRole?: ProjectMemberRole;
+  createdAt: string;
+  updatedAt: string;
+  members?: ProjectMember[];
+  ticketCount?: number;
+  memberCount?: number;
+  boardId?: string | null;
 }
 
 export interface Board {
@@ -54,51 +46,62 @@ export interface Board {
   projectId: string;
   name: string;
   createdAt: string;
-  columns: Column[];
+  columns?: Column[];
 }
 
-export interface Project {
+export interface Column {
   id: string;
   name: string;
-  description: string;
-  prdText: string;
-  techStack?: string;
-  goals?: string;
-  constraints?: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy?: User | null;
-  totalTickets?: number;
-  doneTickets?: number;
-  totalPoints?: number;
-  completionRate?: number;
-  boardId?: string | null;
+  tickets: Ticket[];
 }
 
-export interface MessageCitation {
-  section: string;
-  snippet: string;
-  distance: number;
+export interface Comment {
+  id: string;
+  ticketId: string;
+  userId: string;
+  user: User;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Ticket {
+  id: string;
+  boardId: string;
+  projectId: string;
+  title: string;
+  description?: string | null;
+  status: TicketStatus;
+  priority: TicketPriority;
+  type: TicketType;
+  assigneeId?: string | null;
+  assignee?: User | null;
+  reporterId?: string | null;
+  reporter?: User | null;
+  createdAt: string;
+  updatedAt: string;
+  comments?: Comment[];
+  _count?: {
+    comments: number;
+  };
 }
 
 export interface Message {
   id: string;
   ticketId: string;
-  senderType: 'USER' | 'AI';
-  senderId?: string | null;
-  senderName: string;
-  sender?: User | null;
+  senderId?: string;
+  senderName?: string;
+  senderType?: 'user' | 'ai';
   content: string;
-  citations?: MessageCitation[];
   createdAt: string;
 }
 
 export interface ProjectAnalytics {
   totalTickets: number;
-  totalStoryPoints: number;
-  completedStoryPoints: number;
-  completionPercentage: number;
-  statusCounts: Record<string, number>;
-  priorityCounts: Record<string, number>;
-  labelCounts: Record<string, number>;
+  completedTickets: number;
+  inProgressTickets: number;
+  todoTickets: number;
+  completionRate: number;
+  priorityBreakdown: Record<string, number>;
+  typeBreakdown: Record<string, number>;
 }

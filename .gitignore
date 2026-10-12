@@ -1,26 +1,50 @@
 # Dependencies
 node_modules/
-*/node_modules/
+**/node_modules/
 venv/
-*/venv/
-__pycache__/
-*.pyc
+**/venv/
+.venv/
+**/env/
 
-# Builds
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Builds & caches
 .next/
+**/.next/
+out/
 dist/
+**/dist/
 build/
+**/build/
 .cache/
+*.tsbuildinfo
 
 # Environment files
-.env.local
-.env*.local
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # OS Files
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+
+# IDE & Editor
+.idea/
+*.swp
+*.swo

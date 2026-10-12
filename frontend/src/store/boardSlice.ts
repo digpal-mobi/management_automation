@@ -1,11 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Board, Column, Ticket, Project, Priority } from '@/types';
+import { Board, Column, Ticket, Project, TicketPriority } from '@/types';
 
 export interface BoardFilters {
   search: string;
-  priority: 'ALL' | Priority;
-  label: string;
+  priority: 'ALL' | TicketPriority;
+  type: string;
   assigneeId: string;
+  isSemantic: boolean;
 }
 
 interface BoardState {
@@ -24,8 +25,9 @@ const initialState: BoardState = {
   filters: {
     search: '',
     priority: 'ALL',
-    label: 'ALL',
+    type: 'ALL',
     assigneeId: 'ALL',
+    isSemantic: false,
   },
   loading: false,
   error: null,
@@ -44,8 +46,7 @@ export const boardSlice = createSlice({
       state.loading = false;
       state.error = null;
 
-      // If activeTicket is open, update its reference
-      if (state.activeTicket) {
+      if (state.activeTicket && action.payload.board.columns) {
         for (const col of action.payload.board.columns) {
           const found = col.tickets.find((t) => t.id === state.activeTicket?.id);
           if (found) {
@@ -72,69 +73,53 @@ export const boardSlice = createSlice({
       state.filters = {
         search: '',
         priority: 'ALL',
-        label: 'ALL',
+        type: 'ALL',
         assigneeId: 'ALL',
+        isSemantic: false,
       };
     },
-    // Optimistic Drag-and-Drop Ticket Move
     moveTicketOptimistic: (
       state,
       action: PayloadAction<{
         ticketId: string;
-        targetColumnId: string;
-        targetPosition: number;
+        targetStatus: 'To Do' | 'In Progress' | 'Done';
       }>
     ) => {
-      if (!state.board) return;
+      if (!state.board?.columns) return;
+      const { ticketId, targetStatus } = action.payload;
 
-      const { ticketId, targetColumnId, targetPosition } = action.payload;
-      let ticketToMove: Ticket | null = null;
-      let sourceColIndex = -1;
-
-      // 1. Locate and remove from source column
-      for (let i = 0; i < state.board.columns.length; i++) {
-        const col = state.board.columns[i];
-        const tIndex = col.tickets.findIndex((t) => t.id === ticketId);
-        if (tIndex !== -1) {
-          ticketToMove = col.tickets[tIndex];
-          col.tickets.splice(tIndex, 1);
-          sourceColIndex = i;
+      let foundTicket: Ticket | null = null;
+      for (const col of state.board.columns) {
+        const idx = col.tickets.findIndex((t) => t.id === ticketId);
+        if (idx !== -1) {
+          foundTicket = { ...col.tickets[idx], status: targetStatus };
+          col.tickets.splice(idx, 1);
           break;
         }
       }
 
-      if (!ticketToMove) return;
-
-      // 2. Insert into target column
-      const targetCol = state.board.columns.find((c) => c.id === targetColumnId);
-      if (targetCol) {
-        ticketToMove.columnId = targetColumnId;
-        ticketToMove.position = targetPosition;
-        targetCol.tickets.splice(targetPosition, 0, ticketToMove);
-
-        // Reindex positions
-        targetCol.tickets.forEach((t, idx) => {
-          t.position = idx;
-        });
-
+      if (foundTicket) {
+        const targetCol = state.board.columns.find((c) => c.name === targetStatus);
+        if (targetCol) {
+          targetCol.tickets.push(foundTicket);
+        }
         if (state.activeTicket?.id === ticketId) {
-          state.activeTicket = ticketToMove;
+          state.activeTicket.status = targetStatus;
         }
       }
     },
     updateTicketLocal: (state, action: PayloadAction<Ticket>) => {
-      if (!state.board) return;
+      if (!state.board?.columns) return;
       const updated = action.payload;
 
       for (const col of state.board.columns) {
         const idx = col.tickets.findIndex((t) => t.id === updated.id);
         if (idx !== -1) {
-          if (col.id === updated.columnId) {
+          if (col.name === updated.status) {
             col.tickets[idx] = updated;
           } else {
-            // Moved to a different column
             col.tickets.splice(idx, 1);
-            const targetCol = state.board.columns.find((c) => c.id === updated.columnId);
+            const targetCol = state.board.columns.find((c) => c.name === updated.status);
             if (targetCol) {
               targetCol.tickets.push(updated);
             }
@@ -147,39 +132,16 @@ export const boardSlice = createSlice({
         state.activeTicket = updated;
       }
     },
-    toggleChecklistLocal: (
-      state,
-      action: PayloadAction<{
-        ticketId: string;
-        type: 'acceptance' | 'pr';
-        itemId: string;
-      }>
-    ) => {
-      if (!state.board) return;
-      const { ticketId, type, itemId } = action.payload;
-
-      const updateList = (ticket: Ticket) => {
-        const list = type === 'acceptance' ? ticket.acceptanceCriteria : ticket.prChecklist;
-        const item = list.find((x) => x.id === itemId);
-        if (item) {
-          item.completed = !item.completed;
-        }
-      };
-
-      for (const col of state.board.columns) {
-        const t = col.tickets.find((t) => t.id === ticketId);
-        if (t) {
-          updateList(t);
-          break;
-        }
-      }
-
-      if (state.activeTicket?.id === ticketId) {
-        updateList(state.activeTicket);
+    addTicketLocal: (state, action: PayloadAction<Ticket>) => {
+      if (!state.board?.columns) return;
+      const ticket = action.payload;
+      const targetCol = state.board.columns.find((c) => c.name === ticket.status);
+      if (targetCol) {
+        targetCol.tickets.unshift(ticket);
       }
     },
     removeTicketLocal: (state, action: PayloadAction<string>) => {
-      if (!state.board) return;
+      if (!state.board?.columns) return;
       const ticketId = action.payload;
 
       for (const col of state.board.columns) {
@@ -202,7 +164,7 @@ export const {
   clearFilters,
   moveTicketOptimistic,
   updateTicketLocal,
-  toggleChecklistLocal,
+  addTicketLocal,
   removeTicketLocal,
 } = boardSlice.actions;
 
