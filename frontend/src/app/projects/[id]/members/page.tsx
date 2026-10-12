@@ -21,13 +21,12 @@ import {
   Users,
   UserPlus,
   Trash2,
-  Shield,
   ArrowLeft,
   Kanban,
   Loader2,
   AlertCircle,
-  Mail,
-  User,
+  FileText,
+  Compass,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -198,8 +197,8 @@ export default function ProjectMembersPage() {
   if (loading || authLoading) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-8 w-8 text-indigo-400 animate-spin" />
-        <p className="text-xs text-slate-400">Loading team members...</p>
+        <Loader2 className="h-7 w-7 text-white animate-spin" />
+        <p className="text-xs text-[#A3A3A3]">Loading team members...</p>
       </div>
     );
   }
@@ -207,12 +206,12 @@ export default function ProjectMembersPage() {
   if (error || !project) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center space-y-3 text-center">
-        <AlertCircle className="h-8 w-8 text-rose-400" />
-        <h3 className="text-sm font-semibold text-slate-200">Unable to view members</h3>
-        <p className="text-xs text-slate-400 max-w-sm">{error}</p>
+        <AlertCircle className="h-7 w-7 text-white" />
+        <h3 className="text-sm font-semibold text-white">Unable to view members</h3>
+        <p className="text-xs text-[#A3A3A3] max-w-sm">{error}</p>
         <Link
           href="/"
-          className="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-200 hover:bg-slate-700"
+          className="px-4 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white hover:bg-[#2A2A2A]"
         >
           Return to Dashboard
         </Link>
@@ -221,41 +220,66 @@ export default function ProjectMembersPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2A2A2A]">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
-            <Link href="/" className="hover:text-slate-200 flex items-center gap-1">
+          <div className="flex items-center gap-2 text-xs text-[#525252] mb-1.5">
+            <Link href="/" className="hover:text-white flex items-center gap-1 transition-colors">
               <ArrowLeft className="h-3 w-3" />
               <span>Projects</span>
             </Link>
             <span>/</span>
-            <span className="text-indigo-400 font-medium truncate max-w-xs">{project.name}</span>
+            <span className="text-white font-medium truncate max-w-xs">{project.name}</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2.5">
-            <Users className="h-6 w-6 text-indigo-400" />
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <Users className="h-6 w-6 text-white" />
             <span>Team & Collaboration</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Manage who has access to this project and their permissions.
+          <p className="text-xs text-[#A3A3A3] mt-1">
+            Manage members, assign project roles, and configure contributor permissions.
           </p>
         </div>
 
         {/* Tab links & Invite Button */}
         <div className="flex items-center gap-3">
-          <Link
-            href={`/projects/${projectId}/board`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-medium transition-colors"
-          >
-            <Kanban className="h-3.5 w-3.5 text-slate-400" />
-            <span>Kanban Board</span>
-          </Link>
+          <div className="flex items-center gap-1.5 bg-[#0A0A0A] p-1 rounded-xl border border-[#2A2A2A]">
+            <Link
+              href={`/projects/${projectId}/knowledge`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Knowledge</span>
+            </Link>
+            <Link
+              href={`/projects/${projectId}/roadmap`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
+            >
+              <Compass className="h-3.5 w-3.5" />
+              <span>Roadmap</span>
+            </Link>
+            <Link
+              href={`/projects/${projectId}/board`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
+            >
+              <Kanban className="h-3.5 w-3.5" />
+              <span>Board</span>
+            </Link>
+            <Link
+              href={`/projects/${projectId}/members`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-black shadow-sm"
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span>Team</span>
+            </Link>
+          </div>
 
           {isOwnerOrManager && (
             <Button
               onClick={() => setIsInviteOpen(true)}
-              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/20"
+              variant="primary"
+              size="sm"
+              className="flex items-center gap-1.5"
             >
               <UserPlus className="h-4 w-4" />
               <span>Invite Member</span>
@@ -266,44 +290,44 @@ export default function ProjectMembersPage() {
 
       {/* Permissions Legend */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
           <Badge variant="role" role="owner" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-[#A3A3A3]">
             Full control: delete project, manage team, all CRUD.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
           <Badge variant="role" role="manager" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-[#A3A3A3]">
             Manage tickets & boards, invite and manage team members.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
           <Badge variant="role" role="developer" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-[#A3A3A3]">
             Create, update and move tickets, add comments.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
+        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
           <Badge variant="role" role="editor" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-[#A3A3A3]">
             View-only access and comment on tickets.
           </p>
         </div>
       </div>
 
       {/* Members List Table */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-950/70 overflow-hidden shadow-xl">
-        <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-200">
+      <div className="rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] overflow-hidden shadow-sm">
+        <div className="px-5 py-3.5 border-b border-[#2A2A2A] flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white">
             Project Members ({members.length})
           </h3>
-          <span className="text-xs text-slate-500">
-            Your role: <strong className="text-slate-300 capitalize">{userRole}</strong>
+          <span className="text-xs text-[#525252]">
+            Your role: <strong className="text-white capitalize">{userRole}</strong>
           </span>
         </div>
 
-        <div className="divide-y divide-slate-800/80">
+        <div className="divide-y divide-[#2A2A2A]">
           {members.map((member) => {
             const isSelf = member.userId === user?.id;
             const isOwner = member.role === 'owner';
@@ -316,34 +340,26 @@ export default function ProjectMembersPage() {
             return (
               <div
                 key={member.id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-900/30 transition-colors"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#141414] transition-colors"
               >
                 {/* User Info */}
                 <div className="flex items-center gap-3">
-                  {member.user.avatarUrl ? (
-                    <img
-                      src={member.user.avatarUrl}
-                      alt={member.user.username}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-700"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 font-bold text-sm flex items-center justify-center">
-                      {(member.user.username || member.user.email)[0].toUpperCase()}
-                    </div>
-                  )}
+                  <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#2A2A2A] text-white font-bold text-sm flex items-center justify-center">
+                    {(member.user.username || member.user.email)[0].toUpperCase()}
+                  </div>
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-100">
+                      <span className="text-sm font-semibold text-white">
                         {member.user.username}
                       </span>
                       {isSelf && (
-                        <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">
+                        <span className="text-[10px] bg-[#141414] text-[#A3A3A3] px-1.5 py-0.5 rounded border border-[#2A2A2A]">
                           You
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-slate-400 block">
+                    <span className="text-xs text-[#A3A3A3] block">
                       {member.user.email}
                     </span>
                   </div>
@@ -362,7 +378,7 @@ export default function ProjectMembersPage() {
                           e.target.value as ProjectMemberRole
                         )
                       }
-                      className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs font-medium text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer disabled:opacity-50"
                     >
                       <option value="manager">Manager</option>
                       <option value="developer">Developer</option>
@@ -380,7 +396,7 @@ export default function ProjectMembersPage() {
                       onClick={() =>
                         handleRemoveMember(member.userId, member.user.username)
                       }
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors disabled:opacity-50"
+                      className="p-1.5 rounded-lg text-[#525252] hover:text-white hover:bg-[#2A2A2A] transition-colors disabled:opacity-50"
                       title="Remove member from project"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -392,7 +408,7 @@ export default function ProjectMembersPage() {
           })}
 
           {members.length === 0 && (
-            <div className="py-12 text-center text-slate-500 text-xs">
+            <div className="py-12 text-center text-[#525252] text-xs">
               No members found in this project.
             </div>
           )}
@@ -404,42 +420,42 @@ export default function ProjectMembersPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-indigo-400" />
+              <UserPlus className="h-5 w-5 text-white" />
               <span>Invite Team Member</span>
             </DialogTitle>
             <DialogDescription>
               Invite an existing user by email or username to collaborate on{' '}
-              <strong>{project.name}</strong>.
+              <strong className="text-white">{project.name}</strong>.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onInviteSubmit)} className="space-y-4 pt-2">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
                 Email or Username *
               </label>
               <input
                 type="text"
                 {...register('identifier')}
                 placeholder="e.g. dev@example.com or techlead"
-                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
-                  errors.identifier ? 'border-rose-500' : 'border-slate-800'
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-[#000000] border text-xs text-white placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white ${
+                  errors.identifier ? 'border-white' : 'border-[#2A2A2A]'
                 }`}
               />
               {errors.identifier && (
-                <span className="text-[11px] text-rose-400 mt-1 block">
+                <span className="text-[11px] text-[#A3A3A3] mt-1 block">
                   {errors.identifier.message}
                 </span>
               )}
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
                 Role *
               </label>
               <select
                 {...register('role')}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
               >
                 <option value="developer">Developer (Create/edit tickets & comments)</option>
                 <option value="manager">Manager (Manage tickets, board & members)</option>
@@ -447,19 +463,20 @@ export default function ProjectMembersPage() {
               </select>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#2A2A2A]">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
+                size="sm"
                 onClick={() => setIsInviteOpen(false)}
-                className="text-xs"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
+                variant="primary"
+                size="sm"
                 disabled={isInviting}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl"
               >
                 {isInviting ? (
                   <>

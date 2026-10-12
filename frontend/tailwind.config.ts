@@ -10,41 +10,53 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#090d16",
-        foreground: "#f8fafc",
+        background: "#000000",
+        foreground: "#FFFFFF",
+        mono: {
+          bg: "#000000",
+          surface: "#0A0A0A",
+          elevated: "#141414",
+          border: "#2A2A2A",
+          strong: "#404040",
+          text: "#FFFFFF",
+          muted: "#A3A3A3",
+          subtle: "#525252",
+          white: "#FFFFFF",
+          light: "#F5F5F5",
+        },
         card: {
-          DEFAULT: "#0f172a",
-          foreground: "#f8fafc",
-          muted: "#1e293b",
+          DEFAULT: "#0A0A0A",
+          foreground: "#FFFFFF",
+          muted: "#141414",
         },
         popover: {
-          DEFAULT: "#0f172a",
-          foreground: "#f8fafc",
+          DEFAULT: "#141414",
+          foreground: "#FFFFFF",
         },
         primary: {
-          DEFAULT: "#6366f1", // indigo
-          foreground: "#ffffff",
-          hover: "#4f46e5",
+          DEFAULT: "#FFFFFF",
+          foreground: "#000000",
+          hover: "#E5E5E5",
         },
         secondary: {
-          DEFAULT: "#1e293b",
-          foreground: "#94a3b8",
+          DEFAULT: "#141414",
+          foreground: "#A3A3A3",
         },
         muted: {
-          DEFAULT: "#1e293b",
-          foreground: "#64748b",
+          DEFAULT: "#141414",
+          foreground: "#A3A3A3",
         },
         accent: {
-          DEFAULT: "#0ea5e9", // cyan
-          foreground: "#ffffff",
+          DEFAULT: "#2A2A2A",
+          foreground: "#FFFFFF",
         },
         destructive: {
-          DEFAULT: "#ef4444",
-          foreground: "#ffffff",
+          DEFAULT: "#2A2A2A",
+          foreground: "#FFFFFF",
         },
-        border: "#1e293b",
-        input: "#1e293b",
-        ring: "#6366f1",
+        border: "#2A2A2A",
+        input: "#141414",
+        ring: "#FFFFFF",
       },
       borderRadius: {
         lg: "0.5rem",

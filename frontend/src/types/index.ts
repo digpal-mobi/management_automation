@@ -7,6 +7,10 @@ export type Priority = TicketPriority;
 
 export type TicketType = 'Feature' | 'Bug' | 'Task' | 'Improvement';
 
+export type DocumentProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+export type FeatureReviewStatus = 'PROPOSED' | 'ACCEPTED' | 'DEFERRED';
+
 export interface User {
   id: string;
   email: string;
@@ -30,6 +34,14 @@ export interface Project {
   id: string;
   name: string;
   description?: string | null;
+  goals?: string | null;
+  targetUsers?: string | null;
+  techStack?: string | null;
+  businessRequirements?: string | null;
+  technicalConstraints?: string | null;
+  knownDependencies?: string | null;
+  targetReleaseDate?: string | null;
+  additionalNotes?: string | null;
   ownerId: string;
   owner?: User;
   userRole?: ProjectMemberRole;
@@ -38,7 +50,94 @@ export interface Project {
   members?: ProjectMember[];
   ticketCount?: number;
   memberCount?: number;
+  documentCount?: number;
+  featureCount?: number;
   boardId?: string | null;
+}
+
+export interface DocumentChunk {
+  id: string;
+  documentId: string;
+  projectId: string;
+  chunkText: string;
+  location?: string | null;
+  sourceHeading?: string | null;
+  order: number;
+  createdAt: string;
+}
+
+export interface ProjectDocument {
+  id: string;
+  projectId: string;
+  filename: string;
+  fileSize: number;
+  fileFormat: string;
+  mimeType: string;
+  status: DocumentProcessingStatus;
+  errorMessage?: string | null;
+  extractedText?: string | null;
+  metadata?: {
+    pageCount?: number;
+    sheetNames?: string[];
+    wordCount?: number;
+    characterCount?: number;
+    headings?: string[];
+    [key: string]: any;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+  chunks?: DocumentChunk[];
+}
+
+export interface SourceReference {
+  docTitle: string;
+  location?: string;
+  excerpt?: string;
+}
+
+export interface ProjectFeature {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string;
+  module: string;
+  businessValue?: string | null;
+  relatedRequirements?: string[] | null;
+  dependencies?: string[] | null;
+  suggestedPriority: TicketPriority;
+  constraints?: string | null;
+  sourceReferences?: SourceReference[] | null;
+  status: FeatureReviewStatus;
+  isAiGenerated: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  tickets?: Ticket[];
+}
+
+export interface RequirementItem {
+  id?: string;
+  title: string;
+  description: string;
+  module?: string;
+  priority?: string;
+  source?: string;
+}
+
+export interface ProjectAnalysis {
+  id: string;
+  projectId: string;
+  overview?: string | null;
+  functionalRequirements?: RequirementItem[] | null;
+  nonFunctionalRequirements?: Array<{ category: string; description: string; source?: string }> | null;
+  businessRules?: Array<{ rule: string; details?: string; source?: string }> | null;
+  technicalRequirements?: Array<{ area: string; details: string; source?: string }> | null;
+  milestones?: Array<{ name: string; targetDate?: string; sequenceOrder?: number; isConfirmed?: boolean; details?: string }> | null;
+  openQuestions?: Array<{ question: string; category?: string; impact?: string; resolution?: string }> | null;
+  status: string;
+  analyzedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Board {
@@ -69,11 +168,17 @@ export interface Ticket {
   id: string;
   boardId: string;
   projectId: string;
+  featureId?: string | null;
+  feature?: ProjectFeature | null;
   title: string;
   description?: string | null;
   status: TicketStatus;
   priority: TicketPriority;
   type: TicketType;
+  acceptanceCriteria?: Array<{ id: string; text: string; completed: boolean }> | null;
+  technicalNotes?: string | null;
+  prChecklist?: Array<{ id: string; text: string; completed: boolean }> | null;
+  storyPoints?: number | null;
   assigneeId?: string | null;
   assignee?: User | null;
   reporterId?: string | null;

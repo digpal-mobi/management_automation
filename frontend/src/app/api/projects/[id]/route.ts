@@ -2,11 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
-import { getProjectRole, canManageProject } from '@/lib/permissions';
+import { getProjectRole } from '@/lib/permissions';
 
 const updateProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100).optional(),
   description: z.string().optional().nullable(),
+  goals: z.string().optional().nullable(),
+  targetUsers: z.string().optional().nullable(),
+  techStack: z.string().optional().nullable(),
+  businessRequirements: z.string().optional().nullable(),
+  technicalConstraints: z.string().optional().nullable(),
+  knownDependencies: z.string().optional().nullable(),
+  targetReleaseDate: z.string().optional().nullable(),
+  additionalNotes: z.string().optional().nullable(),
 });
 
 // GET /api/projects/[id]
@@ -43,6 +51,14 @@ export async function GET(
           },
         },
         boards: true,
+        _count: {
+          select: {
+            tickets: true,
+            members: true,
+            documents: true,
+            features: true,
+          },
+        },
       },
     });
 
@@ -54,6 +70,10 @@ export async function GET(
       success: true,
       project: {
         ...project,
+        ticketCount: project._count.tickets,
+        memberCount: project._count.members,
+        documentCount: project._count.documents,
+        featureCount: project._count.features,
         userRole,
       },
     });

@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import {
-  Sparkles,
   Kanban,
-  BarChart3,
   PlusCircle,
   LogOut,
   LogIn,
   UserPlus,
   Users,
+  BookOpen,
+  Map,
+  Layers,
 } from 'lucide-react';
 
 export function Navbar() {
@@ -24,49 +25,73 @@ export function Navbar() {
   const activeProjectId = projectMatch ? projectMatch[1] : null;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-[#2A2A2A] bg-black/90 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-        {/* Left: Brand + Project Switcher */}
+        {/* Left: Brand + Project Navigation */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black font-black text-sm shadow-sm transition-transform group-hover:scale-105">
+              <Layers className="h-4 w-4" />
             </div>
             <div>
-              <span className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
-                TaskPulse <span className="text-cyan-400 font-extrabold">PM</span>
+              <span className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
+                PULSE <span className="text-neutral-400 font-normal">AI</span>
               </span>
-              <span className="text-[10px] font-medium text-slate-400 block -mt-1 tracking-wider uppercase">
-                Project & Ticket Management
+              <span className="text-[10px] font-mono text-neutral-500 block -mt-1 tracking-wider uppercase">
+                Knowledge & Roadmap PM
               </span>
             </div>
           </Link>
 
           {/* Project Navigation Links if inside project */}
           {activeProjectId && activeProjectId !== 'new' && (
-            <div className="hidden md:flex items-center gap-1 border-l border-slate-800 pl-6">
+            <div className="hidden lg:flex items-center gap-1.5 border-l border-[#2A2A2A] pl-5">
               <Link
-                href={`/projects/${activeProjectId}/board`}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname.includes('/board')
-                    ? 'bg-slate-800 text-indigo-400 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                href={`/projects/${activeProjectId}/knowledge`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pathname.includes('/knowledge')
+                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
+                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
                 }`}
               >
-                <Kanban className="h-4 w-4" />
-                Kanban Board
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>Knowledge & Docs</span>
+              </Link>
+
+              <Link
+                href={`/projects/${activeProjectId}/roadmap`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pathname.includes('/roadmap')
+                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
+                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
+                }`}
+              >
+                <Map className="h-3.5 w-3.5" />
+                <span>Roadmap</span>
+              </Link>
+
+              <Link
+                href={`/projects/${activeProjectId}/board`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pathname.includes('/board')
+                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
+                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
+                }`}
+              >
+                <Kanban className="h-3.5 w-3.5" />
+                <span>Board</span>
               </Link>
 
               <Link
                 href={`/projects/${activeProjectId}/members`}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   pathname.includes('/members')
-                    ? 'bg-slate-800 text-indigo-400 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
+                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
                 }`}
               >
-                <Users className="h-4 w-4" />
-                Team Members
+                <Users className="h-3.5 w-3.5" />
+                <span>Team</span>
               </Link>
             </div>
           )}
@@ -79,59 +104,52 @@ export function Navbar() {
               {/* New Project Button */}
               <Link
                 href="/projects/new"
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white hover:bg-neutral-200 text-black text-xs font-semibold shadow-sm transition-all active:scale-[0.98]"
               >
-                <PlusCircle className="h-4 w-4" />
+                <PlusCircle className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">New Project</span>
                 <span className="sm:hidden">New</span>
               </Link>
 
               {/* User Profile Pill */}
-              <div className="flex items-center gap-2.5 pl-2 border-l border-slate-800">
-                <img
-                  src={
-                    user.avatarUrl ||
-                    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                      user.username
-                    )}`
-                  }
-                  alt={user.username}
-                  className="w-7 h-7 rounded-full object-cover border border-slate-700 bg-slate-800"
-                />
-                <div className="hidden sm:block text-left">
-                  <div className="text-xs font-semibold text-slate-200 leading-tight">
-                    {user.username}
-                  </div>
-                  <div className="text-[10px] text-slate-500 leading-tight">
-                    {user.email}
-                  </div>
+              <div className="flex items-center gap-2.5 pl-2 border-l border-[#2A2A2A]">
+                <div className="w-7 h-7 rounded-full bg-[#141414] border border-[#2A2A2A] text-white text-xs font-bold flex items-center justify-center">
+                  {(user.username || user.email)[0].toUpperCase()}
                 </div>
-
-                {/* Sign Out Button */}
-                <button
-                  onClick={() => logout()}
-                  title="Sign Out"
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 transition-colors ml-1"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
+                <div className="hidden sm:block text-left">
+                  <span className="text-xs font-medium text-white block leading-none">
+                    {user.username}
+                  </span>
+                  <span className="text-[10px] text-neutral-500 block leading-none mt-1">
+                    {user.email}
+                  </span>
+                </div>
               </div>
+
+              {/* Logout Button */}
+              <button
+                onClick={logout}
+                title="Log out"
+                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#141414] border border-transparent hover:border-[#2A2A2A] transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </>
           ) : (
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:bg-[#141414] border border-[#2A2A2A]"
               >
                 <LogIn className="h-3.5 w-3.5" />
-                Sign In
+                <span>Log In</span>
               </Link>
               <Link
                 href="/register"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-black hover:bg-neutral-200"
               >
                 <UserPlus className="h-3.5 w-3.5" />
-                Sign Up
+                <span>Register</span>
               </Link>
             </div>
           )}

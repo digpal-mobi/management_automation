@@ -19,7 +19,7 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
     },
     {
       title: 'Generating pgvector Semantic Memory',
-      desc: 'Deconstructing text into chunks & storing 1536-dim embeddings',
+      desc: 'Deconstructing text into chunks & storing vector embeddings',
       icon: Database,
     },
     {
@@ -34,7 +34,7 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
     },
     {
       title: 'Finalizing Kanban Board & Workflows',
-      desc: 'Organizing columns: Backlog, To Do, In Progress, In Review, Done',
+      desc: 'Organizing columns: To Do, In Progress, Done',
       icon: Layers,
     },
   ];
@@ -55,29 +55,29 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
   }, [steps.length]);
 
   return (
-    <div className="max-w-xl mx-auto p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6">
+    <div className="max-w-xl mx-auto p-8 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] shadow-xl space-y-6">
       {/* Title */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 shadow-lg shadow-indigo-500/20 mb-2">
-          <Sparkles className="h-7 w-7 text-white animate-pulse" />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#141414] border border-[#2A2A2A] mb-2">
+          <Sparkles className="h-7 w-7 text-white" />
         </div>
-        <h3 className="text-lg font-bold text-slate-100">
-          Autonomous AI Ingestion in Progress
+        <h3 className="text-lg font-bold text-white">
+          AI Analysis & Setup in Progress
         </h3>
-        <p className="text-xs text-slate-400">
-          Synthesizing <span className="text-indigo-400 font-semibold">{projectName}</span> into developer-ready tickets
+        <p className="text-xs text-[#A3A3A3]">
+          Synthesizing <span className="text-white font-semibold">{projectName}</span> into technical roadmap
         </p>
       </div>
 
       {/* Progress Bar */}
       <div className="space-y-1.5">
-        <div className="flex justify-between text-[11px] font-mono text-slate-400">
+        <div className="flex justify-between text-[11px] font-mono text-[#A3A3A3]">
           <span>PIPELINE PROGRESS</span>
-          <span className="text-indigo-400 font-bold">{progressPct}%</span>
+          <span className="text-white font-bold">{progressPct}%</span>
         </div>
-        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-[#141414] rounded-full overflow-hidden border border-[#2A2A2A]">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-700 ease-out"
+            className="h-full bg-white rounded-full transition-all duration-700 ease-out"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -95,19 +95,19 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
               key={idx}
               className={`flex items-start gap-3.5 p-3 rounded-xl border transition-all duration-300 ${
                 isCurrent
-                  ? 'bg-indigo-950/20 border-indigo-500/40 shadow-sm'
+                  ? 'bg-[#141414] border-white shadow-sm'
                   : isDone
-                  ? 'bg-slate-950/60 border-slate-800/80 opacity-80'
+                  ? 'bg-[#0A0A0A] border-[#2A2A2A] opacity-80'
                   : 'bg-transparent border-transparent opacity-40'
               }`}
             >
               <div className="mt-0.5 flex-shrink-0">
                 {isDone ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <CheckCircle2 className="h-5 w-5 text-white" />
                 ) : isCurrent ? (
-                  <Loader2 className="h-5 w-5 text-indigo-400 animate-spin" />
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
                 ) : (
-                  <IconComponent className="h-5 w-5 text-slate-600" />
+                  <IconComponent className="h-5 w-5 text-[#525252]" />
                 )}
               </div>
 
@@ -115,15 +115,15 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
                 <div
                   className={`text-xs font-semibold ${
                     isCurrent
-                      ? 'text-indigo-300'
+                      ? 'text-white'
                       : isDone
-                      ? 'text-slate-200'
-                      : 'text-slate-500'
+                      ? 'text-[#F5F5F5]'
+                      : 'text-[#525252]'
                   }`}
                 >
                   {step.title}
                 </div>
-                <div className="text-[11px] text-slate-400">{step.desc}</div>
+                <div className="text-[11px] text-[#A3A3A3]">{step.desc}</div>
               </div>
             </div>
           );
