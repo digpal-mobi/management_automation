@@ -230,9 +230,73 @@ class FallbackProvider(LLMProvider):
 
         # Generate intelligent response tailored to the developer's question
         resp = f"### Developer Guidance: {ticket_title}\n\n"
+        lower_msg = message.lower()
+
+        # 1. Missing requirements / validation / error status clarification
+        if any(k in lower_msg for k in ["error response", "400 or 422", "validation failure", "missing requirement", "status code", "what status", "return 400", "return 422"]):
+            resp += "I can help clarify this, but the ticket does not explicitly specify the expected error response format.\n\n"
+            resp += "**Clarification Needed:**\n"
+            resp += "- Should the API return an HTTP **400 Bad Request** or **422 Unprocessable Entity** for input validation failures?\n"
+            resp += "- Is the expected error schema standard `{ success: false, error: string, issues?: any[] }`?\n\n"
+            resp += "Could the Tech Lead or PM confirm the preferred error contract before finalizing the controller?"
+            return resp
+
+        # 2. Acceptance criteria inquiry
+        if any(k in lower_msg for k in ["acceptance criteria", "complete", "definition of done", "when is this done", "how do we know"]):
+            resp += "Here is the verified Acceptance Criteria and Definition of Done for this ticket:\n\n"
+            ac_list = ticket.get("acceptanceCriteria", [])
+            if ac_list:
+                for idx, ac in enumerate(ac_list):
+                    text = ac.get("text") if isinstance(ac, dict) else str(ac)
+                    resp += f"- [ ] **AC {idx + 1}**: {text}\n"
+            else:
+                resp += "- Verify core functionality and edge cases with automated unit/integration tests.\n"
+                resp += "- Ensure code builds cleanly without TypeScript or linter errors.\n"
+            
+            pr_list = ticket.get("prChecklist", [])
+            if pr_list:
+                resp += "\n**PR Checklist Verification:**\n"
+                for pr in pr_list:
+                    pr_text = pr.get("text") if isinstance(pr, dict) else str(pr)
+                    resp += f"- [ ] {pr_text}\n"
+            return resp
+
+        # 3. 401 Unauthorized / Authentication doubts
+        if "401" in lower_msg or "unauthorized" in lower_msg or "token" in lower_msg and "invalid" in lower_msg:
+            resp += "A **401 Unauthorized** response typically occurs in the authentication workflow due to:\n\n"
+            resp += "1. **Missing or Malformed Header**: Ensure the request contains `Authorization: Bearer <access_token>`.\n"
+            resp += "2. **Expired Access Token**: Access tokens expire after short intervals. Call `POST /api/auth/refresh` with HTTP-only cookies to obtain a new token.\n"
+            resp += "3. **Invalid Signature**: Verify the `JWT_ACCESS_SECRET` matches across environments.\n\n"
+            resp += "```typescript\n"
+            resp += "// Example client request with credentials\n"
+            resp += "const res = await fetch(url, {\n"
+            resp += "  headers: { 'Authorization': `Bearer ${token}` },\n"
+            resp += "  credentials: 'include',\n"
+            resp += "});\n"
+            resp += "```\n"
+            return resp
+
+        # 4. Architecture questions (Frontend vs Backend)
+        if any(k in lower_msg for k in ["frontend or backend", "where should this logic", "architecture", "which layer"]):
+            resp += f"Based on the project's architectural guidelines (**{tech_stack}**):\n\n"
+            resp += "- **Backend Core / API Route**: Business validation, database transactions, authorization checks, and secure secrets handling must live on the server.\n"
+            resp += "- **Frontend (Next.js)**: Optimistic UI state updates, form client-side schema parsing, and interactive modal state belong in client components.\n\n"
+            resp += "Keeping domain rules strictly on the server protects data integrity and guarantees security boundaries."
+            return resp
+
+        # 5. Testing and Edge Cases
+        if any(k in lower_msg for k in ["test", "edge case", "unit test", "integration test"]):
+            resp += "#### Recommended Edge Cases to Test\n"
+            resp += "1. **Boundary Limits**: Empty strings, exceeding max payload lengths, and special characters.\n"
+            resp += "2. **Authorization Boundaries**: Non-project members attempting access must receive 403 Forbidden.\n"
+            resp += "3. **Race Conditions / Concurrency**: Concurrent edits or duplicate requests must remain idempotent.\n"
+            resp += "4. **Service Unavailability**: Graceful fallback when downstream services or databases time out.\n\n"
+            return resp
+
+        # 6. API / Endpoint implementation
         resp += f"Based on the project tech stack (**{tech_stack}**) and ticket requirements, here is the suggested approach:\n\n"
         
-        if "endpoint" in message.lower() or "api" in message.lower() or "route" in message.lower():
+        if "endpoint" in lower_msg or "api" in lower_msg or "route" in lower_msg:
             resp += "#### Recommended API Endpoint Architecture\n"
             resp += "```typescript\n"
             resp += "// routes/api.ts\n"
@@ -246,7 +310,7 @@ class FallbackProvider(LLMProvider):
             resp += "  }\n"
             resp += "});\n"
             resp += "```\n\n"
-        elif "schema" in message.lower() or "database" in message.lower() or "table" in message.lower() or "model" in message.lower():
+        elif "schema" in lower_msg or "database" in lower_msg or "table" in lower_msg or "model" in lower_msg:
             resp += "#### Recommended Prisma Schema Model\n"
             resp += "```prisma\n"
             resp += "model Entity {\n"
@@ -262,7 +326,7 @@ class FallbackProvider(LLMProvider):
         else:
             resp += "#### Implementation Steps\n"
             resp += "1. **Check Acceptance Criteria**: Review the checklist on the left panel to ensure all items are accounted for.\n"
-            resp += "2. **Follow Existing Service Patterns**: Implement business logic inside `services/` and keep Express controllers concise.\n"
+            resp += "2. **Follow Existing Service Patterns**: Implement business logic cleanly with validation and error handling.\n"
             resp += "3. **Error Boundaries & Validation**: Validate input payloads before processing and return standard error structures.\n"
             resp += "4. **Unit/Integration Verification**: Ensure test coverage meets the PR checklist before opening a merge request.\n\n"
 

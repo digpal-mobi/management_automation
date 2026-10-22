@@ -69,6 +69,35 @@ def generate_tickets():
         logger.exception("Error in /ai/generate-tickets")
         return jsonify({"error": str(e)}), 500
 
+from app.services.ticket_discussion import analyze_and_respond_to_ticket_comment
+
+@ai_bp.route("/ticket-discussion", methods=["POST"])
+def ticket_discussion():
+    data = request.get_json() or {}
+    project_id = data.get("projectId")
+    ticket = data.get("ticket", {})
+    comment_text = data.get("comment", "") or data.get("message", "")
+    history = data.get("history", [])
+    project_context = data.get("project", {})
+    related_tickets = data.get("relatedTickets", [])
+
+    if not project_id or not comment_text:
+        return jsonify({"error": "projectId and comment are required"}), 400
+
+    try:
+        result = analyze_and_respond_to_ticket_comment(
+            project_id=project_id,
+            project_context=project_context,
+            ticket=ticket,
+            history=history,
+            comment_text=comment_text,
+            related_tickets=related_tickets
+        )
+        return jsonify(result), 200
+    except Exception as e:
+        logger.exception("Error in /ai/ticket-discussion")
+        return jsonify({"error": str(e)}), 500
+
 @ai_bp.route("/ticket-chat", methods=["POST"])
 def ticket_chat():
     data = request.get_json() or {}
