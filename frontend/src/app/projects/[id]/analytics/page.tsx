@@ -40,8 +40,8 @@ export default function ProjectAnalyticsPage() {
   if (loading) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-8 w-8 text-indigo-400 animate-spin" />
-        <p className="text-xs text-slate-400">Computing project velocity & metrics...</p>
+        <Loader2 className="h-7 w-7 text-white animate-spin" />
+        <p className="text-xs text-[#A3A3A3]">Computing project velocity & metrics...</p>
       </div>
     );
   }
@@ -49,12 +49,12 @@ export default function ProjectAnalyticsPage() {
   if (error || !project || !analytics) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center space-y-3 text-center">
-        <AlertCircle className="h-8 w-8 text-rose-400" />
-        <h3 className="text-sm font-semibold text-slate-200">Unable to load analytics</h3>
-        <p className="text-xs text-slate-400 max-w-sm">{error}</p>
+        <AlertCircle className="h-7 w-7 text-white" />
+        <h3 className="text-sm font-semibold text-white">Unable to load analytics</h3>
+        <p className="text-xs text-[#A3A3A3] max-w-sm">{error}</p>
         <Link
           href="/"
-          className="px-4 py-2 rounded-lg bg-slate-800 text-xs text-slate-200 hover:bg-slate-700"
+          className="px-4 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white hover:bg-[#2A2A2A]"
         >
           Return to Dashboard
         </Link>

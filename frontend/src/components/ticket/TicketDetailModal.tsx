@@ -23,6 +23,9 @@ import {
   Clock,
   Send,
   AlertTriangle,
+  CheckSquare,
+  Code2,
+  GitPullRequest,
 } from 'lucide-react';
 
 interface TicketDetailModalProps {
@@ -34,6 +37,29 @@ interface TicketDetailModalProps {
   onTicketUpdated: (ticket: Ticket) => void;
   onTicketDeleted: (ticketId: string) => void;
 }
+
+interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+const parseChecklist = (items: any): ChecklistItem[] => {
+  if (!items) return [];
+  if (Array.isArray(items)) {
+    return items.map((item, idx) => {
+      if (typeof item === 'string') {
+        return { id: `item-${idx}`, text: item, completed: false };
+      }
+      return {
+        id: item.id || `item-${idx}`,
+        text: item.text || String(item),
+        completed: Boolean(item.completed),
+      };
+    });
+  }
+  return [];
+};
 
 export function TicketDetailModal({
   ticket,
@@ -53,6 +79,10 @@ export function TicketDetailModal({
   const [priority, setPriority] = useState<TicketPriority>('Medium');
   const [type, setType] = useState<TicketType>('Task');
   const [assigneeId, setAssigneeId] = useState<string>('');
+  const [storyPoints, setStoryPoints] = useState<number | ''>('');
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState<ChecklistItem[]>([]);
+  const [technicalNotes, setTechnicalNotes] = useState<string>('');
+  const [prChecklist, setPrChecklist] = useState<ChecklistItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Delete Confirmation State
@@ -75,6 +105,10 @@ export function TicketDetailModal({
       setPriority(ticket.priority);
       setType(ticket.type);
       setAssigneeId(ticket.assigneeId || '');
+      setStoryPoints(ticket.storyPoints ?? '');
+      setAcceptanceCriteria(parseChecklist(ticket.acceptanceCriteria));
+      setTechnicalNotes(ticket.technicalNotes || '');
+      setPrChecklist(parseChecklist(ticket.prChecklist));
       setShowDeleteConfirm(false);
 
       // Fetch comments
@@ -107,6 +141,10 @@ export function TicketDetailModal({
             priority,
             type,
             assigneeId: assigneeId || null,
+            storyPoints: storyPoints === '' ? null : Number(storyPoints),
+            acceptanceCriteria,
+            technicalNotes: technicalNotes || null,
+            prChecklist,
           }),
         }
       );
@@ -238,17 +276,22 @@ export function TicketDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative flex flex-col w-full max-w-4xl h-[92vh] bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative flex flex-col w-full max-w-5xl h-[92vh] bg-[#000000] border border-[#2A2A2A] rounded-2xl shadow-2xl overflow-hidden">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2A2A2A] bg-[#0A0A0A]">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold text-slate-400 bg-slate-800/90 px-2.5 py-1 rounded-md border border-slate-700">
+            <span className="font-mono text-xs font-bold text-[#A3A3A3] bg-[#141414] px-2.5 py-1 rounded-md border border-[#2A2A2A]">
               #{ticket.id.slice(0, 8).toUpperCase()}
             </span>
             <div className="flex items-center gap-2">
               <Badge variant="type" type={type} size="sm" />
               <Badge variant="priority" priority={priority} size="sm" />
               <Badge variant="status" status={status} size="sm" />
+              {storyPoints !== '' && (
+                <span className="text-xs font-mono font-medium text-[#A3A3A3] bg-[#141414] px-2 py-0.5 rounded border border-[#2A2A2A]">
+                  {storyPoints} story points
+                </span>
+              )}
             </div>
           </div>
 
@@ -266,7 +309,7 @@ export function TicketDetailModal({
 
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-900 transition-colors"
+              className="p-2 rounded-lg text-[#525252] hover:text-white hover:bg-[#141414] transition-colors"
               title="Delete Ticket"
             >
               <Trash2 className="h-4 w-4" />
@@ -274,7 +317,7 @@ export function TicketDetailModal({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-900 transition-colors"
+              className="p-2 rounded-lg text-[#525252] hover:text-white hover:bg-[#141414] transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -283,9 +326,9 @@ export function TicketDetailModal({
 
         {/* Delete Confirmation Alert Banner */}
         {showDeleteConfirm && (
-          <div className="flex items-center justify-between p-4 bg-rose-950/40 border-b border-rose-500/30 text-rose-300 text-xs">
+          <div className="flex items-center justify-between p-4 bg-[#141414] border-b border-[#2A2A2A] text-white text-xs">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-rose-400" />
+              <AlertTriangle className="h-4 w-4 text-white" />
               <span>Are you sure you want to delete this ticket? This action cannot be undone.</span>
             </div>
             <div className="flex items-center gap-2">
@@ -311,44 +354,125 @@ export function TicketDetailModal({
         {/* Modal Body: Split Content & Discussion */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           {/* Left Details Panel */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar border-r border-slate-800/80">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar border-r border-[#2A2A2A]">
             {/* Title */}
             <div>
-              <label className="text-xs font-semibold text-slate-400 block mb-1">
+              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
                 Ticket Title
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-sm font-semibold text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-white"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="text-xs font-semibold text-slate-400 block mb-1">
+              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
                 Description
               </label>
               <textarea
-                rows={7}
+                rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Detailed specifications, reproduction steps, or requirements..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-100 leading-relaxed placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 custom-scrollbar"
+                placeholder="Detailed specifications, background, or requirements..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white leading-relaxed placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white custom-scrollbar"
               />
             </div>
+
+            {/* Acceptance Criteria Checklist */}
+            {acceptanceCriteria.length > 0 && (
+              <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <CheckSquare className="h-4 w-4 text-white" />
+                  <span>Acceptance Criteria</span>
+                </div>
+                <div className="space-y-2">
+                  {acceptanceCriteria.map((ac, idx) => (
+                    <label
+                      key={ac.id || idx}
+                      className="flex items-start gap-2.5 text-xs text-[#A3A3A3] hover:text-white cursor-pointer select-none transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={ac.completed}
+                        onChange={() => {
+                          setAcceptanceCriteria((prev) =>
+                            prev.map((item, i) =>
+                              i === idx ? { ...item, completed: !item.completed } : item
+                            )
+                          );
+                        }}
+                        className="mt-0.5 rounded border-[#2A2A2A] bg-[#000000] accent-white"
+                      />
+                      <span className={ac.completed ? 'line-through text-[#525252]' : ''}>
+                        {ac.text}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Technical Notes if present */}
+            {technicalNotes && (
+              <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Code2 className="h-4 w-4 text-white" />
+                  <span>Technical Notes & Architecture</span>
+                </div>
+                <p className="text-xs text-[#A3A3A3] leading-relaxed whitespace-pre-wrap font-mono bg-[#000000] p-3 rounded-lg border border-[#2A2A2A]">
+                  {technicalNotes}
+                </p>
+              </div>
+            )}
+
+            {/* PR Checklist if present */}
+            {prChecklist.length > 0 && (
+              <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <GitPullRequest className="h-4 w-4 text-white" />
+                  <span>PR Checklist</span>
+                </div>
+                <div className="space-y-2">
+                  {prChecklist.map((item, idx) => (
+                    <label
+                      key={item.id || idx}
+                      className="flex items-start gap-2.5 text-xs text-[#A3A3A3] hover:text-white cursor-pointer select-none transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        onChange={() => {
+                          setPrChecklist((prev) =>
+                            prev.map((it, i) =>
+                              i === idx ? { ...it, completed: !it.completed } : it
+                            )
+                          );
+                        }}
+                        className="mt-0.5 rounded border-[#2A2A2A] bg-[#000000] accent-white"
+                      />
+                      <span className={item.completed ? 'line-through text-[#525252]' : ''}>
+                        {item.text}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Workflow Attributes Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
                   Status
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as TicketStatus)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
                 >
                   <option value="To Do">To Do</option>
                   <option value="In Progress">In Progress</option>
@@ -357,13 +481,13 @@ export function TicketDetailModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
                   Priority
                 </label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -373,13 +497,13 @@ export function TicketDetailModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
                   Type
                 </label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as TicketType)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
                 >
                   <option value="Feature">Feature</option>
                   <option value="Bug">Bug</option>
@@ -389,13 +513,13 @@ export function TicketDetailModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
                   Assignee
                 </label>
                 <select
                   value={assigneeId}
                   onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
                 >
                   <option value="">Unassigned</option>
                   {members.map((m) => (
@@ -408,11 +532,11 @@ export function TicketDetailModal({
             </div>
 
             {/* Reporter Meta */}
-            <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+            <div className="pt-4 border-t border-[#2A2A2A] flex items-center justify-between text-xs text-[#525252]">
               <div className="flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5" />
                 <span>Reporter:</span>
-                <span className="text-slate-300 font-medium">
+                <span className="text-white font-medium">
                   {ticket.reporter?.username || 'System'}
                 </span>
               </div>
@@ -424,13 +548,13 @@ export function TicketDetailModal({
           </div>
 
           {/* Right Comments Panel */}
-          <div className="w-full md:w-[42%] flex flex-col bg-slate-950/80">
+          <div className="w-full md:w-[42%] flex flex-col bg-[#0A0A0A]">
             {/* Comments Header */}
-            <div className="px-5 py-3.5 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between">
+            <div className="px-5 py-3.5 border-b border-[#2A2A2A] bg-[#000000] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-indigo-400" />
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Comments & Discussion ({comments.length})
+                <MessageSquare className="h-4 w-4 text-white" />
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  Discussion ({comments.length})
                 </h3>
               </div>
             </div>
@@ -438,8 +562,8 @@ export function TicketDetailModal({
             {/* Comments Stream */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar">
               {comments.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 text-xs">
-                  <MessageSquare className="h-8 w-8 text-slate-700 mb-2" />
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#525252] text-xs">
+                  <MessageSquare className="h-8 w-8 text-[#2A2A2A] mb-2" />
                   <span>No comments yet. Start the conversation!</span>
                 </div>
               ) : (
@@ -450,24 +574,17 @@ export function TicketDetailModal({
                   return (
                     <div
                       key={comment.id}
-                      className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800/90 space-y-2 text-xs"
+                      className="p-3.5 rounded-xl bg-[#141414] border border-[#2A2A2A] space-y-2 text-xs"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={
-                              comment.user?.avatarUrl ||
-                              `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                                comment.user?.username || 'U'
-                              )}`
-                            }
-                            alt={comment.user?.username}
-                            className="w-5 h-5 rounded-full object-cover bg-slate-800"
-                          />
-                          <span className="font-semibold text-slate-200">
+                          <div className="w-5 h-5 rounded-full bg-[#2A2A2A] text-[10px] text-white flex items-center justify-center font-bold">
+                            {(comment.user?.username || 'U')[0].toUpperCase()}
+                          </div>
+                          <span className="font-semibold text-white">
                             {comment.user?.username}
                           </span>
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-[#525252]">
                             {new Date(comment.createdAt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -482,14 +599,14 @@ export function TicketDetailModal({
                                 setEditingCommentId(comment.id);
                                 setEditCommentText(comment.content);
                               }}
-                              className="p-1 rounded text-slate-500 hover:text-slate-300"
+                              className="p-1 rounded text-[#525252] hover:text-white"
                               title="Edit"
                             >
                               <Edit2 className="h-3 w-3" />
                             </button>
                             <button
                               onClick={() => handleDeleteComment(comment.id)}
-                              className="p-1 rounded text-slate-500 hover:text-rose-400"
+                              className="p-1 rounded text-[#525252] hover:text-white"
                               title="Delete"
                             >
                               <Trash2 className="h-3 w-3" />
@@ -504,13 +621,13 @@ export function TicketDetailModal({
                             rows={2}
                             value={editCommentText}
                             onChange={(e) => setEditCommentText(e.target.value)}
-                            className="w-full p-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            className="w-full p-2 rounded-lg bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white"
                           />
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
                               onClick={() => setEditingCommentId(null)}
-                              className="px-2 py-0.5 text-[11px] text-slate-400"
+                              className="px-2 py-0.5 text-[11px] text-[#A3A3A3]"
                             >
                               Cancel
                             </button>
@@ -524,7 +641,7 @@ export function TicketDetailModal({
                           </div>
                         </div>
                       ) : (
-                        <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-[#A3A3A3] leading-relaxed whitespace-pre-wrap">
                           {comment.content}
                         </p>
                       )}
@@ -535,19 +652,19 @@ export function TicketDetailModal({
             </div>
 
             {/* Add Comment Input */}
-            <form onSubmit={handleAddComment} className="p-3 bg-slate-950 border-t border-slate-800">
+            <form onSubmit={handleAddComment} className="p-3 bg-[#000000] border-t border-[#2A2A2A]">
               <div className="relative flex items-center">
                 <textarea
                   rows={2}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Write a comment..."
-                  className="w-full resize-none rounded-xl bg-slate-900 border border-slate-800 pl-3.5 pr-12 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full resize-none rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] pl-3.5 pr-12 py-2 text-xs text-white placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white"
                 />
                 <button
                   type="submit"
                   disabled={!newComment.trim() || isSubmittingComment}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-40"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white text-black hover:bg-[#F5F5F5] transition-all disabled:opacity-30"
                 >
                   <Send className="h-3.5 w-3.5" />
                 </button>

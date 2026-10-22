@@ -42,6 +42,23 @@ enum TicketType {
   @@map("ticket_type")
 }
 
+enum DocumentProcessingStatus {
+  PENDING    @map("pending")
+  PROCESSING @map("processing")
+  COMPLETED  @map("completed")
+  FAILED     @map("failed")
+
+  @@map("document_processing_status")
+}
+
+enum FeatureReviewStatus {
+  PROPOSED @map("proposed")
+  ACCEPTED @map("accepted")
+  DEFERRED @map("deferred")
+
+  @@map("feature_review_status")
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -52,10 +69,10 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  ownedProjects   Project[]        @relation("ProjectOwner")
+  ownedProjects   Project[]       @relation("ProjectOwner")
   projectMembers  ProjectMember[]
-  assignedTickets Ticket[]         @relation("TicketAssignee")
-  reportedTickets Ticket[]         @relation("TicketReporter")
+  assignedTickets Ticket[]        @relation("TicketAssignee")
+  reportedTickets Ticket[]        @relation("TicketReporter")
   comments        Comment[]
   refreshTokens   RefreshToken[]
 
@@ -63,17 +80,29 @@ model User {
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  name        String
-  description String?  @db.Text
-  ownerId     String   @map("owner_id")
-  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                   String   @id @default(uuid())
+  name                 String
+  description          String?  @db.Text
+  goals                String?  @db.Text
+  targetUsers          String?  @map("target_users") @db.Text
+  techStack            String?  @map("tech_stack") @db.Text
+  businessRequirements String?  @map("business_requirements") @db.Text
+  technicalConstraints String?  @map("technical_constraints") @db.Text
+  knownDependencies    String?  @map("known_dependencies") @db.Text
+  targetReleaseDate    String?  @map("target_release_date")
+  additionalNotes      String?  @map("additional_notes") @db.Text
+  ownerId              String   @map("owner_id")
+  owner                User     @relation("ProjectOwner", fields: [ownerId], references: [id])
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
-  members ProjectMember[]
-  boards  Board[]
-  tickets Ticket[]
+  members        ProjectMember[]
+  boards         Board[]
+  tickets        Ticket[]
+  documents      ProjectDocument[]
+  analysis       ProjectAnalysis?
+  features       ProjectFeature[]
+  documentChunks DocumentChunk[]
 
   @@map("projects")
 }
@@ -92,6 +121,89 @@ model ProjectMember {
   @@map("project_members")
 }
 
+model ProjectDocument {
+  id            String                   @id @default(uuid())
+  projectId     String                   @map("project_id")
+  project       Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  filename      String
+  fileSize      Int                      @map("file_size")
+  fileFormat    String                   @map("file_format")
+  mimeType      String                   @map("mime_type")
+  status        DocumentProcessingStatus @default(PENDING)
+  errorMessage  String?                  @map("error_message") @db.Text
+  extractedText String?                  @map("extracted_text") @db.Text
+  metadata      Json?
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  chunks DocumentChunk[]
+
+  @@index([projectId])
+  @@map("project_documents")
+}
+
+model DocumentChunk {
+  id            String          @id @default(uuid())
+  documentId    String          @map("document_id")
+  document      ProjectDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  projectId     String          @map("project_id")
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunkText     String          @map("chunk_text") @db.Text
+  location      String?
+  sourceHeading String?         @map("source_heading")
+  order         Int             @default(0)
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+model ProjectAnalysis {
+  id                        String   @id @default(uuid())
+  projectId                 String   @unique @map("project_id")
+  project                   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  overview                  String?  @db.Text
+  functionalRequirements    Json?    @map("functional_requirements")
+  nonFunctionalRequirements Json?    @map("non_functional_requirements")
+  businessRules             Json?    @map("business_rules")
+  technicalRequirements     Json?    @map("technical_requirements")
+  milestones                Json?
+  openQuestions             Json?    @map("open_questions")
+  status                    String   @default("COMPLETED")
+  analyzedAt                DateTime @default(now()) @map("analyzed_at")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  @@map("project_analyses")
+}
+
+model ProjectFeature {
+  id                  String              @id @default(uuid())
+  projectId           String              @map("project_id")
+  project             Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name                String
+  description         String              @db.Text
+  module              String              @default("Core")
+  businessValue       String?             @map("business_value") @db.Text
+  relatedRequirements Json?               @map("related_requirements")
+  dependencies        Json?
+  suggestedPriority   TicketPriority      @default(MEDIUM) @map("suggested_priority")
+  constraints         String?             @db.Text
+  sourceReferences    Json?               @map("source_references")
+  status              FeatureReviewStatus @default(PROPOSED)
+  isAiGenerated       Boolean             @default(true) @map("is_ai_generated")
+  order               Int                 @default(0)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  tickets Ticket[]
+
+  @@index([projectId])
+  @@index([status])
+  @@map("project_features")
+}
+
 model Board {
   id        String   @id @default(uuid())
   projectId String   @map("project_id")
@@ -99,34 +211,41 @@ model Board {
   name      String   @default("Main Board")
   createdAt DateTime @default(now()) @map("created_at")
 
-  tickets   Ticket[]
+  tickets Ticket[]
 
   @@map("boards")
 }
 
 model Ticket {
-  id          String         @id @default(uuid())
-  boardId     String         @map("board_id")
-  board       Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  projectId   String         @map("project_id")
-  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title       String
-  description String?        @db.Text
-  status      TicketStatus   @default(TODO)
-  priority    TicketPriority @default(MEDIUM)
-  type        TicketType     @default(TASK)
-  assigneeId  String?        @map("assignee_id")
-  assignee    User?          @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  reporterId  String?        @map("reporter_id")
-  reporter    User?          @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: SetNull)
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
+  id                 String          @id @default(uuid())
+  boardId            String          @map("board_id")
+  board              Board           @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  projectId          String          @map("project_id")
+  project            Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  featureId          String?         @map("feature_id")
+  feature            ProjectFeature? @relation(fields: [featureId], references: [id], onDelete: SetNull)
+  title              String
+  description        String?         @db.Text
+  status             TicketStatus    @default(TODO)
+  priority           TicketPriority  @default(MEDIUM)
+  type               TicketType      @default(TASK)
+  acceptanceCriteria Json?           @map("acceptance_criteria")
+  technicalNotes     String?         @map("technical_notes") @db.Text
+  prChecklist        Json?           @map("pr_checklist")
+  storyPoints        Int?            @map("story_points")
+  assigneeId         String?         @map("assignee_id")
+  assignee           User?           @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reporterId         String?         @map("reporter_id")
+  reporter           User?           @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
 
-  comments    Comment[]
-  embedding   TicketEmbedding?
+  comments  Comment[]
+  embedding TicketEmbedding?
 
   @@index([projectId])
   @@index([boardId])
+  @@index([featureId])
   @@index([status])
   @@map("tickets")
 }

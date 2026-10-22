@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#090d16] text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+      <body className="min-h-screen bg-[#000000] text-white antialiased selection:bg-white selection:text-black">
         <Providers>
           <div className="flex flex-col min-h-screen">
             <Navbar />

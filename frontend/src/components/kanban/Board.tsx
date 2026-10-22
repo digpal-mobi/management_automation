@@ -25,7 +25,7 @@ import { TicketDetailModal } from '../ticket/TicketDetailModal';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { setFilters } from '@/store/boardSlice';
 import { Button } from '@/components/ui/Button';
-import { Plus, Kanban, Sparkles, AlertCircle } from 'lucide-react';
+import { Plus, Kanban, Sparkles } from 'lucide-react';
 
 interface BoardProps {
   projectId: string;
@@ -288,11 +288,11 @@ export function Board({
       {/* Board Header Action Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2.5">
-            <Kanban className="h-5 w-5 text-indigo-400" />
-            <span>Kanban Board</span>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
+            <Kanban className="h-5 w-5 text-white" />
+            <span>Sprint & Task Board</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[#A3A3A3] mt-1">
             Manage workflow and drag tickets across columns.
           </p>
         </div>
@@ -300,7 +300,9 @@ export function Board({
         {/* Prominent Create Ticket Button */}
         <Button
           onClick={() => handleOpenCreate('To Do')}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 px-4 py-2 text-xs font-semibold rounded-xl"
+          variant="primary"
+          size="sm"
+          className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           <span>Create Ticket</span>
@@ -312,17 +314,17 @@ export function Board({
 
       {/* Semantic Search Banner */}
       {filters.isSemantic && filters.search.trim() && (
-        <div className="mb-4 px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between text-xs text-purple-300">
+        <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-between text-xs text-[#F5F5F5]">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-purple-400 animate-spin" />
+            <Sparkles className="h-4 w-4 text-white animate-spin" />
             <span>
-              Semantic AI search matching: <strong>"{filters.search}"</strong> (
+              pgvector semantic match: <strong>"{filters.search}"</strong> (
               {filteredTickets.length} found)
             </span>
           </div>
           <button
             onClick={() => dispatch(setFilters({ search: '', isSemantic: false }))}
-            className="text-purple-400 hover:text-purple-200 underline text-[11px]"
+            className="text-[#A3A3A3] hover:text-white underline text-[11px] transition-colors"
           >
             Clear Search
           </button>
@@ -331,19 +333,20 @@ export function Board({
 
       {/* Empty State when no tickets exist anywhere in project */}
       {tickets.length === 0 && !isLoading && (
-        <div className="py-20 px-4 text-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-4">
+        <div className="py-20 px-4 text-center rounded-2xl border border-dashed border-[#2A2A2A] bg-[#0A0A0A]">
+          <div className="w-12 h-12 rounded-2xl bg-[#141414] border border-[#2A2A2A] text-white flex items-center justify-center mx-auto mb-4">
             <Kanban className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-semibold text-slate-100 mb-1">
+          <h3 className="text-base font-semibold text-white mb-1">
             No tickets yet
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto mb-6">
-            Get started by creating your first ticket or feature for this project board.
+          <p className="text-xs text-[#A3A3A3] max-w-sm mx-auto mb-6">
+            Get started by manually creating a ticket, or generate tickets incrementally from selected roadmap features.
           </p>
           <Button
             onClick={() => handleOpenCreate('To Do')}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-4 py-2 rounded-xl"
+            variant="primary"
+            size="sm"
           >
             <Plus className="h-4 w-4 mr-1.5" />
             Create First Ticket

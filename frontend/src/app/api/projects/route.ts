@@ -6,7 +6,15 @@ import { ProjectRole } from '@prisma/client';
 
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100),
-  description: z.string().optional().nullable(),
+  description: z.string().min(1, 'Short description is required'),
+  goals: z.string().optional().nullable(),
+  targetUsers: z.string().optional().nullable(),
+  techStack: z.string().optional().nullable(),
+  businessRequirements: z.string().optional().nullable(),
+  technicalConstraints: z.string().optional().nullable(),
+  knownDependencies: z.string().optional().nullable(),
+  targetReleaseDate: z.string().optional().nullable(),
+  additionalNotes: z.string().optional().nullable(),
 });
 
 // GET /api/projects → projects user owns or is member of
@@ -40,7 +48,12 @@ export async function GET(req: NextRequest) {
           select: { id: true, name: true },
         },
         _count: {
-          select: { tickets: true, members: true },
+          select: {
+            tickets: true,
+            members: true,
+            documents: true,
+            features: true,
+          },
         },
       },
     });
@@ -54,6 +67,14 @@ export async function GET(req: NextRequest) {
         id: p.id,
         name: p.name,
         description: p.description,
+        goals: p.goals,
+        targetUsers: p.targetUsers,
+        techStack: p.techStack,
+        businessRequirements: p.businessRequirements,
+        technicalConstraints: p.technicalConstraints,
+        knownDependencies: p.knownDependencies,
+        targetReleaseDate: p.targetReleaseDate,
+        additionalNotes: p.additionalNotes,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
         ownerId: p.ownerId,
@@ -61,6 +82,8 @@ export async function GET(req: NextRequest) {
         userRole,
         ticketCount: p._count.tickets,
         memberCount: p._count.members,
+        documentCount: p._count.documents,
+        featureCount: p._count.features,
         boardId: p.boards[0]?.id || null,
       };
     });
@@ -92,14 +115,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, description } = parsed.data;
+    const {
+      name,
+      description,
+      goals,
+      targetUsers,
+      techStack,
+      businessRequirements,
+      technicalConstraints,
+      knownDependencies,
+      targetReleaseDate,
+      additionalNotes,
+    } = parsed.data;
 
     // Create Project, Default Board, and Owner membership in a transaction
     const project = await prisma.$transaction(async (tx) => {
       const newProj = await tx.project.create({
         data: {
           name,
-          description: description || '',
+          description: description || null,
+          goals: goals || null,
+          targetUsers: targetUsers || null,
+          techStack: techStack || null,
+          businessRequirements: businessRequirements || null,
+          technicalConstraints: technicalConstraints || null,
+          knownDependencies: knownDependencies || null,
+          targetReleaseDate: targetReleaseDate || null,
+          additionalNotes: additionalNotes || null,
           ownerId: user.id,
         },
       });
