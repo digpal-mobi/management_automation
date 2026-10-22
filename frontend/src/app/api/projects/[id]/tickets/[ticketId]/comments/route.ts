@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { authenticateRequest } from '@/lib/auth';
 import { getProjectRole, canComment } from '@/lib/permissions';
+import { processAiTicketDiscussion } from '@/lib/ticketAiAssistant';
 
 const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty').max(3000),
@@ -26,7 +27,13 @@ export async function GET(
     }
 
     const comments = await prisma.comment.findMany({
-      where: { ticketId },
+      where: {
+        ticketId,
+        OR: [
+          { aiProcessingStatus: null },
+          { aiProcessingStatus: { not: 'SKIPPED' } },
+        ],
+      },
       include: {
         user: {
           select: { id: true, username: true, email: true, avatarUrl: true },
@@ -71,11 +78,13 @@ export async function POST(
       );
     }
 
+    // 1. Persist the human comment
     const comment = await prisma.comment.create({
       data: {
         ticketId,
         userId: user.id,
         content: parsed.data.content,
+        isAi: false,
       },
       include: {
         user: {
@@ -84,6 +93,16 @@ export async function POST(
       },
     });
 
+    // 2. Automatically trigger AI discussion processing asynchronously (non-blocking)
+    void processAiTicketDiscussion({
+      projectId,
+      ticketId,
+      originalCommentId: comment.id,
+    }).catch((err) => {
+      console.error('[POST comments] Error during background AI discussion processing:', err);
+    });
+
+    // 3. Return original comment response immediately
     return NextResponse.json({ success: true, comment }, { status: 201 });
   } catch (error: any) {
     console.error('[POST comments] Error:', error);

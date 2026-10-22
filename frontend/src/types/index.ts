@@ -154,12 +154,27 @@ export interface Column {
   tickets: Ticket[];
 }
 
+export type AiProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
+
 export interface Comment {
   id: string;
   ticketId: string;
-  userId: string;
-  user: User;
+  userId?: string | null;
+  user?: User | null;
   content: string;
+  isAi?: boolean;
+  authorName?: string | null;
+  parentCommentId?: string | null;
+  aiProcessingStatus?: AiProcessingStatus | null;
+  aiMetadata?: {
+    model?: string;
+    provider?: string;
+    citations?: Array<{ section?: string; snippet?: string; distance?: number }>;
+    responseTimeMs?: number;
+    error?: string;
+    retryable?: boolean;
+    [key: string]: any;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }

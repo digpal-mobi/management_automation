@@ -59,6 +59,16 @@ enum FeatureReviewStatus {
   @@map("feature_review_status")
 }
 
+enum AiProcessingStatus {
+  PENDING    @map("pending")
+  PROCESSING @map("processing")
+  COMPLETED  @map("completed")
+  FAILED     @map("failed")
+  SKIPPED    @map("skipped")
+
+  @@map("ai_processing_status")
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -251,16 +261,24 @@ model Ticket {
 }
 
 model Comment {
-  id        String   @id @default(uuid())
-  ticketId  String   @map("ticket_id")
-  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String   @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                 String              @id @default(uuid())
+  ticketId           String              @map("ticket_id")
+  ticket             Ticket              @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId             String?             @map("user_id")
+  user               User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content            String              @db.Text
+  isAi               Boolean             @default(false) @map("is_ai")
+  authorName         String?             @map("author_name")
+  parentCommentId    String?             @map("parent_comment_id")
+  parentComment      Comment?            @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: SetNull)
+  replies            Comment[]           @relation("CommentReplies")
+  aiProcessingStatus AiProcessingStatus? @default(COMPLETED) @map("ai_processing_status")
+  aiMetadata         Json?               @map("ai_metadata")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
 
   @@index([ticketId])
+  @@index([parentCommentId])
   @@map("comments")
 }
 
