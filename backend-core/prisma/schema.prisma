@@ -69,10 +69,10 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  ownedProjects   Project[]        @relation("ProjectOwner")
+  ownedProjects   Project[]       @relation("ProjectOwner")
   projectMembers  ProjectMember[]
-  assignedTickets Ticket[]         @relation("TicketAssignee")
-  reportedTickets Ticket[]         @relation("TicketReporter")
+  assignedTickets Ticket[]        @relation("TicketAssignee")
+  reportedTickets Ticket[]        @relation("TicketReporter")
   comments        Comment[]
   refreshTokens   RefreshToken[]
 
@@ -92,7 +92,7 @@ model Project {
   targetReleaseDate    String?  @map("target_release_date")
   additionalNotes      String?  @map("additional_notes") @db.Text
   ownerId              String   @map("owner_id")
-  owner                User     @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner                User     @relation("ProjectOwner", fields: [ownerId], references: [id])
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -160,20 +160,20 @@ model DocumentChunk {
 }
 
 model ProjectAnalysis {
-  id                       String   @id @default(uuid())
-  projectId                String   @unique @map("project_id")
-  project                  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  overview                 String?  @db.Text
-  functionalRequirements   Json?    @map("functional_requirements")
-  nonFunctionalRequirements Json?   @map("non_functional_requirements")
-  businessRules            Json?    @map("business_rules")
-  technicalRequirements    Json?    @map("technical_requirements")
-  milestones               Json?
-  openQuestions            Json?    @map("open_questions")
-  status                   String   @default("COMPLETED")
-  analyzedAt               DateTime @default(now()) @map("analyzed_at")
-  createdAt                DateTime @default(now()) @map("created_at")
-  updatedAt                DateTime @updatedAt @map("updated_at")
+  id                        String   @id @default(uuid())
+  projectId                 String   @unique @map("project_id")
+  project                   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  overview                  String?  @db.Text
+  functionalRequirements    Json?    @map("functional_requirements")
+  nonFunctionalRequirements Json?    @map("non_functional_requirements")
+  businessRules             Json?    @map("business_rules")
+  technicalRequirements     Json?    @map("technical_requirements")
+  milestones                Json?
+  openQuestions             Json?    @map("open_questions")
+  status                    String   @default("COMPLETED")
+  analyzedAt                DateTime @default(now()) @map("analyzed_at")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
 
   @@map("project_analyses")
 }
