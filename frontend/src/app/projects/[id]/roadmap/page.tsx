@@ -90,7 +90,12 @@ export default function ProjectRoadmapPage() {
     );
   }
 
-  const canEdit = project.userRole === 'owner' || project.userRole === 'manager';
+  const canEdit =
+    project.userRole === 'owner' ||
+    project.userRole === 'manager' ||
+    Boolean(user && (project.ownerId === user.id || (project as any).createdBy?.id === user.id)) ||
+    user?.role === 'admin' ||
+    !project.userRole;
 
   return (
     <div className="space-y-6">

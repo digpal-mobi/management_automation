@@ -85,6 +85,7 @@ model User {
   reportedTickets Ticket[]         @relation("TicketReporter")
   comments        Comment[]
   refreshTokens   RefreshToken[]
+  userRoles       UserRole[]
 
   @@map("users")
 }
@@ -113,6 +114,7 @@ model Project {
   analysis       ProjectAnalysis?
   features       ProjectFeature[]
   documentChunks DocumentChunk[]
+  userRoles      UserRole[]
 
   @@map("projects")
 }
@@ -222,6 +224,7 @@ model Board {
   createdAt DateTime @default(now()) @map("created_at")
 
   tickets Ticket[]
+  columns BoardColumn[]
 
   @@map("boards")
 }
@@ -230,6 +233,8 @@ model Ticket {
   id                 String          @id @default(uuid())
   boardId            String          @map("board_id")
   board              Board           @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  columnId           String?         @map("column_id")
+  column             BoardColumn?    @relation(fields: [columnId], references: [id], onDelete: SetNull)
   projectId          String          @map("project_id")
   project            Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   featureId          String?         @map("feature_id")
@@ -255,6 +260,7 @@ model Ticket {
 
   @@index([projectId])
   @@index([boardId])
+  @@index([columnId])
   @@index([featureId])
   @@index([status])
   @@map("tickets")
@@ -303,4 +309,83 @@ model TicketEmbedding {
   createdAt DateTime                    @default(now()) @map("created_at")
 
   @@map("ticket_embeddings")
+}
+
+model BoardColumn {
+  id          String       @id @default(uuid())
+  boardId     String       @map("board_id")
+  board       Board        @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name        String
+  description String?      @db.Text
+  position    Int          @default(0)
+  category    TicketStatus @default(TODO)
+  isDefault   Boolean      @default(false) @map("is_default")
+  color       String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  tickets     Ticket[]
+
+  @@index([boardId])
+  @@index([boardId, position])
+  @@map("board_columns")
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  name        String
+  description String?          @db.Text
+  isSystem    Boolean          @default(false) @map("is_system")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  name        String
+  description String?          @db.Text
+  resource    String
+  action      String
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  roles       RolePermission[]
+
+  @@index([resource])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String     @map("role_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String     @map("permission_id")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String   @map("role_id")
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([roleId])
+  @@index([projectId])
+  @@map("user_roles")
 }

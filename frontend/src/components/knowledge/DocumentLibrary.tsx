@@ -17,7 +17,11 @@ import {
   Trash2,
   Loader2,
   File,
+  FileCode,
+  Plus,
 } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 
 interface DocumentLibraryProps {
   projectId: string;
@@ -40,17 +44,28 @@ export function DocumentLibrary({
   const [retryingDocId, setRetryingDocId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
+  // Paste PRD State
+  const [isPasteOpen, setIsPasteOpen] = useState(false);
+  const [pasteTitle, setPasteTitle] = useState('');
+  const [pasteContent, setPasteContent] = useState('');
+
   // File Upload Handler
-  const handleUploadFiles = async (fileList: FileList | File[]) => {
+  const handleUploadFiles = async (
+    fileList: FileList | File[] | Array<{ blob: Blob; filename: string }>
+  ) => {
     if (!canEdit) return;
-    const files = Array.from(fileList);
+    const files = Array.from(fileList as any);
     if (files.length === 0) return;
 
     try {
       setIsUploading(true);
       const formData = new FormData();
-      for (const file of files) {
-        formData.append('files', file);
+      for (const item of files as any[]) {
+        if (item && item.blob) {
+          formData.append('files', item.blob, item.filename);
+        } else if (item) {
+          formData.append('files', item);
+        }
       }
 
       const res = await fetchWithAuth(`/api/projects/${projectId}/documents`, {
@@ -152,6 +167,23 @@ export function DocumentLibrary({
     }
   };
 
+  const handleSavePastedDoc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pasteContent.trim()) {
+      toast.error('PRD content cannot be empty');
+      return;
+    }
+    const cleanTitle = pasteTitle.trim() || 'Product_Requirements_Document';
+    const filename = cleanTitle.endsWith('.md')
+      ? cleanTitle
+      : `${cleanTitle.replace(/[^a-zA-Z0-9_-]/g, '_')}.md`;
+    const blob = new Blob([pasteContent.trim()], { type: 'text/markdown' });
+    await handleUploadFiles([{ blob, filename }]);
+    setIsPasteOpen(false);
+    setPasteTitle('');
+    setPasteContent('');
+  };
+
   const getFormatIcon = (format: string) => {
     switch (format.toLowerCase()) {
       case 'xlsx':
@@ -170,58 +202,126 @@ export function DocumentLibrary({
 
   return (
     <div className="space-y-6">
-      {/* Upload Drop Zone */}
+      {/* Upload Drop Zone & Actions */}
       {canEdit && (
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`relative border border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-150 ${
-            isDragging
-              ? 'border-[#003049] bg-[#EFF5F9]'
-              : 'border-[#CBD5E1] hover:border-[#003049] bg-white hover:bg-[#FDFDFE] shadow-card'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.docx,.md,.txt,.xlsx,.csv"
-            className="hidden"
-            onChange={(e) => e.target.files && handleUploadFiles(e.target.files)}
-          />
+        <div className="space-y-4">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`relative border border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-150 ${
+              isDragging
+                ? 'border-[#003049] bg-[#EFF5F9]'
+                : 'border-[#CBD5E1] hover:border-[#003049] bg-white hover:bg-[#FDFDFE] shadow-card'
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.docx,.md,.txt,.xlsx,.csv"
+              className="hidden"
+              onChange={(e) => e.target.files && handleUploadFiles(e.target.files)}
+            />
 
-          <div className="max-w-md mx-auto space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center mx-auto text-[#003049]">
-              {isUploading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <UploadCloud className="h-5 w-5" />
-              )}
-            </div>
+            <div className="max-w-md mx-auto space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center mx-auto text-[#003049]">
+                {isUploading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <UploadCloud className="h-5 w-5" />
+                )}
+              </div>
 
-            <div>
-              <p className="text-xs font-bold text-[#17212B]">
-                {isUploading ? 'Parsing & Ingesting Documents...' : 'Upload Requirements & PRDs'}
-              </p>
-              <p className="text-[11px] text-[#526174] mt-0.5">
-                Drag and drop files here, or click to browse from your computer
-              </p>
-            </div>
+              <div>
+                <p className="text-xs font-bold text-[#17212B]">
+                  {isUploading ? 'Parsing & Ingesting Documents...' : 'Upload Requirements, PDFs & PRDs'}
+                </p>
+                <p className="text-[11px] text-[#526174] mt-0.5">
+                  Drag and drop files here, or click to browse from your computer
+                </p>
+              </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-              {['.PDF', '.DOCX', '.MD', '.TXT', '.XLSX', '.CSV'].map((ext) => (
-                <span
-                  key={ext}
-                  className="px-2 py-0.5 rounded bg-[#F1F4F7] border border-[#E2E8F0] text-[10px] font-mono text-[#526174] font-medium"
-                >
-                  {ext}
-                </span>
-              ))}
-              <span className="text-[10px] text-[#526174] ml-1">Up to 20MB per file</span>
+              <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                {['.PDF', '.DOCX', '.MD', '.TXT', '.XLSX', '.CSV'].map((ext) => (
+                  <span
+                    key={ext}
+                    className="px-2 py-0.5 rounded bg-[#F1F4F7] border border-[#E2E8F0] text-[10px] font-mono text-[#526174] font-medium"
+                  >
+                    {ext}
+                  </span>
+                ))}
+                <span className="text-[10px] text-[#526174] ml-1">Up to 20MB per file</span>
+              </div>
             </div>
           </div>
+
+          {/* Alternative: Paste PRD Option */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] text-[#526174]">
+              Don&apos;t have a document file? You can paste PRD text directly.
+            </span>
+            <Button
+              variant="outline"
+              size="xs"
+              type="button"
+              onClick={() => setIsPasteOpen(!isPasteOpen)}
+              leftIcon={<FileCode className="h-3.5 w-3.5 text-[#003049]" />}
+            >
+              {isPasteOpen ? 'Hide PRD Editor' : 'Paste PRD / Spec Text'}
+            </Button>
+          </div>
+
+          {isPasteOpen && (
+            <Card className="border-[#669BBC]/40 bg-[#FDFDFE]">
+              <form onSubmit={handleSavePastedDoc} className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-[#17212B] flex items-center gap-1.5">
+                    <FileCode className="h-4 w-4 text-[#003049]" />
+                    <span>Paste Requirements or PRD Markdown</span>
+                  </h4>
+                  <span className="text-[10px] text-[#526174]">Will be indexed as a project document</span>
+                </div>
+
+                <Input
+                  label="Document Title"
+                  value={pasteTitle}
+                  onChange={(e) => setPasteTitle(e.target.value)}
+                  placeholder="e.g. System_Requirements_PRD.md"
+                />
+
+                <Textarea
+                  label="PRD Content / Markdown *"
+                  rows={6}
+                  required
+                  value={pasteContent}
+                  onChange={(e) => setPasteContent(e.target.value)}
+                  placeholder="# Technical Requirements&#10;&#10;## Feature Overview&#10;Describe user stories, acceptance criteria, architectural constraints..."
+                />
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setIsPasteOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="xs"
+                    isLoading={isUploading}
+                    leftIcon={<Plus className="h-3 w-3" />}
+                  >
+                    Save & Ingest Document
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          )}
         </div>
       )}
 

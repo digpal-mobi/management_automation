@@ -1,6 +1,7 @@
 import {
   Project,
   Board,
+  BoardColumn,
   Ticket,
   Message,
   ProjectAnalytics,
@@ -9,6 +10,10 @@ import {
   ProjectFeature,
   ProjectMember,
   ProjectMemberRole,
+  Role,
+  Permission,
+  UserRole,
+  UserEffectivePermissions,
 } from '@/types';
 
 class ApiError extends Error {
@@ -236,12 +241,143 @@ export const analysisApi = {
   },
 };
 
+export const boardApi = {
+  async getBoard(projectId: string): Promise<{ success: boolean; project: Project; board: Board; tickets: Ticket[] }> {
+    return request(`/api/projects/${projectId}/board`);
+  },
+
+  async createColumn(
+    projectId: string,
+    payload: { name: string; description?: string | null; category?: string; color?: string | null }
+  ): Promise<{ success: boolean; column: BoardColumn }> {
+    return request(`/api/projects/${projectId}/board/columns`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateColumn(
+    projectId: string,
+    columnId: string,
+    payload: Partial<BoardColumn>
+  ): Promise<{ success: boolean; column: BoardColumn }> {
+    return request(`/api/projects/${projectId}/board/columns/${columnId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteColumn(
+    projectId: string,
+    columnId: string,
+    fallbackColumnId?: string
+  ): Promise<{ success: boolean; message: string; hasTickets?: boolean; ticketCount?: number; availableColumns?: any[] }> {
+    const url = fallbackColumnId
+      ? `/api/projects/${projectId}/board/columns/${columnId}?fallbackColumnId=${fallbackColumnId}`
+      : `/api/projects/${projectId}/board/columns/${columnId}`;
+    return request(url, {
+      method: 'DELETE',
+      body: fallbackColumnId ? JSON.stringify({ fallbackColumnId }) : undefined,
+    });
+  },
+
+  async reorderColumns(
+    projectId: string,
+    columnIds: string[]
+  ): Promise<{ success: boolean; columns: BoardColumn[] }> {
+    return request(`/api/projects/${projectId}/board/columns/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ columnIds }),
+    });
+  },
+};
+
+export const authorizationApi = {
+  async getPermissions(): Promise<{
+    success: boolean;
+    permissions: Permission[];
+    byCategory: Record<string, Permission[]>;
+    dbPermissions: Permission[];
+  }> {
+    return request('/api/authorization/permissions');
+  },
+
+  async getRoles(): Promise<{ success: boolean; roles: Role[] }> {
+    return request('/api/authorization/roles');
+  },
+
+  async getRole(id: string): Promise<{ success: boolean; role: Role }> {
+    return request(`/api/authorization/roles/${id}`);
+  },
+
+  async createRole(payload: {
+    key: string;
+    name: string;
+    description?: string | null;
+    permissionKeys: string[];
+  }): Promise<{ success: boolean; role: Role }> {
+    return request('/api/authorization/roles', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateRole(
+    id: string,
+    payload: {
+      name?: string;
+      description?: string | null;
+      permissionKeys?: string[];
+    }
+  ): Promise<{ success: boolean; role: Role }> {
+    return request(`/api/authorization/roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteRole(id: string): Promise<{ success: boolean; message: string }> {
+    return request(`/api/authorization/roles/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getUserPermissions(projectId?: string): Promise<{
+    success: boolean;
+    effective: UserEffectivePermissions;
+  }> {
+    const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return request(`/api/authorization/user-permissions${query}`);
+  },
+
+  async assignRole(payload: {
+    userId: string;
+    roleId: string;
+    projectId?: string | null;
+  }): Promise<{ success: boolean; assignment: UserRole }> {
+    return request('/api/authorization/assign', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async unassignRole(payload: {
+    userRoleId?: string;
+    userId?: string;
+    roleId?: string;
+    projectId?: string | null;
+  }): Promise<{ success: boolean; message: string }> {
+    return request('/api/authorization/unassign', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
 // Backwards-compatible consolidated `api` export
 export const api = {
   ...projectsApi,
-  getBoard: async (projectId: string): Promise<{ success: boolean; project: Project; board: Board }> => {
-    return request(`/api/projects/${projectId}/board`);
-  },
+  ...boardApi,
   getTicket: async (id: string): Promise<{ success: boolean; ticket: Ticket }> => {
     return request(`/api/tickets/${id}`);
   },

@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { socketService } from '../services/socketService.js';
-import { Priority } from '@prisma/client';
+import { TicketPriority, TicketStatus } from '@prisma/client';
 
 export class TicketController {
   static async createTicket(req: Request, res: Response) {
     try {
       const {
         projectId,
+        boardId,
         columnId,
         title,
         description,
@@ -16,7 +17,6 @@ export class TicketController {
         prChecklist,
         priority,
         storyPoints,
-        labels,
         assigneeId,
       } = req.body;
 
@@ -24,40 +24,51 @@ export class TicketController {
         return res.status(400).json({ success: false, error: 'projectId and title are required' });
       }
 
-      // If columnId not given, default to Backlog
+      // Resolve Board
+      let bId = boardId;
+      if (!bId) {
+        const defaultBoard = await prisma.board.findFirst({ where: { projectId } });
+        bId = defaultBoard?.id;
+        if (!bId) {
+          const createdBoard = await prisma.board.create({
+            data: { projectId, name: 'Main Board' },
+          });
+          bId = createdBoard.id;
+        }
+      }
+
+      // If columnId not given, default to first column on board
       let colId = columnId;
       if (!colId) {
-        const defaultCol = await prisma.column.findFirst({
-          where: { board: { projectId }, name: 'Backlog' },
+        const defaultCol = await prisma.boardColumn.findFirst({
+          where: { boardId: bId },
+          orderBy: { position: 'asc' },
         });
         colId = defaultCol?.id;
       }
 
-      // Count existing tickets in column to set position
-      const count = await prisma.ticket.count({ where: { columnId: colId } });
-
-      let prio: Priority = Priority.MEDIUM;
-      if (priority === 'HIGH') prio = Priority.HIGH;
-      if (priority === 'LOW') prio = Priority.LOW;
+      let prio: TicketPriority = TicketPriority.MEDIUM;
+      if (priority === 'HIGH' || priority === 'High') prio = TicketPriority.HIGH;
+      if (priority === 'LOW' || priority === 'Low') prio = TicketPriority.LOW;
+      if (priority === 'CRITICAL' || priority === 'Critical') prio = TicketPriority.CRITICAL;
 
       const ticket = await prisma.ticket.create({
         data: {
           projectId,
-          columnId: colId,
+          boardId: bId,
+          columnId: colId || null,
           title,
-          description: description || '',
-          acceptanceCriteria: acceptanceCriteria || [],
-          technicalNotes: technicalNotes || '',
-          prChecklist: prChecklist || [],
+          description: description || null,
+          acceptanceCriteria: acceptanceCriteria || null,
+          technicalNotes: technicalNotes || null,
+          prChecklist: prChecklist || null,
           priority: prio,
-          storyPoints: storyPoints || 3,
-          labels: labels || [],
-          position: count,
+          storyPoints: storyPoints ? parseInt(storyPoints, 10) : null,
           assigneeId: assigneeId || null,
         },
         include: {
-          assignee: { select: { id: true, name: true, avatar: true, email: true } },
-          column: { select: { id: true, name: true } },
+          assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          column: { select: { id: true, name: true, category: true } },
         },
       });
 
@@ -76,10 +87,10 @@ export class TicketController {
       const ticket = await prisma.ticket.findUnique({
         where: { id },
         include: {
-          assignee: { select: { id: true, name: true, avatar: true, email: true } },
-          column: { select: { id: true, name: true, position: true } },
+          assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          column: { select: { id: true, name: true, position: true, category: true } },
           project: { select: { id: true, name: true, description: true, techStack: true } },
-          _count: { select: { messages: true } },
+          _count: { select: { comments: true } },
         },
       });
 
@@ -99,7 +110,7 @@ export class TicketController {
       const { id } = req.params;
       const {
         columnId,
-        position,
+        status,
         title,
         description,
         acceptanceCriteria,
@@ -107,7 +118,6 @@ export class TicketController {
         prChecklist,
         priority,
         storyPoints,
-        labels,
         assigneeId,
       } = req.body;
 
@@ -117,28 +127,38 @@ export class TicketController {
       }
 
       const updateData: any = {};
-      if (columnId !== undefined) updateData.columnId = columnId;
-      if (position !== undefined) updateData.position = position;
+      if (columnId !== undefined) {
+        updateData.columnId = columnId;
+        const col = await prisma.boardColumn.findUnique({ where: { id: columnId } });
+        if (col) {
+          updateData.status = col.category;
+        }
+      }
+      if (status !== undefined) {
+        if (status === 'To Do' || status === 'TODO') updateData.status = TicketStatus.TODO;
+        else if (status === 'In Progress' || status === 'IN_PROGRESS') updateData.status = TicketStatus.IN_PROGRESS;
+        else if (status === 'Done' || status === 'DONE') updateData.status = TicketStatus.DONE;
+      }
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
       if (acceptanceCriteria !== undefined) updateData.acceptanceCriteria = acceptanceCriteria;
       if (technicalNotes !== undefined) updateData.technicalNotes = technicalNotes;
       if (prChecklist !== undefined) updateData.prChecklist = prChecklist;
-      if (labels !== undefined) updateData.labels = labels;
       if (assigneeId !== undefined) updateData.assigneeId = assigneeId;
       if (storyPoints !== undefined) updateData.storyPoints = parseInt(storyPoints, 10);
       if (priority !== undefined) {
-        if (priority === 'HIGH') updateData.priority = Priority.HIGH;
-        else if (priority === 'LOW') updateData.priority = Priority.LOW;
-        else updateData.priority = Priority.MEDIUM;
+        if (priority === 'HIGH' || priority === 'High') updateData.priority = TicketPriority.HIGH;
+        else if (priority === 'LOW' || priority === 'Low') updateData.priority = TicketPriority.LOW;
+        else if (priority === 'CRITICAL' || priority === 'Critical') updateData.priority = TicketPriority.CRITICAL;
+        else updateData.priority = TicketPriority.MEDIUM;
       }
 
       const updated = await prisma.ticket.update({
         where: { id },
         data: updateData,
         include: {
-          assignee: { select: { id: true, name: true, avatar: true, email: true } },
-          column: { select: { id: true, name: true } },
+          assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          column: { select: { id: true, name: true, category: true } },
         },
       });
 

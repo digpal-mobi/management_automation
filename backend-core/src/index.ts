@@ -1,9 +1,12 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
 import { socketService } from './services/socketService.js';
 import { AiService } from './services/aiService.js';
+import authRoutes from './routes/authRoutes.js';
+import authorizationRoutes from './routes/authorizationRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import ticketRoutes from './routes/ticketRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
@@ -17,9 +20,29 @@ const server = http.createServer(app);
 socketService.init(server, config.frontendUrl);
 
 // Middleware
-app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+const allowedOrigins = [
+  config.frontendUrl,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Permissive for local dev
+      }
+    },
+    credentials: true,
+  })
+);
+
+app.use(cookieParser());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Health Check
 app.get('/api/health', async (req, res) => {
@@ -42,6 +65,8 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Mount Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/authorization', authorizationRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/tickets', messageRoutes);
