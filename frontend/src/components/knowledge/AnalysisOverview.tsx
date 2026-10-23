@@ -7,6 +7,7 @@ import { ProjectAnalysis } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import Link from 'next/link';
 import {
   Sparkles,
   Layers,
@@ -16,6 +17,8 @@ import {
   CheckCircle2,
   BookOpen,
   RotateCw,
+  Compass,
+  ArrowRight,
 } from 'lucide-react';
 
 interface AnalysisOverviewProps {
@@ -231,6 +234,26 @@ export function AnalysisOverview({
               </div>
             </div>
           )}
+
+          {/* Action Callout: Proceed to Roadmap & Generate Tickets */}
+          <div className="pt-6">
+            <div className="p-5 rounded-2xl bg-[#EFF5F9] border border-[#669BBC]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-[#003049] flex items-center gap-1.5">
+                  <Compass className="h-4 w-4 text-[#003049]" />
+                  <span>Roadmap Features & Autonomous Ticket Generation</span>
+                </h4>
+                <p className="text-[11px] text-[#526174]">
+                  AI has synthesized your documentation into modules and proposed candidate roadmap features. Review them and generate developer-ready backlog tickets directly onto your Kanban board.
+                </p>
+              </div>
+              <Link href={`/projects/${projectId}/roadmap`}>
+                <Button variant="primary" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
+                  Go to Roadmap & Generate Tickets
+                </Button>
+              </Link>
+            </div>
+          </div>
         </CardContent>
       )}
     </Card>

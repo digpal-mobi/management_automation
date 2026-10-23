@@ -48,7 +48,7 @@ export const boardSlice = createSlice({
 
       if (state.activeTicket && action.payload.board.columns) {
         for (const col of action.payload.board.columns) {
-          const found = col.tickets.find((t) => t.id === state.activeTicket?.id);
+          const found = (col.tickets || []).find((t) => t.id === state.activeTicket?.id);
           if (found) {
             state.activeTicket = found;
             break;
@@ -90,6 +90,7 @@ export const boardSlice = createSlice({
 
       let foundTicket: Ticket | null = null;
       for (const col of state.board.columns) {
+        if (!col.tickets) col.tickets = [];
         const idx = col.tickets.findIndex((t) => t.id === ticketId);
         if (idx !== -1) {
           foundTicket = { ...col.tickets[idx], status: targetStatus };
@@ -101,6 +102,7 @@ export const boardSlice = createSlice({
       if (foundTicket) {
         const targetCol = state.board.columns.find((c) => c.name === targetStatus);
         if (targetCol) {
+          if (!targetCol.tickets) targetCol.tickets = [];
           targetCol.tickets.push(foundTicket);
         }
         if (state.activeTicket?.id === ticketId) {
@@ -113,6 +115,7 @@ export const boardSlice = createSlice({
       const updated = action.payload;
 
       for (const col of state.board.columns) {
+        if (!col.tickets) col.tickets = [];
         const idx = col.tickets.findIndex((t) => t.id === updated.id);
         if (idx !== -1) {
           if (col.name === updated.status) {
@@ -121,6 +124,7 @@ export const boardSlice = createSlice({
             col.tickets.splice(idx, 1);
             const targetCol = state.board.columns.find((c) => c.name === updated.status);
             if (targetCol) {
+              if (!targetCol.tickets) targetCol.tickets = [];
               targetCol.tickets.push(updated);
             }
           }
@@ -137,6 +141,7 @@ export const boardSlice = createSlice({
       const ticket = action.payload;
       const targetCol = state.board.columns.find((c) => c.name === ticket.status);
       if (targetCol) {
+        if (!targetCol.tickets) targetCol.tickets = [];
         targetCol.tickets.unshift(ticket);
       }
     },
@@ -145,6 +150,7 @@ export const boardSlice = createSlice({
       const ticketId = action.payload;
 
       for (const col of state.board.columns) {
+        if (!col.tickets) col.tickets = [];
         col.tickets = col.tickets.filter((t) => t.id !== ticketId);
       }
 

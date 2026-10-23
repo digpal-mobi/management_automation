@@ -140,19 +140,29 @@ export interface ProjectAnalysis {
   updatedAt: string;
 }
 
+export interface BoardColumn {
+  id: string;
+  boardId: string;
+  name: string;
+  description?: string | null;
+  position: number;
+  category: TicketStatus;
+  isDefault: boolean;
+  color?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  tickets?: Ticket[];
+}
+
 export interface Board {
   id: string;
   projectId: string;
   name: string;
   createdAt: string;
-  columns?: Column[];
+  columns?: BoardColumn[];
 }
 
-export interface Column {
-  id: string;
-  name: string;
-  tickets: Ticket[];
-}
+export type Column = BoardColumn;
 
 export type AiProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
 
@@ -182,6 +192,8 @@ export interface Comment {
 export interface Ticket {
   id: string;
   boardId: string;
+  columnId?: string | null;
+  column?: BoardColumn | null;
   projectId: string;
   featureId?: string | null;
   feature?: ProjectFeature | null;
@@ -225,3 +237,61 @@ export interface ProjectAnalytics {
   priorityBreakdown: Record<string, number>;
   typeBreakdown: Record<string, number>;
 }
+
+export interface Role {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+  permissions?: RolePermission[];
+  userRoles?: UserRole[];
+  userCount?: number;
+  _count?: {
+    permissions?: number;
+    userRoles?: number;
+  };
+}
+
+export interface Permission {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  resource: string;
+  action: string;
+  category?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RolePermission {
+  id: string;
+  roleId: string;
+  role?: Role;
+  permissionId: string;
+  permission: Permission;
+  createdAt: string;
+}
+
+export interface UserRole {
+  id: string;
+  userId: string;
+  user?: User;
+  roleId: string;
+  role?: Role;
+  projectId?: string | null;
+  project?: Project | null;
+  createdAt: string;
+}
+
+export interface UserEffectivePermissions {
+  userId: string;
+  isSystemAdmin: boolean;
+  systemRoles: string[];
+  projectRoles: string[];
+  permissions: string[];
+}
+

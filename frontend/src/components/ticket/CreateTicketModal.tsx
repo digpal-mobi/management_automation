@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { Ticket, ProjectMember, TicketStatus } from '@/types';
+import { Ticket, ProjectMember, TicketStatus, BoardColumn } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ const createTicketFormSchema = z.object({
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
   status: z.enum(['To Do', 'In Progress', 'Done']),
+  columnId: z.string().optional(),
   assigneeId: z.string().optional(),
 });
 
@@ -37,6 +38,8 @@ interface CreateTicketModalProps {
   projectId: string;
   members: ProjectMember[];
   initialStatus?: TicketStatus;
+  initialColumnId?: string;
+  columns?: BoardColumn[];
   onTicketCreated: (ticket: Ticket) => void;
 }
 
@@ -46,15 +49,22 @@ export function CreateTicketModal({
   projectId,
   members,
   initialStatus = 'To Do',
+  initialColumnId,
+  columns = [],
   onTicketCreated,
 }: CreateTicketModalProps) {
   const { fetchWithAuth } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
+  // Compute default columnId
+  const defaultColId = initialColumnId || columns[0]?.id || '';
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<CreateTicketFormValues>({
     resolver: zodResolver(createTicketFormSchema),
@@ -64,11 +74,14 @@ export function CreateTicketModal({
       type: 'Task',
       priority: 'Medium',
       status: initialStatus,
+      columnId: defaultColId,
       assigneeId: '',
     },
   });
 
-  // Re-sync initial status when modal opens
+  const selectedColId = watch('columnId');
+
+  // Re-sync initial status and columnId when modal opens
   React.useEffect(() => {
     if (isOpen) {
       reset({
@@ -77,10 +90,20 @@ export function CreateTicketModal({
         type: 'Task',
         priority: 'Medium',
         status: initialStatus,
+        columnId: initialColumnId || columns[0]?.id || '',
         assigneeId: '',
       });
     }
-  }, [isOpen, initialStatus, reset]);
+  }, [isOpen, initialStatus, initialColumnId, columns, reset]);
+
+  // When column changes, synchronize status with column category if possible
+  const handleColumnChange = (colId: string) => {
+    setValue('columnId', colId);
+    const col = columns.find((c) => c.id === colId);
+    if (col && col.category) {
+      setValue('status', col.category);
+    }
+  };
 
   const onSubmit = async (values: CreateTicketFormValues) => {
     try {
@@ -90,6 +113,7 @@ export function CreateTicketModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...values,
+          columnId: values.columnId || null,
           assigneeId: values.assigneeId || null,
         }),
       });
@@ -119,7 +143,7 @@ export function CreateTicketModal({
             <span>Create New Ticket</span>
           </DialogTitle>
           <DialogDescription>
-            Add a developer-ready ticket directly to this project&apos;s Kanban board.
+            Add a developer-ready ticket directly to any column on this project&apos;s Kanban board.
           </DialogDescription>
         </DialogHeader>
 
@@ -140,7 +164,7 @@ export function CreateTicketModal({
             {...register('description')}
           />
 
-          {/* Grid: Type, Priority, Status, Assignee */}
+          {/* Grid: Type, Priority, Board Column, Assignee */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <Select label="Type" {...register('type')}>
               <option value="Feature">Feature</option>
@@ -156,11 +180,25 @@ export function CreateTicketModal({
               <option value="Critical">Critical</option>
             </Select>
 
-            <Select label="Status" {...register('status')}>
-              <option value="To Do">To Do</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Done">Done</option>
-            </Select>
+            {columns.length > 0 ? (
+              <Select
+                label="Board Column *"
+                value={selectedColId}
+                onChange={(e) => handleColumnChange(e.target.value)}
+              >
+                {columns.map((col) => (
+                  <option key={col.id} value={col.id}>
+                    {col.name} ({col.category})
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <Select label="Status" {...register('status')}>
+                <option value="To Do">To Do</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Done">Done</option>
+              </Select>
+            )}
 
             <Select label="Assignee" {...register('assigneeId')}>
               <option value="">Unassigned</option>
