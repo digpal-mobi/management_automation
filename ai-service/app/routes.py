@@ -15,8 +15,6 @@ def health_check():
     providers = []
     if Config.GROQ_API_KEY:
         providers.append("groq")
-    if Config.OPENAI_API_KEY:
-        providers.append("openai")
     providers.append("fallback")
 
     return jsonify({
@@ -25,7 +23,12 @@ def health_check():
         "active_primary": Config.PRIMARY_PROVIDER,
         "available_providers": providers,
         "groq_configured": bool(Config.GROQ_API_KEY),
-        "openai_configured": bool(Config.OPENAI_API_KEY)
+        "models": {
+            "primary": Config.GROQ_MODEL,
+            "fallback": Config.GROQ_FALLBACK_MODEL,
+            "prompt_guard": Config.GROQ_PROMPT_GUARD_MODEL,
+            "safeguard": Config.GROQ_SAFEGUARD_MODEL
+        }
     }), 200
 
 @ai_bp.route("/ingest-project", methods=["POST"])
@@ -132,4 +135,35 @@ def embed_text():
         return jsonify({"embedding": emb, "dimension": len(emb)}), 200
     except Exception as e:
         logger.exception("Error in /ai/embed")
+        return jsonify({"error": str(e)}), 500
+
+@ai_bp.route("/guard", methods=["POST"])
+def prompt_guard():
+    data = request.get_json() or {}
+    text = data.get("text", "")
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+    try:
+        from app.llm.groq_provider import GroqProvider
+        provider = GroqProvider()
+        result = provider.check_prompt_guard(text)
+        return jsonify(result), 200
+    except Exception as e:
+        logger.exception("Error in /ai/guard")
+        return jsonify({"error": str(e)}), 500
+
+@ai_bp.route("/safeguard", methods=["POST"])
+def content_safeguard():
+    data = request.get_json() or {}
+    text = data.get("text", "")
+    policy = data.get("policy", None)
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+    try:
+        from app.llm.groq_provider import GroqProvider
+        provider = GroqProvider()
+        result = provider.check_safeguard(text, policy=policy)
+        return jsonify(result), 200
+    except Exception as e:
+        logger.exception("Error in /ai/safeguard")
         return jsonify({"error": str(e)}), 500

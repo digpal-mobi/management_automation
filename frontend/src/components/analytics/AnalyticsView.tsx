@@ -1,22 +1,21 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { Project, ProjectAnalytics } from '@/types';
 import {
   BarChart3,
   CheckCircle2,
   Clock,
   Layers,
-  Kanban,
 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 
 interface AnalyticsViewProps {
   project: Project;
   analytics: ProjectAnalytics;
 }
 
-export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
+export function AnalyticsView({ analytics }: AnalyticsViewProps) {
   const statusCounts: Record<string, number> = {
     'To Do': analytics.todoTickets || 0,
     'In Progress': analytics.inProgressTickets || 0,
@@ -24,127 +23,118 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
   };
 
   const statusColors: Record<string, string> = {
-    'To Do': 'bg-[#525252]',
-    'In Progress': 'bg-[#A3A3A3]',
-    'Done': 'bg-white',
+    'To Do': 'bg-[#669BBC]',
+    'In Progress': 'bg-[#003049]',
+    'Done': 'bg-[#15803D]',
+  };
+
+  const priorityColors: Record<string, string> = {
+    CRITICAL: 'bg-[#C1121F]',
+    HIGH: 'bg-[#D97706]',
+    MEDIUM: 'bg-[#003049]',
+    LOW: 'bg-[#669BBC]',
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A]">
-        <div>
-          <span className="text-[10px] uppercase font-bold text-[#A3A3A3] tracking-wider">
-            Project Velocity & Metrics
-          </span>
-          <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">
-            {project.name}
-          </h1>
-          <p className="text-xs text-[#A3A3A3] mt-1 max-w-xl">
-            {project.description || 'No description provided.'}
-          </p>
-        </div>
-
-        <Link
-          href={`/projects/${project.id}/board`}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-[#F5F5F5] text-black text-xs font-semibold shadow-sm transition-all self-start sm:self-center"
-        >
-          <Kanban className="h-4 w-4" />
-          View Kanban Board
-        </Link>
-      </div>
-
-      {/* KPI Cards */}
+    <div className="space-y-6">
+      {/* KPI Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Tickets */}
-        <div className="p-5 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-2">
-          <div className="flex items-center justify-between text-[#A3A3A3] text-xs font-semibold">
+        <Card className="p-5 space-y-2">
+          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
             <span>Total Tickets</span>
-            <Layers className="h-4 w-4 text-white" />
+            <div className="p-1.5 rounded-lg bg-[#EFF5F9]">
+              <Layers className="h-4 w-4 text-[#003049]" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-white">
+          <div className="text-3xl font-extrabold text-[#17212B]">
             {analytics.totalTickets}
           </div>
-          <div className="text-[11px] text-[#525252]">
+          <div className="text-[11px] text-[#526174]">
             Across all workflow states
           </div>
-        </div>
+        </Card>
 
         {/* In Progress */}
-        <div className="p-5 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-2">
-          <div className="flex items-center justify-between text-[#A3A3A3] text-xs font-semibold">
+        <Card className="p-5 space-y-2">
+          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
             <span>In Progress</span>
-            <Clock className="h-4 w-4 text-white" />
+            <div className="p-1.5 rounded-lg bg-[#EFF5F9]">
+              <Clock className="h-4 w-4 text-[#003049]" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-white">
+          <div className="text-3xl font-extrabold text-[#17212B]">
             {analytics.inProgressTickets}
           </div>
-          <div className="text-[11px] text-[#525252]">
+          <div className="text-[11px] text-[#526174]">
             Active developer tasks
           </div>
-        </div>
+        </Card>
 
         {/* Completed Tickets */}
-        <div className="p-5 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-2">
-          <div className="flex items-center justify-between text-[#A3A3A3] text-xs font-semibold">
+        <Card className="p-5 space-y-2">
+          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
             <span>Completed Tickets</span>
-            <CheckCircle2 className="h-4 w-4 text-white" />
+            <div className="p-1.5 rounded-lg bg-[#F0FDF4]">
+              <CheckCircle2 className="h-4 w-4 text-[#15803D]" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-white">
+          <div className="text-3xl font-extrabold text-[#17212B]">
             {analytics.completedTickets}
           </div>
-          <div className="text-[11px] text-[#525252]">
+          <div className="text-[11px] text-[#526174]">
             Moved to Done column
           </div>
-        </div>
+        </Card>
 
         {/* Completion Rate */}
-        <div className="p-5 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-2">
-          <div className="flex items-center justify-between text-[#A3A3A3] text-xs font-semibold">
+        <Card className="p-5 space-y-2">
+          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
             <span>Completion Rate</span>
-            <BarChart3 className="h-4 w-4 text-white" />
+            <div className="p-1.5 rounded-lg bg-[#EFF5F9]">
+              <BarChart3 className="h-4 w-4 text-[#003049]" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-white">
+          <div className="text-3xl font-extrabold text-[#17212B]">
             {analytics.completionRate}%
           </div>
-          {/* Progress bar */}
-          <div className="w-full h-1.5 bg-[#141414] rounded-full overflow-hidden border border-[#2A2A2A]">
+          <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
             <div
-              className="h-full bg-white rounded-full transition-all duration-500"
+              className="h-full bg-[#003049] rounded-full transition-all duration-500"
               style={{ width: `${analytics.completionRate}%` }}
             />
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Grid: Status Distribution & Priority Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Column Status Breakdown */}
-        <div className="p-6 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">
-              Tickets by Board Column
-            </h3>
-            <span className="text-xs text-[#525252]">Workflow distribution</span>
-          </div>
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Tickets by Board Column</CardTitle>
+              <p className="text-xs text-[#526174] mt-0.5">Workflow distribution</p>
+            </div>
+          </CardHeader>
 
-          <div className="space-y-3">
+          <CardContent className="space-y-4">
             {Object.entries(statusCounts).map(([status, count]) => {
               const pct =
                 analytics.totalTickets > 0
                   ? Math.round((count / analytics.totalTickets) * 100)
                   : 0;
-              const barColor = statusColors[status] || 'bg-[#525252]';
+              const barColor = statusColors[status] || 'bg-[#669BBC]';
 
               return (
-                <div key={status} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-[#A3A3A3]">{status}</span>
-                    <span className="text-white font-mono">
+                <div key={status} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="text-[#17212B]">{status}</span>
+                    <span className="text-[#526174] font-mono">
                       {count} ({pct}%)
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-[#141414] rounded-full overflow-hidden border border-[#2A2A2A]">
+                  <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
                     <div
                       className={`h-full ${barColor} rounded-full transition-all duration-300`}
                       style={{ width: `${pct}%` }}
@@ -153,45 +143,78 @@ export function AnalyticsView({ project, analytics }: AnalyticsViewProps) {
                 </div>
               );
             })}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Priority Breakdown */}
-        <div className="p-6 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">
-              Tickets by Priority
-            </h3>
-            <span className="text-xs text-[#525252]">Urgency breakdown</span>
-          </div>
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Priority Breakdown</CardTitle>
+              <p className="text-xs text-[#526174] mt-0.5">Distribution across severity levels</p>
+            </div>
+          </CardHeader>
 
-          <div className="space-y-3">
-            {Object.entries(analytics.priorityBreakdown || {}).map(([prio, count]) => {
+          <CardContent className="space-y-4">
+            {Object.entries(analytics.priorityBreakdown || {}).map(([priority, val]) => {
+              const count = Number(val) || 0;
               const pct =
                 analytics.totalTickets > 0
                   ? Math.round((count / analytics.totalTickets) * 100)
                   : 0;
+              const barColor = priorityColors[priority] || 'bg-[#003049]';
 
               return (
-                <div key={prio} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-[#A3A3A3]">{prio}</span>
-                    <span className="text-white font-mono">
+                <div key={priority} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="text-[#17212B]">{priority}</span>
+                    <span className="text-[#526174] font-mono">
                       {count} ({pct}%)
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-[#141414] rounded-full overflow-hidden border border-[#2A2A2A]">
+                  <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-white rounded-full transition-all duration-300"
+                      className={`h-full ${barColor} rounded-full transition-all duration-300`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
                 </div>
               );
             })}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Ticket Type Distribution */}
+      {analytics.typeBreakdown && Object.keys(analytics.typeBreakdown).length > 0 && (
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Ticket Type Distribution</CardTitle>
+              <p className="text-xs text-[#526174] mt-0.5">Feature vs Bug vs Task breakdown</p>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {Object.entries(analytics.typeBreakdown).map(([type, val]) => {
+                const count = Number(val) || 0;
+                return (
+                  <div
+                    key={type}
+                    className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1 text-center"
+                  >
+                    <div className="text-[11px] font-semibold text-[#526174] uppercase tracking-wider">
+                      {type}
+                    </div>
+                    <div className="text-2xl font-bold text-[#17212B]">{count}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

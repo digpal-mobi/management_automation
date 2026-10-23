@@ -55,29 +55,29 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
   }, [steps.length]);
 
   return (
-    <div className="max-w-xl mx-auto p-8 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] shadow-xl space-y-6">
+    <div className="max-w-xl mx-auto p-8 rounded-2xl bg-white border border-[#E2E8F0] shadow-card space-y-6">
       {/* Title */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#141414] border border-[#2A2A2A] mb-2">
-          <Sparkles className="h-7 w-7 text-white" />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#EFF5F9] border border-[#669BBC]/30 mb-2">
+          <Sparkles className="h-7 w-7 text-[#003049]" />
         </div>
-        <h3 className="text-lg font-bold text-white">
+        <h3 className="text-lg font-bold text-[#17212B]">
           AI Analysis & Setup in Progress
         </h3>
-        <p className="text-xs text-[#A3A3A3]">
-          Synthesizing <span className="text-white font-semibold">{projectName}</span> into technical roadmap
+        <p className="text-xs text-[#526174]">
+          Synthesizing <span className="text-[#003049] font-semibold">{projectName}</span> into technical roadmap
         </p>
       </div>
 
       {/* Progress Bar */}
       <div className="space-y-1.5">
-        <div className="flex justify-between text-[11px] font-mono text-[#A3A3A3]">
+        <div className="flex justify-between text-[11px] font-mono text-[#526174]">
           <span>PIPELINE PROGRESS</span>
-          <span className="text-white font-bold">{progressPct}%</span>
+          <span className="text-[#003049] font-bold">{progressPct}%</span>
         </div>
-        <div className="w-full h-1.5 bg-[#141414] rounded-full overflow-hidden border border-[#2A2A2A]">
+        <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
           <div
-            className="h-full bg-white rounded-full transition-all duration-700 ease-out"
+            className="h-full bg-[#003049] rounded-full transition-all duration-700 ease-out"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -95,19 +95,19 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
               key={idx}
               className={`flex items-start gap-3.5 p-3 rounded-xl border transition-all duration-300 ${
                 isCurrent
-                  ? 'bg-[#141414] border-white shadow-sm'
+                  ? 'bg-[#EFF5F9] border-[#003049] shadow-sm'
                   : isDone
-                  ? 'bg-[#0A0A0A] border-[#2A2A2A] opacity-80'
+                  ? 'bg-[#F7F8FA] border-[#E2E8F0]'
                   : 'bg-transparent border-transparent opacity-40'
               }`}
             >
               <div className="mt-0.5 flex-shrink-0">
                 {isDone ? (
-                  <CheckCircle2 className="h-5 w-5 text-white" />
+                  <CheckCircle2 className="h-5 w-5 text-[#15803D]" />
                 ) : isCurrent ? (
-                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                  <Loader2 className="h-5 w-5 text-[#003049] animate-spin" />
                 ) : (
-                  <IconComponent className="h-5 w-5 text-[#525252]" />
+                  <IconComponent className="h-5 w-5 text-[#94A3B8]" />
                 )}
               </div>
 
@@ -115,15 +115,15 @@ export function IngestionProgress({ projectName }: IngestionProgressProps) {
                 <div
                   className={`text-xs font-semibold ${
                     isCurrent
-                      ? 'text-white'
+                      ? 'text-[#003049]'
                       : isDone
-                      ? 'text-[#F5F5F5]'
-                      : 'text-[#525252]'
+                      ? 'text-[#17212B]'
+                      : 'text-[#94A3B8]'
                   }`}
                 >
                   {step.title}
                 </div>
-                <div className="text-[11px] text-[#A3A3A3]">{step.desc}</div>
+                <div className="text-[11px] text-[#526174]">{step.desc}</div>
               </div>
             </div>
           );

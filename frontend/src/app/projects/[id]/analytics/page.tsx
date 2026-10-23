@@ -1,16 +1,23 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { api } from '@/lib/api';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { Project, ProjectAnalytics } from '@/types';
 import { AnalyticsView } from '@/components/analytics/AnalyticsView';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { ProjectNav } from '@/components/layout/ProjectNav';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { BarChart3, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProjectAnalyticsPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.id as string;
+  const { user, fetchWithAuth, isLoading: authLoading } = useAuth();
 
   const [project, setProject] = useState<Project | null>(null);
   const [analytics, setAnalytics] = useState<ProjectAnalytics | null>(null);
@@ -18,49 +25,131 @@ export default function ProjectAnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push(`/login?redirect=/projects/${projectId}/analytics`);
+      return;
+    }
+
     if (!projectId) return;
 
-    setLoading(true);
-    Promise.all([api.getProject(projectId), api.getAnalytics(projectId)])
-      .then(([projRes, anaRes]) => {
-        if (projRes.success && projRes.project) {
-          setProject(projRes.project);
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        // 1. Fetch project
+        const pRes = await fetchWithAuth(`/api/projects/${projectId}`);
+        const pData = await pRes.json();
+        if (!pRes.ok || !pData.success) {
+          setError(pData.error || 'Failed to load project details');
+          return;
         }
-        if (anaRes.success) {
-          setAnalytics(anaRes);
-        }
-      })
-      .catch((err) => {
+        setProject(pData.project);
+
+        // 2. Fetch analytics
+        const aRes = await fetchWithAuth(`/api/projects/${projectId}/analysis`);
+        const tRes = await fetchWithAuth(`/api/projects/${projectId}/tickets`);
+        const tData = await tRes.json();
+
+        const tickets = tData.tickets || [];
+        const total = tickets.length;
+        const todo = tickets.filter((t: any) => t.status === 'To Do').length;
+        const inProgress = tickets.filter((t: any) => t.status === 'In Progress').length;
+        const completed = tickets.filter((t: any) => t.status === 'Done').length;
+        const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        const priorityCounts: Record<string, number> = {
+          Low: tickets.filter((t: any) => t.priority === 'Low').length,
+          Medium: tickets.filter((t: any) => t.priority === 'Medium').length,
+          High: tickets.filter((t: any) => t.priority === 'High').length,
+          Critical: tickets.filter((t: any) => t.priority === 'Critical').length,
+        };
+
+        const typeCounts: Record<string, number> = {
+          Feature: tickets.filter((t: any) => t.type === 'Feature').length,
+          Bug: tickets.filter((t: any) => t.type === 'Bug').length,
+          Task: tickets.filter((t: any) => t.type === 'Task').length,
+          Improvement: tickets.filter((t: any) => t.type === 'Improvement').length,
+        };
+
+        setAnalytics({
+          totalTickets: total,
+          todoTickets: todo,
+          inProgressTickets: inProgress,
+          completedTickets: completed,
+          completionRate: rate,
+          priorityBreakdown: priorityCounts,
+          typeBreakdown: typeCounts,
+        });
+      } catch (err: any) {
         console.error(err);
         setError(err.message || 'Failed to load project metrics');
-      })
-      .finally(() => setLoading(false));
-  }, [projectId]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (loading) {
+    loadData();
+  }, [projectId, user, authLoading, fetchWithAuth, router]);
+
+  if (loading || authLoading) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-7 w-7 text-white animate-spin" />
-        <p className="text-xs text-[#A3A3A3]">Computing project velocity & metrics...</p>
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <Skeleton className="h-16 w-full rounded-2xl" />
+        <Skeleton className="h-10 w-96 rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Skeleton className="h-64 rounded-2xl" />
+          <Skeleton className="h-64 rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   if (error || !project || !analytics) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center space-y-3 text-center">
-        <AlertCircle className="h-7 w-7 text-white" />
-        <h3 className="text-sm font-semibold text-white">Unable to load analytics</h3>
-        <p className="text-xs text-[#A3A3A3] max-w-sm">{error}</p>
-        <Link
-          href="/"
-          className="px-4 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white hover:bg-[#2A2A2A]"
-        >
-          Return to Dashboard
-        </Link>
-      </div>
+      <EmptyState
+        icon={<AlertCircle className="h-6 w-6 text-[#526174]" />}
+        title="Unable to load analytics"
+        description={error || 'Project metrics are currently unavailable.'}
+        action={
+          <Link href="/">
+            <Button variant="outline" size="sm">
+              Return to Workspaces
+            </Button>
+          </Link>
+        }
+      />
     );
   }
 
-  return <AnalyticsView project={project} analytics={analytics} />;
+  return (
+    <div className="space-y-6">
+      {/* Standardized Page Header */}
+      <PageHeader
+        backLink={{ label: 'All Projects', href: '/' }}
+        breadcrumbs={[
+          { label: 'Projects', href: '/' },
+          { label: project.name },
+          { label: 'Velocity & Metrics' },
+        ]}
+        icon={<BarChart3 className="h-6 w-6 text-[#003049]" />}
+        title="Project Velocity & Metrics"
+        description={project.description || 'Sprint progress, distribution by priority and type, and completion metrics.'}
+        actions={
+          <ProjectNav
+            projectId={projectId}
+            memberCount={project.memberCount}
+            ticketCount={analytics.totalTickets}
+          />
+        }
+      />
+
+      <AnalyticsView project={project} analytics={analytics} />
+    </div>
+  );
 }

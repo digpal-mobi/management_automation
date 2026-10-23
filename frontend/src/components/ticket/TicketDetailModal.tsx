@@ -109,6 +109,7 @@ export function TicketDetailModal({
   const [editCommentText, setEditCommentText] = useState('');
   const [retryingCommentId, setRetryingCommentId] = useState<string | null>(null);
   const [expandedCitations, setExpandedCitations] = useState<Record<string, boolean>>({});
+  const [mobileTab, setMobileTab] = useState<'details' | 'discussion'>('details');
 
   // Fetch comments callback
   const fetchComments = useCallback(async () => {
@@ -378,12 +379,12 @@ export function TicketDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative flex flex-col w-full max-w-5xl h-[92vh] bg-[#000000] border border-[#2A2A2A] rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#003049]/30 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative flex flex-col w-full max-w-5xl h-[92vh] bg-white border border-[#E2E8F0] rounded-2xl shadow-dropdown overflow-hidden text-[#17212B]">
         {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2A2A2A] bg-[#0A0A0A]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] bg-white">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs font-bold text-[#A3A3A3] bg-[#141414] px-2.5 py-1 rounded-md border border-[#2A2A2A]">
+            <span className="font-mono text-xs font-bold text-[#003049] bg-[#EFF5F9] px-2.5 py-1 rounded-md border border-[#669BBC]/30">
               #{ticket.id.slice(0, 8).toUpperCase()}
             </span>
             <div className="flex items-center gap-2">
@@ -391,7 +392,7 @@ export function TicketDetailModal({
               <Badge variant="priority" priority={priority} size="sm" />
               <Badge variant="status" status={status} size="sm" />
               {storyPoints !== '' && (
-                <span className="text-xs font-mono font-medium text-[#A3A3A3] bg-[#141414] px-2 py-0.5 rounded border border-[#2A2A2A]">
+                <span className="text-xs font-mono font-medium text-[#003049] bg-[#EFF5F9] px-2 py-0.5 rounded border border-[#669BBC]/30">
                   {storyPoints} story points
                 </span>
               )}
@@ -412,7 +413,7 @@ export function TicketDetailModal({
 
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 rounded-lg text-[#525252] hover:text-white hover:bg-[#141414] transition-colors"
+              className="p-2 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] transition-colors"
               title="Delete Ticket"
             >
               <Trash2 className="h-4 w-4" />
@@ -420,7 +421,7 @@ export function TicketDetailModal({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-[#525252] hover:text-white hover:bg-[#141414] transition-colors"
+              className="p-2 rounded-lg text-[#526174] hover:text-[#17212B] hover:bg-[#F1F4F7] transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -429,10 +430,10 @@ export function TicketDetailModal({
 
         {/* Delete Confirmation Alert Banner */}
         {showDeleteConfirm && (
-          <div className="flex items-center justify-between p-4 bg-[#141414] border-b border-[#2A2A2A] text-white text-xs">
+          <div className="flex items-center justify-between p-4 bg-[#FDF2F2] border-b border-[#FDE8E8] text-[#C1121F] text-xs">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-white" />
-              <span>Are you sure you want to delete this ticket? This action cannot be undone.</span>
+              <AlertTriangle className="h-4 w-4 text-[#C1121F]" />
+              <span className="font-medium">Are you sure you want to delete this ticket? This action cannot be undone.</span>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -454,26 +455,65 @@ export function TicketDetailModal({
           </div>
         )}
 
+        {/* Mobile Tab Switcher */}
+        <div className="md:hidden flex items-center border-b border-[#E2E8F0] bg-[#F1F4F7] p-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setMobileTab('details')}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              mobileTab === 'details'
+                ? 'bg-[#003049] text-white shadow-xs'
+                : 'text-[#526174] hover:text-[#17212B]'
+            }`}
+          >
+            Ticket Details
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('discussion')}
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+              mobileTab === 'discussion'
+                ? 'bg-[#003049] text-white shadow-xs'
+                : 'text-[#526174] hover:text-[#17212B]'
+            }`}
+          >
+            <span>Discussion</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                mobileTab === 'discussion'
+                  ? 'bg-white/20 text-white font-bold'
+                  : 'bg-white text-[#526174] border border-[#E2E8F0]'
+              }`}
+            >
+              {comments.length}
+            </span>
+          </button>
+        </div>
+
         {/* Modal Body: Split Content & Discussion */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           {/* Left Details Panel */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar border-r border-[#2A2A2A]">
+          <div
+            className={`${
+              mobileTab === 'details' ? 'flex' : 'hidden'
+            } md:flex flex-1 flex-col overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar border-r border-[#E2E8F0] bg-white`}
+          >
             {/* Title */}
             <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
+              <label className="text-xs font-semibold text-[#17212B] block mb-1">
                 Ticket Title
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-white"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-sm font-semibold text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
+              <label className="text-xs font-semibold text-[#17212B] block mb-1">
                 Description
               </label>
               <textarea
@@ -481,22 +521,22 @@ export function TicketDetailModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Detailed specifications, background, or requirements..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white leading-relaxed placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white custom-scrollbar"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] leading-relaxed placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] custom-scrollbar"
               />
             </div>
 
             {/* Acceptance Criteria Checklist */}
             {acceptanceCriteria.length > 0 && (
-              <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                  <CheckSquare className="h-4 w-4 text-white" />
+              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#003049]">
+                  <CheckSquare className="h-4 w-4 text-[#003049]" />
                   <span>Acceptance Criteria</span>
                 </div>
                 <div className="space-y-2">
                   {acceptanceCriteria.map((ac, idx) => (
                     <label
                       key={ac.id || idx}
-                      className="flex items-start gap-2.5 text-xs text-[#A3A3A3] hover:text-white cursor-pointer select-none transition-colors"
+                      className="flex items-start gap-2.5 text-xs text-[#17212B] hover:text-[#003049] cursor-pointer select-none transition-colors"
                     >
                       <input
                         type="checkbox"
@@ -508,9 +548,9 @@ export function TicketDetailModal({
                             )
                           );
                         }}
-                        className="mt-0.5 rounded border-[#2A2A2A] bg-[#000000] accent-white"
+                        className="mt-0.5 rounded border-[#CBD5E1] accent-[#003049]"
                       />
-                      <span className={ac.completed ? 'line-through text-[#525252]' : ''}>
+                      <span className={ac.completed ? 'line-through text-[#94A3B8]' : ''}>
                         {ac.text}
                       </span>
                     </label>
@@ -519,14 +559,14 @@ export function TicketDetailModal({
               </div>
             )}
 
-            {/* Technical Notes if present */}
+            {/* Technical Notes if present - Papaya Whip Warm Surface */}
             {technicalNotes && (
-              <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                  <Code2 className="h-4 w-4 text-white" />
+              <div className="p-4 rounded-xl bg-[#FDF0D5]/40 border border-[#F7DFAB] space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#780000]">
+                  <Code2 className="h-4 w-4 text-[#780000]" />
                   <span>Technical Notes & Architecture</span>
                 </div>
-                <p className="text-xs text-[#A3A3A3] leading-relaxed whitespace-pre-wrap font-mono bg-[#000000] p-3 rounded-lg border border-[#2A2A2A]">
+                <p className="text-xs text-[#17212B] leading-relaxed whitespace-pre-wrap font-mono bg-white p-3 rounded-lg border border-[#F7DFAB]">
                   {technicalNotes}
                 </p>
               </div>
@@ -534,16 +574,16 @@ export function TicketDetailModal({
 
             {/* PR Checklist if present */}
             {prChecklist.length > 0 && (
-              <div className="p-4 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                  <GitPullRequest className="h-4 w-4 text-white" />
+              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#003049]">
+                  <GitPullRequest className="h-4 w-4 text-[#003049]" />
                   <span>PR Checklist</span>
                 </div>
                 <div className="space-y-2">
                   {prChecklist.map((item, idx) => (
                     <label
                       key={item.id || idx}
-                      className="flex items-start gap-2.5 text-xs text-[#A3A3A3] hover:text-white cursor-pointer select-none transition-colors"
+                      className="flex items-start gap-2.5 text-xs text-[#17212B] hover:text-[#003049] cursor-pointer select-none transition-colors"
                     >
                       <input
                         type="checkbox"
@@ -555,9 +595,9 @@ export function TicketDetailModal({
                             )
                           );
                         }}
-                        className="mt-0.5 rounded border-[#2A2A2A] bg-[#000000] accent-white"
+                        className="mt-0.5 rounded border-[#CBD5E1] accent-[#003049]"
                       />
-                      <span className={item.completed ? 'line-through text-[#525252]' : ''}>
+                      <span className={item.completed ? 'line-through text-[#94A3B8]' : ''}>
                         {item.text}
                       </span>
                     </label>
@@ -569,13 +609,13 @@ export function TicketDetailModal({
             {/* Workflow Attributes Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div>
-                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
+                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
                   Status
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as TicketStatus)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
                 >
                   <option value="To Do">To Do</option>
                   <option value="In Progress">In Progress</option>
@@ -584,13 +624,13 @@ export function TicketDetailModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
+                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
                   Priority
                 </label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -600,13 +640,13 @@ export function TicketDetailModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
+                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
                   Type
                 </label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as TicketType)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
                 >
                   <option value="Feature">Feature</option>
                   <option value="Bug">Bug</option>
@@ -616,13 +656,13 @@ export function TicketDetailModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#A3A3A3] block mb-1">
+                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
                   Assignee
                 </label>
                 <select
                   value={assigneeId}
                   onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
                 >
                   <option value="">Unassigned</option>
                   {members.map((m) => (
@@ -635,11 +675,11 @@ export function TicketDetailModal({
             </div>
 
             {/* Reporter Meta */}
-            <div className="pt-4 border-t border-[#2A2A2A] flex items-center justify-between text-xs text-[#525252]">
+            <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between text-xs text-[#526174]">
               <div className="flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5" />
                 <span>Reporter:</span>
-                <span className="text-white font-medium">
+                <span className="text-[#17212B] font-semibold">
                   {ticket.reporter?.username || 'System'}
                 </span>
               </div>
@@ -651,17 +691,21 @@ export function TicketDetailModal({
           </div>
 
           {/* Right Comments Panel */}
-          <div className="w-full md:w-[42%] flex flex-col bg-[#0A0A0A]">
+          <div
+            className={`${
+              mobileTab === 'discussion' ? 'flex' : 'hidden'
+            } md:flex w-full md:w-[42%] flex-col bg-[#F7F8FA] min-h-0 overflow-hidden`}
+          >
             {/* Comments Header */}
-            <div className="px-5 py-3.5 border-b border-[#2A2A2A] bg-[#000000] flex items-center justify-between">
+            <div className="px-5 py-3.5 border-b border-[#E2E8F0] bg-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-white" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                <MessageSquare className="h-4 w-4 text-[#003049]" />
+                <h3 className="text-xs font-bold text-[#17212B] uppercase tracking-wider">
                   Discussion ({comments.length})
                 </h3>
               </div>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] text-indigo-300">
-                <Sparkles className="h-3 w-3 text-indigo-400" />
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#EFF5F9] border border-[#669BBC]/30 text-[10px] text-[#003049] font-medium">
+                <Sparkles className="h-3 w-3 text-[#003049]" />
                 <span>AI Assistant Active</span>
               </div>
             </div>
@@ -669,10 +713,10 @@ export function TicketDetailModal({
             {/* Comments Stream */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar">
               {comments.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#525252] text-xs">
-                  <MessageSquare className="h-8 w-8 text-[#2A2A2A] mb-2" />
-                  <span>No comments yet. Start the conversation!</span>
-                  <span className="text-[10px] text-[#404040] mt-1">AI assistant analyzes every inquiry automatically.</span>
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#526174] text-xs">
+                  <MessageSquare className="h-8 w-8 text-[#CBD5E1] mb-2" />
+                  <span className="font-medium text-[#17212B]">No comments yet. Start the conversation!</span>
+                  <span className="text-[10px] text-[#526174] mt-1">AI assistant analyzes every inquiry automatically.</span>
                 </div>
               ) : (
                 comments.map((comment) => {
@@ -689,24 +733,24 @@ export function TicketDetailModal({
                     return (
                       <div
                         key={comment.id}
-                        className="p-3.5 rounded-xl bg-gradient-to-b from-[#15141E] to-[#0F0E14] border border-indigo-500/30 space-y-2.5 text-xs shadow-sm relative overflow-hidden"
+                        className="p-3.5 rounded-xl bg-white border border-[#669BBC]/30 space-y-2.5 text-xs shadow-card relative overflow-hidden"
                       >
                         {/* Top decorative accent line */}
-                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-transparent" />
+                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#003049] via-[#669BBC] to-transparent" />
 
                         {/* AI Header */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 flex items-center justify-center font-bold">
+                            <div className="w-5 h-5 rounded-full bg-[#003049] text-white flex items-center justify-center font-bold">
                               <Bot className="h-3 w-3" />
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-white">AI Ticket Assistant</span>
-                              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+                              <span className="font-semibold text-[#003049]">AI Ticket Assistant</span>
+                              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-[#EFF5F9] text-[#003049] border border-[#669BBC]/30 uppercase tracking-wider">
                                 AI
                               </span>
                             </div>
-                            <span className="text-[10px] text-[#737373]">
+                            <span className="text-[10px] text-[#526174]">
                               {new Date(comment.createdAt).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit',
@@ -715,7 +759,7 @@ export function TicketDetailModal({
                           </div>
 
                           {comment.aiMetadata?.provider && (
-                            <span className="text-[10px] text-[#737373] hidden sm:inline-block font-mono">
+                            <span className="text-[10px] text-[#526174] hidden sm:inline-block font-mono">
                               {comment.aiMetadata.provider}
                             </span>
                           )}
@@ -723,20 +767,20 @@ export function TicketDetailModal({
 
                         {/* Processing State */}
                         {isProcessing && (
-                          <div className="py-2.5 px-3 rounded-lg bg-indigo-950/20 border border-indigo-500/20 flex items-center gap-2.5 text-indigo-300">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-400" />
+                          <div className="py-2.5 px-3 rounded-lg bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center gap-2.5 text-[#003049]">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#003049]" />
                             <span className="font-medium text-xs">AI is analyzing context and preparing response...</span>
                           </div>
                         )}
 
                         {/* Failed State */}
                         {isFailed && (
-                          <div className="space-y-2 p-3 rounded-lg bg-red-950/20 border border-red-500/30 text-xs">
-                            <div className="flex items-start gap-2 text-red-300">
-                              <AlertTriangle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                          <div className="space-y-2 p-3 rounded-lg bg-[#FDF2F2] border border-[#FDE8E8] text-xs">
+                            <div className="flex items-start gap-2 text-[#C1121F]">
+                              <AlertTriangle className="h-4 w-4 shrink-0 text-[#C1121F] mt-0.5" />
                               <div className="space-y-1">
-                                <p className="font-medium text-white">Response generation could not be completed.</p>
-                                <p className="text-[11px] text-red-300/80">
+                                <p className="font-medium text-[#780000]">Response generation could not be completed.</p>
+                                <p className="text-[11px] text-[#C1121F]/80">
                                   {comment.aiMetadata?.error || 'Temporary timeout or service limitation.'}
                                 </p>
                               </div>
@@ -747,7 +791,7 @@ export function TicketDetailModal({
                                 variant="outline"
                                 onClick={() => handleRetryAi(comment.id)}
                                 disabled={retryingCommentId === comment.id}
-                                className="text-xs h-7 px-2.5 gap-1.5 border-red-500/40 text-red-200 hover:bg-red-900/30 hover:text-white"
+                                className="text-xs h-7 px-2.5 gap-1.5 border-[#FDE8E8] text-[#C1121F] hover:bg-[#FDF2F2]"
                               >
                                 <RotateCw className={`h-3 w-3 ${retryingCommentId === comment.id ? 'animate-spin' : ''}`} />
                                 {retryingCommentId === comment.id ? 'Retrying...' : 'Retry Response'}
@@ -759,25 +803,25 @@ export function TicketDetailModal({
                         {/* Completed Content */}
                         {!isProcessing && !isFailed && (
                           <div className="space-y-3 pt-0.5">
-                            <div className="text-[#D4D4D4] leading-relaxed text-xs space-y-2">
+                            <div className="text-[#17212B] leading-relaxed text-xs space-y-2">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                  h3: ({ node, ...props }) => <h3 className="text-xs font-bold text-white mt-2 mb-1" {...props} />,
-                                  h4: ({ node, ...props }) => <h4 className="text-[11px] font-semibold text-indigo-300 mt-2 mb-1" {...props} />,
-                                  p: ({ node, ...props }) => <p className="text-[#D4D4D4] mb-1.5 last:mb-0 leading-relaxed" {...props} />,
+                                  h3: ({ node, ...props }) => <h3 className="text-xs font-bold text-[#003049] mt-2 mb-1" {...props} />,
+                                  h4: ({ node, ...props }) => <h4 className="text-[11px] font-semibold text-[#669BBC] mt-2 mb-1" {...props} />,
+                                  p: ({ node, ...props }) => <p className="text-[#17212B] mb-1.5 last:mb-0 leading-relaxed" {...props} />,
                                   ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-0.5 my-1" {...props} />,
                                   ol: ({ node, ...props }) => <ol className="list-decimal pl-4 space-y-0.5 my-1" {...props} />,
-                                  li: ({ node, ...props }) => <li className="text-[#D4D4D4]" {...props} />,
+                                  li: ({ node, ...props }) => <li className="text-[#17212B]" {...props} />,
                                   code: ({ node, className, children, ...props }: any) => {
                                     const isInline = !className;
                                     return isInline ? (
-                                      <code className="px-1 py-0.5 rounded bg-[#1F1F1F] text-indigo-200 font-mono text-[11px]" {...props}>
+                                      <code className="px-1 py-0.5 rounded bg-[#F1F4F7] text-[#003049] font-mono text-[11px]" {...props}>
                                         {children}
                                       </code>
                                     ) : (
                                       <div className="relative group my-2">
-                                        <pre className="p-2.5 rounded-lg bg-[#000000] border border-[#2A2A2A] overflow-x-auto font-mono text-[11px] text-gray-200">
+                                        <pre className="p-2.5 rounded-lg bg-[#17212B] text-white overflow-x-auto font-mono text-[11px]">
                                           <code>{children}</code>
                                         </pre>
                                       </div>
@@ -791,7 +835,7 @@ export function TicketDetailModal({
 
                             {/* Citations Accordion */}
                             {Array.isArray(comment.aiMetadata?.citations) && comment.aiMetadata.citations.length > 0 && (
-                              <div className="pt-2 border-t border-[#22222E]">
+                              <div className="pt-2 border-t border-[#E2E8F0]">
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -800,7 +844,7 @@ export function TicketDetailModal({
                                       [comment.id]: !prev[comment.id],
                                     }))
                                   }
-                                  className="flex items-center gap-1.5 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium"
+                                  className="flex items-center gap-1.5 text-[11px] text-[#003049] hover:text-[#669BBC] font-medium"
                                 >
                                   {expandedCitations[comment.id] ? (
                                     <ChevronDown className="h-3 w-3" />
@@ -810,19 +854,19 @@ export function TicketDetailModal({
                                   <span>Grounded in {comment.aiMetadata.citations.length} Knowledge References</span>
                                 </button>
                                 {expandedCitations[comment.id] && (
-                                  <div className="mt-2 space-y-1.5 pl-3 border-l border-indigo-500/20">
+                                  <div className="mt-2 space-y-1.5 pl-3 border-l border-[#669BBC]/40">
                                     {comment.aiMetadata.citations.map((c: any, cIdx: number) => (
-                                      <div key={cIdx} className="text-[11px] text-[#A3A3A3] space-y-0.5">
-                                        <div className="flex items-center gap-1.5 font-medium text-white">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                      <div key={cIdx} className="text-[11px] text-[#526174] space-y-0.5">
+                                        <div className="flex items-center gap-1.5 font-medium text-[#17212B]">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-[#669BBC]" />
                                           <span>{c.section || 'General Reference'}</span>
                                           {c.distance !== undefined && (
-                                            <span className="text-[9px] text-[#737373] font-mono">
+                                            <span className="text-[9px] text-[#526174] font-mono">
                                               (score: {c.distance})
                                             </span>
                                           )}
                                         </div>
-                                        {c.snippet && <p className="text-[10px] text-[#737373] italic pl-3">{c.snippet}</p>}
+                                        {c.snippet && <p className="text-[10px] text-[#526174] italic pl-3">{c.snippet}</p>}
                                       </div>
                                     ))}
                                   </div>
@@ -839,17 +883,17 @@ export function TicketDetailModal({
                   return (
                     <div
                       key={comment.id}
-                      className="p-3.5 rounded-xl bg-[#141414] border border-[#2A2A2A] space-y-2 text-xs"
+                      className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-card space-y-2 text-xs"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-[#2A2A2A] text-[10px] text-white flex items-center justify-center font-bold">
+                          <div className="w-5 h-5 rounded-full bg-[#669BBC] text-[10px] text-white flex items-center justify-center font-bold">
                             {(comment.user?.username || 'U')[0].toUpperCase()}
                           </div>
-                          <span className="font-semibold text-white">
+                          <span className="font-semibold text-[#17212B]">
                             {comment.user?.username || 'Team Member'}
                           </span>
-                          <span className="text-[10px] text-[#525252]">
+                          <span className="text-[10px] text-[#526174]">
                             {new Date(comment.createdAt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -864,14 +908,14 @@ export function TicketDetailModal({
                                 setEditingCommentId(comment.id);
                                 setEditCommentText(comment.content);
                               }}
-                              className="p-1 rounded text-[#525252] hover:text-white"
+                              className="p-1 rounded text-[#526174] hover:text-[#003049]"
                               title="Edit"
                             >
                               <Edit2 className="h-3 w-3" />
                             </button>
                             <button
                               onClick={() => handleDeleteComment(comment.id)}
-                              className="p-1 rounded text-[#525252] hover:text-white"
+                              className="p-1 rounded text-[#526174] hover:text-[#C1121F]"
                               title="Delete"
                             >
                               <Trash2 className="h-3 w-3" />
@@ -886,13 +930,13 @@ export function TicketDetailModal({
                             rows={2}
                             value={editCommentText}
                             onChange={(e) => setEditCommentText(e.target.value)}
-                            className="w-full p-2 rounded-lg bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white"
+                            className="w-full p-2 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
                           />
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
                               onClick={() => setEditingCommentId(null)}
-                              className="px-2 py-0.5 text-[11px] text-[#A3A3A3]"
+                              className="px-2 py-0.5 text-[11px] text-[#526174]"
                             >
                               Cancel
                             </button>
@@ -906,7 +950,7 @@ export function TicketDetailModal({
                           </div>
                         </div>
                       ) : (
-                        <p className="text-[#A3A3A3] leading-relaxed whitespace-pre-wrap">
+                        <p className="text-[#526174] leading-relaxed whitespace-pre-wrap">
                           {comment.content}
                         </p>
                       )}
@@ -917,19 +961,19 @@ export function TicketDetailModal({
             </div>
 
             {/* Add Comment Input */}
-            <form onSubmit={handleAddComment} className="p-3 bg-[#000000] border-t border-[#2A2A2A]">
+            <form onSubmit={handleAddComment} className="p-3 bg-white border-t border-[#E2E8F0]">
               <div className="relative flex items-center">
                 <textarea
                   rows={2}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Write a comment..."
-                  className="w-full resize-none rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] pl-3.5 pr-12 py-2 text-xs text-white placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white"
+                  className="w-full resize-none rounded-xl bg-white border border-[#E2E8F0] pl-3.5 pr-12 py-2 text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
                 />
                 <button
                   type="submit"
                   disabled={!newComment.trim() || isSubmittingComment}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white text-black hover:bg-[#F5F5F5] transition-all disabled:opacity-30"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-[#003049] text-white hover:bg-[#002437] transition-all disabled:opacity-40"
                 >
                   <Send className="h-3.5 w-3.5" />
                 </button>

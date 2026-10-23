@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #000000;
-  --foreground: #FFFFFF;
+  --background: #F7F8FA;
+  --foreground: #17212B;
 }
 
 body {
@@ -15,27 +15,27 @@ body {
 }
 
 ::selection {
-  background: #FFFFFF;
-  color: #000000;
+  background: #003049;
+  color: #FFFFFF;
 }
 
-/* Custom Monochrome Scrollbar */
+/* Custom Scrollbar for Light Theme */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #0A0A0A;
+  background: #F1F4F7;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #2A2A2A;
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #404040;
+  background: #94A3B8;
 }
 
 /* Code block styles */

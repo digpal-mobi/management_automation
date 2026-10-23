@@ -104,7 +104,7 @@ class FallbackProvider(LLMProvider):
                 "Generate 1536-dim vector embeddings and store in PostgreSQL vector table",
                 "Implement cosine distance `<=>` similarity search endpoint"
             ],
-            "technicalNotes": "Use Flask/FastAPI with psycopg2 or SQLAlchemy. Support Groq/OpenAI embedding abstraction. Normalize vector embeddings to unit length.",
+            "technicalNotes": "Use Flask/FastAPI with psycopg2 or SQLAlchemy. Support Groq Cloud and deterministic vector embeddings normalized to unit length.",
             "dependencies": ["Design Database Schema & Setup Prisma ORM Models"],
             "priority": "HIGH",
             "storyPoints": 8,

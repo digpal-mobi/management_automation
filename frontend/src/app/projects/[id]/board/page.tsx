@@ -5,7 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Project, ProjectMember } from '@/types';
 import { Board } from '@/components/kanban/Board';
-import { Loader2, AlertCircle, Kanban, Users, ArrowLeft, FileText, Compass } from 'lucide-react';
+import { ProjectNav } from '@/components/layout/ProjectNav';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { AlertCircle, Kanban } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProjectBoardPage() {
@@ -59,92 +64,59 @@ export default function ProjectBoardPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-7 w-7 text-white animate-spin" />
-        <p className="text-xs text-[#A3A3A3]">Loading Kanban board & tickets...</p>
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <Skeleton className="h-16 w-full rounded-2xl" />
+        <Skeleton className="h-10 w-96 rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <Skeleton className="h-[65vh] rounded-2xl" />
+          <Skeleton className="h-[65vh] rounded-2xl" />
+          <Skeleton className="h-[65vh] rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center space-y-3 text-center">
-        <AlertCircle className="h-7 w-7 text-white" />
-        <h3 className="text-sm font-semibold text-white">Failed to load board</h3>
-        <p className="text-xs text-[#A3A3A3] max-w-sm">{error}</p>
-        <Link
-          href="/"
-          className="px-4 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white hover:bg-[#2A2A2A]"
-        >
-          Return to Dashboard
-        </Link>
-      </div>
+      <EmptyState
+        icon={<AlertCircle className="h-6 w-6 text-[#526174]" />}
+        title="Failed to load Kanban board"
+        description={error || 'Project not found or you lack permission to view this workspace.'}
+        action={
+          <Link href="/">
+            <Button variant="outline" size="sm">
+              Return to Workspaces
+            </Button>
+          </Link>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Board Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2A2A2A]">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-[#525252] mb-1.5">
-            <Link href="/" className="hover:text-white flex items-center gap-1 transition-colors">
-              <ArrowLeft className="h-3 w-3" />
-              <span>Projects</span>
-            </Link>
-            <span>/</span>
-            <span className="text-white font-medium truncate max-w-xs">{project.name}</span>
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <Kanban className="h-6 w-6 text-white" />
-            <span>{project.name}</span>
-          </h1>
-          {project.description && (
-            <p className="text-xs text-[#A3A3A3] mt-1 max-w-xl line-clamp-1">
-              {project.description}
-            </p>
-          )}
-        </div>
-
-        {/* Tab Links to All 4 Project Areas */}
-        <div className="flex items-center gap-1.5 bg-[#0A0A0A] p-1 rounded-xl border border-[#2A2A2A]">
-          <Link
-            href={`/projects/${projectId}/knowledge`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
-          >
-            <FileText className="h-3.5 w-3.5" />
-            <span>Knowledge</span>
-          </Link>
-          <Link
-            href={`/projects/${projectId}/roadmap`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
-          >
-            <Compass className="h-3.5 w-3.5" />
-            <span>Roadmap</span>
-          </Link>
-          <Link
-            href={`/projects/${projectId}/board`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-black shadow-sm"
-          >
-            <Kanban className="h-3.5 w-3.5" />
-            <span>Board</span>
-          </Link>
-          <Link
-            href={`/projects/${projectId}/members`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span>Team ({members.length})</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Main Kanban Board Area */}
-      <Board
-        projectId={projectId}
-        project={project}
-        members={members}
+    <div className="space-y-6">
+      {/* Standard Page Header */}
+      <PageHeader
+        backLink={{ label: 'All Projects', href: '/' }}
+        breadcrumbs={[
+          { label: 'Projects', href: '/' },
+          { label: project.name },
+          { label: 'Kanban Board' },
+        ]}
+        icon={<Kanban className="h-6 w-6 text-[#003049]" />}
+        title={project.name}
+        description={project.description || 'Sprint & engineering backlog Kanban workflow.'}
+        actions={
+          <ProjectNav
+            projectId={projectId}
+            memberCount={members.length}
+            ticketCount={project.ticketCount}
+          />
+        }
       />
+
+      {/* Main Kanban Board */}
+      <Board projectId={projectId} project={project} members={members} />
     </div>
   );
 }

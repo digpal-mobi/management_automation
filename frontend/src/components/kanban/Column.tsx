@@ -32,19 +32,19 @@ export function Column({
 
   const columnStyles: Record<TicketStatus, { dot: string; border: string; badge: string }> = {
     'To Do': {
-      dot: 'bg-[#525252]',
-      border: 'border-[#2A2A2A]',
-      badge: 'bg-[#141414] text-[#A3A3A3] border-[#2A2A2A]',
+      dot: 'bg-[#526174]',
+      border: 'border-[#E2E8F0]',
+      badge: 'bg-[#F1F4F7] text-[#526174] border-[#E2E8F0]',
     },
     'In Progress': {
-      dot: 'bg-white',
-      border: 'border-[#2A2A2A]',
-      badge: 'bg-white/10 text-white border-white/20',
+      dot: 'bg-[#003049]',
+      border: 'border-[#669BBC]/40',
+      badge: 'bg-[#EFF5F9] text-[#003049] border-[#669BBC]/30',
     },
     'Done': {
-      dot: 'bg-[#A3A3A3]',
-      border: 'border-[#2A2A2A]',
-      badge: 'bg-[#2A2A2A] text-white border-[#404040]',
+      dot: 'bg-[#15803D]',
+      border: 'border-[#BBF7D0]',
+      badge: 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]',
     },
   };
 
@@ -53,15 +53,15 @@ export function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col flex-1 min-w-[300px] max-w-[420px] rounded-2xl border bg-[#0A0A0A] p-3.5 shadow-sm transition-colors ${
-        isOver ? 'border-white ring-1 ring-white/20 bg-[#141414]' : currentStyle.border
+      className={`flex flex-col flex-1 min-w-[300px] max-w-[420px] rounded-2xl border bg-[#F7F8FA] p-3.5 shadow-card transition-colors ${
+        isOver ? 'border-[#003049] ring-2 ring-[#003049]/20 bg-[#EFF5F9]/50' : currentStyle.border
       }`}
     >
       {/* Column Header */}
       <div className="flex items-center justify-between px-2 py-2 mb-3">
         <div className="flex items-center gap-2.5">
           <span className={`w-2 h-2 rounded-full ${currentStyle.dot}`} />
-          <h3 className="font-semibold text-sm text-white tracking-tight">
+          <h3 className="font-bold text-sm text-[#17212B] tracking-tight">
             {title}
           </h3>
           <span
@@ -73,7 +73,7 @@ export function Column({
 
         <button
           onClick={() => onAddTicketClick(title)}
-          className="p-1 rounded-lg text-[#525252] hover:text-white hover:bg-[#141414] transition-colors"
+          className="p-1 rounded-lg text-[#526174] hover:text-[#003049] hover:bg-white transition-colors"
           title={`Add ticket to ${title}`}
         >
           <Plus className="h-4 w-4" />
@@ -96,18 +96,18 @@ export function Column({
         </SortableContext>
 
         {tickets.length === 0 && (
-          <div className="h-40 flex flex-col items-center justify-center border border-dashed border-[#2A2A2A] rounded-xl text-[#525252] text-xs px-4 text-center">
-            <span className="font-medium text-[#A3A3A3] mb-1">No tickets in this column</span>
-            <span className="text-[11px] text-[#525252]">Drag a ticket here or click + to add one</span>
+          <div className="h-40 flex flex-col items-center justify-center border border-dashed border-[#CBD5E1] rounded-xl text-[#526174] text-xs px-4 text-center bg-white/50">
+            <span className="font-semibold text-[#17212B] mb-1">No tickets in this column</span>
+            <span className="text-[11px] text-[#526174]">Drag a ticket here or click + to add one</span>
           </div>
         )}
       </div>
 
       {/* Quick Add CTA */}
-      <div className="mt-3 pt-2.5 border-t border-[#2A2A2A]">
+      <div className="mt-3 pt-2.5 border-t border-[#E2E8F0]">
         <button
           onClick={() => onAddTicketClick(title)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-[#2A2A2A] hover:border-[#404040] hover:bg-[#141414] text-[#A3A3A3] hover:text-white text-xs font-medium transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-[#CBD5E1] hover:border-[#003049] hover:bg-white text-[#526174] hover:text-[#003049] text-xs font-medium transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Add Ticket</span>

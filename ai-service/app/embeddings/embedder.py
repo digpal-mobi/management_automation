@@ -1,16 +1,16 @@
-import math
 import hashlib
 import re
 import numpy as np
 from app.config import Config
 
-DIMENSION = Config.VECTOR_DIMENSION # 1536
+DIMENSION = Config.VECTOR_DIMENSION  # 1536
 
 def _generate_deterministic_embedding(text: str, dim: int = DIMENSION) -> list:
     """
-    Fallback deterministic feature projection vector when OpenAI API key is unavailable.
+    High-performance deterministic feature projection vector engine.
     Produces a normalized 1536-dimensional float vector capturing term frequencies,
-    word prefixes, bigrams, and token characteristics.
+    word prefixes, sub-token n-grams, and bi-grams.
+    Zero-network dependency, completely offline, and fully pgvector compatible.
     """
     cleaned = re.sub(r'[^\w\s]', ' ', text.lower())
     tokens = [t for t in cleaned.split() if len(t) > 1]
@@ -56,42 +56,16 @@ def _generate_deterministic_embedding(text: str, dim: int = DIMENSION) -> list:
 
 def get_embedding(text: str) -> list:
     """
-    Generate a 1536-dimensional embedding.
-    Uses OpenAI text-embedding-3-small if OPENAI_API_KEY is configured,
-    otherwise uses deterministic semantic vector.
+    Generate a 1536-dimensional semantic vector for pgvector storage and similarity querying.
     """
     if not text:
         text = "empty"
-        
-    if Config.OPENAI_API_KEY:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=Config.OPENAI_API_KEY)
-            resp = client.embeddings.create(
-                model=Config.OPENAI_EMBEDDING_MODEL,
-                input=text
-            )
-            return resp.data[0].embedding
-        except Exception as e:
-            print(f"[Warning] OpenAI embedding failed: {e}. Falling back to deterministic embedding.")
-            
     return _generate_deterministic_embedding(text, DIMENSION)
 
 def get_embeddings_batch(texts: list) -> list:
+    """
+    Batch generate 1536-dimensional semantic vectors.
+    """
     if not texts:
         return []
-        
-    if Config.OPENAI_API_KEY:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=Config.OPENAI_API_KEY)
-            resp = client.embeddings.create(
-                model=Config.OPENAI_EMBEDDING_MODEL,
-                input=texts
-            )
-            # preserve order
-            return [item.embedding for item in resp.data]
-        except Exception as e:
-            print(f"[Warning] OpenAI batch embedding failed: {e}. Falling back.")
-            
     return [get_embedding(t) for t in texts]

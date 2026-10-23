@@ -11,12 +11,17 @@ class Config:
     PORT = int(os.getenv("AI_SERVICE_PORT", "5001"))
     DATABASE_URL = clean_db_url
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     
-    # Preferred primary provider: groq, fallback: openai
-    PRIMARY_PROVIDER = os.getenv("PRIMARY_PROVIDER", "groq")
-    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
-    OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+    # LLM Provider configuration: Exclusively Groq Cloud
+    PRIMARY_PROVIDER = "groq"
+    
+    # Groq Cloud Models
+    # Primary generative & reasoning model
+    GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    # Secondary / fast fallback Groq generative model
+    GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b")
+    # Guardrail and safety models on Groq Cloud
+    GROQ_PROMPT_GUARD_MODEL = os.getenv("GROQ_PROMPT_GUARD_MODEL", "meta-llama/llama-prompt-guard-2-86m")
+    GROQ_SAFEGUARD_MODEL = os.getenv("GROQ_SAFEGUARD_MODEL", "openai/gpt-oss-safeguard-20b")
     
     VECTOR_DIMENSION = 1536

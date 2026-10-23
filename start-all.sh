@@ -35,12 +35,6 @@ BACKEND_PID=$!
 # Wait for backend to initialize
 sleep 2
 
-# 3. Start Next.js Frontend (Port 3000)
-echo "🎨 [3/3] Starting Next.js Frontend on http://localhost:3000..."
-cd "$ROOT_DIR/frontend"
-npm run dev &
-FRONTEND_PID=$!
-
 echo ""
 echo "=========================================================="
 echo "🎉 All services are LIVE!"

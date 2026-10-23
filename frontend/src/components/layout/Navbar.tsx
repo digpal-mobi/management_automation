@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -12,61 +12,67 @@ import {
   UserPlus,
   Users,
   BookOpen,
-  Map,
+  Compass,
   Layers,
+  BarChart3,
+  Menu,
+  X,
+  FolderKanban,
 } from 'lucide-react';
+import { Avatar } from '@/components/ui/Avatar';
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Extract project ID if current pathname is /projects/[id]/...
   const projectMatch = pathname.match(/^\/projects\/([^\/]+)/);
   const activeProjectId = projectMatch ? projectMatch[1] : null;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[#2A2A2A] bg-black/90 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-        {/* Left: Brand + Project Navigation */}
+    <header className="sticky top-0 z-40 w-full border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 max-w-7xl mx-auto">
+        {/* Left: Brand + Desktop Project Navigation */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black font-black text-sm shadow-sm transition-transform group-hover:scale-105">
+          <Link href="/" className="flex items-center gap-2.5 group select-none">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#003049] text-white font-black text-sm shadow-sm transition-transform group-hover:scale-105">
               <Layers className="h-4 w-4" />
             </div>
             <div>
-              <span className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
-                PULSE <span className="text-neutral-400 font-normal">AI</span>
+              <span className="font-extrabold text-sm tracking-tight text-[#003049] flex items-center gap-1.5">
+                TASKPULSE <span className="text-[#669BBC] font-bold">AI</span>
               </span>
-              <span className="text-[10px] font-mono text-neutral-500 block -mt-1 tracking-wider uppercase">
+              <span className="text-[10px] font-mono text-[#526174] block -mt-1 tracking-wider uppercase">
                 Knowledge & Roadmap PM
               </span>
             </div>
           </Link>
 
-          {/* Project Navigation Links if inside project */}
+          {/* Desktop Project Navigation Links if inside project */}
           {activeProjectId && activeProjectId !== 'new' && (
-            <div className="hidden lg:flex items-center gap-1.5 border-l border-[#2A2A2A] pl-5">
+            <div className="hidden lg:flex items-center gap-1.5 border-l border-[#E2E8F0] pl-5">
               <Link
                 href={`/projects/${activeProjectId}/knowledge`}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   pathname.includes('/knowledge')
-                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
-                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
+                    ? 'bg-[#003049] text-white shadow-sm'
+                    : 'text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7]'
                 }`}
               >
                 <BookOpen className="h-3.5 w-3.5" />
-                <span>Knowledge & Docs</span>
+                <span>Knowledge</span>
               </Link>
 
               <Link
                 href={`/projects/${activeProjectId}/roadmap`}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   pathname.includes('/roadmap')
-                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
-                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
+                    ? 'bg-[#003049] text-white shadow-sm'
+                    : 'text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7]'
                 }`}
               >
-                <Map className="h-3.5 w-3.5" />
+                <Compass className="h-3.5 w-3.5" />
                 <span>Roadmap</span>
               </Link>
 
@@ -74,8 +80,8 @@ export function Navbar() {
                 href={`/projects/${activeProjectId}/board`}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   pathname.includes('/board')
-                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
-                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
+                    ? 'bg-[#003049] text-white shadow-sm'
+                    : 'text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7]'
                 }`}
               >
                 <Kanban className="h-3.5 w-3.5" />
@@ -83,11 +89,23 @@ export function Navbar() {
               </Link>
 
               <Link
+                href={`/projects/${activeProjectId}/analytics`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  pathname.includes('/analytics')
+                    ? 'bg-[#003049] text-white shadow-sm'
+                    : 'text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7]'
+                }`}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                <span>Analytics</span>
+              </Link>
+
+              <Link
                 href={`/projects/${activeProjectId}/members`}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   pathname.includes('/members')
-                    ? 'bg-[#141414] text-white border border-[#2A2A2A]'
-                    : 'text-neutral-400 hover:text-white hover:bg-[#0A0A0A]'
+                    ? 'bg-[#003049] text-white shadow-sm'
+                    : 'text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7]'
                 }`}
               >
                 <Users className="h-3.5 w-3.5" />
@@ -97,56 +115,70 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Right: Actions & User Info */}
+        {/* Right: Actions & User Info (Desktop) */}
         <div className="flex items-center gap-3">
           {user ? (
             <>
               {/* New Project Button */}
               <Link
                 href="/projects/new"
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white hover:bg-neutral-200 text-black text-xs font-semibold shadow-sm transition-all active:scale-[0.98]"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#003049] hover:bg-[#002437] text-white text-xs font-semibold shadow-sm transition-all active:scale-[0.98]"
               >
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">New Project</span>
                 <span className="sm:hidden">New</span>
               </Link>
 
-              {/* User Profile Pill */}
-              <div className="flex items-center gap-2.5 pl-2 border-l border-[#2A2A2A]">
-                <div className="w-7 h-7 rounded-full bg-[#141414] border border-[#2A2A2A] text-white text-xs font-bold flex items-center justify-center">
-                  {(user.username || user.email)[0].toUpperCase()}
-                </div>
-                <div className="hidden sm:block text-left">
-                  <span className="text-xs font-medium text-white block leading-none">
+              {/* Desktop User Profile Pill */}
+              <div className="hidden sm:flex items-center gap-2.5 pl-2 border-l border-[#E2E8F0]">
+                <Avatar
+                  name={user.username}
+                  email={user.email}
+                  avatarUrl={user.avatarUrl}
+                  size="sm"
+                />
+                <div className="text-left">
+                  <span className="text-xs font-semibold text-[#17212B] block leading-none">
                     {user.username}
                   </span>
-                  <span className="text-[10px] text-neutral-500 block leading-none mt-1">
+                  <span className="text-[10px] text-[#526174] block leading-none mt-1 truncate max-w-[140px]">
                     {user.email}
                   </span>
                 </div>
               </div>
 
-              {/* Logout Button */}
+              {/* Desktop Logout Button */}
               <button
                 onClick={logout}
                 title="Log out"
-                className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#141414] border border-transparent hover:border-[#2A2A2A] transition-colors"
+                aria-label="Log out"
+                className="hidden sm:flex p-1.5 rounded-xl text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#FDE8E8] transition-colors"
               >
                 <LogOut className="h-4 w-4" />
+              </button>
+
+              {/* Mobile Menu Toggle Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle navigation menu"
+                aria-expanded={mobileMenuOpen}
+                className="sm:hidden p-2 rounded-xl text-[#17212B] hover:bg-[#F1F4F7] border border-[#E2E8F0] transition-colors"
+              >
+                {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </button>
             </>
           ) : (
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:bg-[#141414] border border-[#2A2A2A]"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[#17212B] hover:text-[#003049] hover:bg-[#F1F4F7] border border-[#E2E8F0] transition-colors"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Log In</span>
               </Link>
               <Link
                 href="/register"
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white text-black hover:bg-neutral-200"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#003049] text-white hover:bg-[#002437] transition-colors shadow-sm"
               >
                 <UserPlus className="h-3.5 w-3.5" />
                 <span>Register</span>
@@ -155,6 +187,125 @@ export function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Mobile Drawer Dropdown */}
+      {mobileMenuOpen && user && (
+        <div className="sm:hidden border-t border-[#E2E8F0] bg-white px-4 py-4 space-y-4 shadow-dropdown animate-in slide-in-from-top-2 duration-150">
+          {/* User profile row */}
+          <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
+            <div className="flex items-center gap-2.5">
+              <Avatar
+                name={user.username}
+                email={user.email}
+                avatarUrl={user.avatarUrl}
+                size="sm"
+              />
+              <div>
+                <span className="text-xs font-bold text-[#17212B] block">
+                  {user.username}
+                </span>
+                <span className="text-[10px] text-[#526174] block truncate max-w-[200px]">
+                  {user.email}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                logout();
+              }}
+              className="flex items-center gap-1 text-xs text-[#C1121F] hover:bg-[#FDF2F2] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0]"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Logout</span>
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="space-y-1">
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                pathname === '/'
+                  ? 'bg-[#003049] text-white font-semibold'
+                  : 'text-[#17212B] hover:bg-[#F1F4F7]'
+              }`}
+            >
+              <FolderKanban className="h-4 w-4" />
+              <span>Workspaces Dashboard</span>
+            </Link>
+
+            {activeProjectId && activeProjectId !== 'new' && (
+              <div className="pt-2 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-[#526174] px-3 tracking-wider">
+                  Active Project
+                </div>
+                <Link
+                  href={`/projects/${activeProjectId}/knowledge`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                    pathname.includes('/knowledge')
+                      ? 'bg-[#003049] text-white font-semibold'
+                      : 'text-[#17212B] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Knowledge & Specifications</span>
+                </Link>
+                <Link
+                  href={`/projects/${activeProjectId}/roadmap`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                    pathname.includes('/roadmap')
+                      ? 'bg-[#003049] text-white font-semibold'
+                      : 'text-[#17212B] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  <Compass className="h-4 w-4" />
+                  <span>Roadmap</span>
+                </Link>
+                <Link
+                  href={`/projects/${activeProjectId}/board`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                    pathname.includes('/board')
+                      ? 'bg-[#003049] text-white font-semibold'
+                      : 'text-[#17212B] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  <Kanban className="h-4 w-4" />
+                  <span>Kanban Board</span>
+                </Link>
+                <Link
+                  href={`/projects/${activeProjectId}/analytics`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                    pathname.includes('/analytics')
+                      ? 'bg-[#003049] text-white font-semibold'
+                      : 'text-[#17212B] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Analytics</span>
+                </Link>
+                <Link
+                  href={`/projects/${activeProjectId}/members`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+                    pathname.includes('/members')
+                      ? 'bg-[#003049] text-white font-semibold'
+                      : 'text-[#17212B] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Team Members</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

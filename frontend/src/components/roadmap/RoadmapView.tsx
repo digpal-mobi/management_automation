@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   Map,
   Plus,
@@ -31,6 +32,7 @@ import {
   Search,
   Loader2,
   HelpCircle,
+  ChevronDown,
 } from 'lucide-react';
 
 interface RoadmapViewProps {
@@ -287,59 +289,68 @@ export function RoadmapView({
   return (
     <div className="space-y-6">
       {/* Action Bar & Filter Controls */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A]">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-card">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174]" />
           <input
             type="text"
             placeholder="Search features..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white"
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
           />
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Module Filter */}
-          <select
-            value={selectedModule}
-            onChange={(e) => setSelectedModule(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white cursor-pointer"
-          >
-            <option value="ALL">All Modules ({features.length})</option>
-            {allModules.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedModule}
+              onChange={(e) => setSelectedModule(e.target.value)}
+              className="py-1.5 pl-3 pr-8 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none transition-colors"
+            >
+              <option value="ALL">All Modules ({features.length})</option>
+              {allModules.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+          </div>
 
           {/* Status Filter */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white cursor-pointer"
-          >
-            <option value="ALL">All Review Statuses</option>
-            <option value="PROPOSED">Proposed</option>
-            <option value="ACCEPTED">Accepted</option>
-            <option value="DEFERRED">Deferred</option>
-          </select>
+          <div className="relative">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="py-1.5 pl-3 pr-8 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none transition-colors"
+            >
+              <option value="ALL">All Review Statuses</option>
+              <option value="PROPOSED">Proposed</option>
+              <option value="ACCEPTED">Accepted</option>
+              <option value="DEFERRED">Deferred</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+          </div>
 
           {/* Priority Filter */}
-          <select
-            value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white cursor-pointer"
-          >
-            <option value="ALL">All Priorities</option>
-            <option value="Critical">Critical</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
+          <div className="relative">
+            <select
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value)}
+              className="py-1.5 pl-3 pr-8 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none transition-colors"
+            >
+              <option value="ALL">All Priorities</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+          </div>
 
           {/* Add Manual Feature Button */}
           {canEdit && (
@@ -358,66 +369,59 @@ export function RoadmapView({
 
       {/* Empty State */}
       {features.length === 0 ? (
-        <div className="p-16 text-center rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] space-y-4">
-          <div className="w-12 h-12 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-center mx-auto text-white">
-            <Map className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white">No Features Identified Yet</h3>
-            <p className="text-xs text-neutral-400 max-w-sm mx-auto mt-1">
-              Run AI analysis on your project knowledge base to extract proposed features, or manually add your first roadmap capability.
-            </p>
-          </div>
-          {canEdit && (
-            <div className="flex items-center justify-center gap-2 pt-2">
+        <EmptyState
+          icon={<Map className="h-6 w-6 text-[#003049]" />}
+          title="No Features Identified Yet"
+          description="Run AI analysis on your project knowledge base to extract proposed features, or manually add your first roadmap capability."
+          action={
+            canEdit ? (
               <Button
                 variant="primary"
-                size="sm"
+                size="md"
                 onClick={() => setIsAddOpen(true)}
-                className="text-xs"
+                leftIcon={<Plus className="h-4 w-4" />}
               >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Add Feature Manually
               </Button>
-            </div>
-          )}
-        </div>
+            ) : undefined
+          }
+        />
       ) : (
         /* Grouped Features Modules */
         <div className="space-y-8">
           {Object.entries(groupedByModule).map(([moduleName, moduleFeatures]) => (
             <div
               key={moduleName}
-              className="rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] overflow-hidden"
+              className="rounded-2xl border border-[#E2E8F0] bg-white shadow-card overflow-hidden"
             >
               {/* Module Header */}
-              <div className="px-5 py-3.5 border-b border-[#2A2A2A] bg-[#101010] flex items-center justify-between">
+              <div className="px-5 py-3.5 border-b border-[#E2E8F0] bg-[#F7F8FA] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FolderTree className="h-4 w-4 text-white" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                  <FolderTree className="h-4 w-4 text-[#003049]" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#17212B]">
                     {moduleName}
                   </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#141414] text-neutral-400 border border-[#2A2A2A]">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white text-[#526174] border border-[#E2E8F0] font-medium">
                     {moduleFeatures.length} feature(s)
                   </span>
                 </div>
               </div>
 
               {/* Feature Cards in Module */}
-              <div className="divide-y divide-[#2A2A2A]">
+              <div className="divide-y divide-[#E2E8F0]">
                 {moduleFeatures.map((feature) => {
                   const ticketCount = feature.tickets?.length || 0;
 
                   return (
                     <div
                       key={feature.id}
-                      className="p-5 hover:bg-[#101010] transition-colors space-y-3"
+                      className="p-5 hover:bg-[#FDFDFE] transition-colors space-y-3"
                     >
                       {/* Top Row: Name, Status, Priority, Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-semibold text-white">
+                            <h4 className="text-sm font-semibold text-[#17212B]">
                               {feature.name}
                             </h4>
                             <Badge
@@ -431,7 +435,7 @@ export function RoadmapView({
                               size="sm"
                             />
                             {feature.isAiGenerated && (
-                              <span className="text-[10px] font-mono text-neutral-500 bg-[#141414] px-1.5 py-0.5 rounded border border-[#2A2A2A]">
+                              <span className="text-[10px] font-mono text-[#003049] bg-[#EFF5F9] px-1.5 py-0.5 rounded border border-[#669BBC]/30 font-medium">
                                 AI Identified
                               </span>
                             )}
@@ -446,7 +450,7 @@ export function RoadmapView({
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(feature.id, 'ACCEPTED')}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white text-black hover:bg-neutral-200 transition-colors"
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#003049] text-white hover:bg-[#002437] transition-colors shadow-xs"
                                 title="Approve into active roadmap"
                               >
                                 Accept
@@ -458,7 +462,7 @@ export function RoadmapView({
                               <button
                                 type="button"
                                 onClick={() => handleStatusChange(feature.id, 'DEFERRED')}
-                                className="px-2.5 py-1 rounded-lg text-[11px] text-neutral-400 hover:text-white bg-[#141414] border border-[#2A2A2A] transition-colors"
+                                className="px-2.5 py-1 rounded-lg text-[11px] text-[#526174] hover:text-[#17212B] bg-[#F1F4F7] hover:bg-[#E2E8F0] border border-[#E2E8F0] transition-colors"
                                 title="Defer to later phase"
                               >
                                 Defer
@@ -476,7 +480,7 @@ export function RoadmapView({
                               className="text-[11px] h-7 px-2.5"
                               title="Generate developer tickets for this feature"
                             >
-                              <TicketIcon className="h-3 w-3 mr-1" />
+                              <TicketIcon className="h-3 w-3 mr-1 text-[#003049]" />
                               <span>Generate Tickets</span>
                             </Button>
 
@@ -484,7 +488,7 @@ export function RoadmapView({
                             <button
                               type="button"
                               onClick={() => openEditModal(feature)}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#141414] border border-transparent hover:border-[#2A2A2A] transition-colors"
+                              className="p-1.5 rounded-lg text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7] border border-transparent hover:border-[#E2E8F0] transition-colors"
                               title="Edit feature specifications"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
@@ -494,7 +498,7 @@ export function RoadmapView({
                             <button
                               type="button"
                               onClick={() => handleDeleteFeature(feature.id, feature.name)}
-                              className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#141414] border border-transparent hover:border-[#2A2A2A] transition-colors"
+                              className="p-1.5 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#FDE8E8] transition-colors"
                               title="Delete feature"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -504,26 +508,26 @@ export function RoadmapView({
                       </div>
 
                       {/* Description */}
-                      <p className="text-xs text-neutral-300 leading-relaxed">
+                      <p className="text-xs text-[#526174] leading-relaxed">
                         {feature.description}
                       </p>
 
                       {/* Business Value & Constraints */}
                       {feature.businessValue && (
-                        <div className="text-[11px] text-neutral-400">
-                          <strong className="text-neutral-300">Business Value:</strong>{' '}
+                        <div className="text-[11px] text-[#526174]">
+                          <strong className="text-[#17212B]">Business Value:</strong>{' '}
                           {feature.businessValue}
                         </div>
                       )}
 
                       {/* Meta Footer: Dependencies, Source References, Linked Tickets */}
-                      <div className="flex flex-wrap items-center gap-4 text-[11px] text-neutral-400 pt-2 border-t border-[#1C1C1C]">
+                      <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#526174] pt-2 border-t border-[#E2E8F0]">
                         {/* Dependencies */}
                         {feature.dependencies && feature.dependencies.length > 0 && (
                           <div className="flex items-center gap-1.5">
-                            <GitBranch className="h-3 w-3 text-neutral-400" />
-                            <span className="text-neutral-500">Prerequisites:</span>
-                            <span className="text-neutral-300">
+                            <GitBranch className="h-3 w-3 text-[#526174]" />
+                            <span className="text-[#526174]">Prerequisites:</span>
+                            <span className="text-[#17212B] font-medium">
                               {feature.dependencies.join(', ')}
                             </span>
                           </div>
@@ -532,9 +536,9 @@ export function RoadmapView({
                         {/* Source References */}
                         {feature.sourceReferences && feature.sourceReferences.length > 0 && (
                           <div className="flex items-center gap-1.5">
-                            <BookOpen className="h-3 w-3 text-neutral-400" />
-                            <span className="text-neutral-500">Source:</span>
-                            <span className="text-neutral-300">
+                            <BookOpen className="h-3 w-3 text-[#526174]" />
+                            <span className="text-[#526174]">Source:</span>
+                            <span className="text-[#17212B] font-medium">
                               {feature.sourceReferences[0].docTitle}{' '}
                               {feature.sourceReferences[0].location &&
                                 `(${feature.sourceReferences[0].location})`}
@@ -544,7 +548,7 @@ export function RoadmapView({
 
                         {/* Linked Tickets Count */}
                         {ticketCount > 0 && (
-                          <div className="flex items-center gap-1 text-white font-medium ml-auto">
+                          <div className="flex items-center gap-1 text-[#003049] font-semibold ml-auto">
                             <TicketIcon className="h-3 w-3" />
                             <span>{ticketCount} generated ticket(s)</span>
                           </div>
@@ -571,7 +575,7 @@ export function RoadmapView({
 
           <form onSubmit={handleAddFeature} className="space-y-4 pt-2">
             <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                 Feature Name *
               </label>
               <input
@@ -580,13 +584,13 @@ export function RoadmapView({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="e.g. Audit Logging & Compliance Export"
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white"
+                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                   Module / Subsystem
                 </label>
                 <input
@@ -594,18 +598,18 @@ export function RoadmapView({
                   value={newModule}
                   onChange={(e) => setNewModule(e.target.value)}
                   placeholder="e.g. Security & Compliance"
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                   Priority
                 </label>
                 <select
                   value={newPriority}
                   onChange={(e) => setNewPriority(e.target.value as TicketPriority)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
                 >
                   <option value="Critical">Critical</option>
                   <option value="High">High</option>
@@ -616,7 +620,7 @@ export function RoadmapView({
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                 Description *
               </label>
               <textarea
@@ -625,12 +629,12 @@ export function RoadmapView({
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 placeholder="Detailed scope of the planned feature..."
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
+                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] custom-scrollbar"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                 Business Value / Objective
               </label>
               <input
@@ -638,12 +642,12 @@ export function RoadmapView({
                 value={newBusinessValue}
                 onChange={(e) => setNewBusinessValue(e.target.value)}
                 placeholder="Why is this valuable to users or the business?"
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white"
+                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                 Prerequisites / Dependencies (Comma-separated)
               </label>
               <input
@@ -651,11 +655,11 @@ export function RoadmapView({
                 value={newDependencies}
                 onChange={(e) => setNewDependencies(e.target.value)}
                 placeholder="e.g. User Authentication, Database Schema"
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white"
+                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#2A2A2A]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
               <Button
                 type="button"
                 variant="outline"
@@ -692,7 +696,7 @@ export function RoadmapView({
 
           <form onSubmit={handleSaveEdit} className="space-y-4 pt-2">
             <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                 Feature Name *
               </label>
               <input
@@ -700,31 +704,31 @@ export function RoadmapView({
                 required
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white"
+                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                   Module
                 </label>
                 <input
                   type="text"
                   value={editModule}
                   onChange={(e) => setEditModule(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                   Priority
                 </label>
                 <select
                   value={editPriority}
                   onChange={(e) => setEditPriority(e.target.value as TicketPriority)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
                 >
                   <option value="Critical">Critical</option>
                   <option value="High">High</option>
@@ -734,13 +738,13 @@ export function RoadmapView({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                   Status
                 </label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value as FeatureReviewStatus)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
                 >
                   <option value="PROPOSED">Proposed</option>
                   <option value="ACCEPTED">Accepted</option>
@@ -750,7 +754,7 @@ export function RoadmapView({
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                 Description *
               </label>
               <textarea
@@ -758,23 +762,23 @@ export function RoadmapView({
                 required
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white custom-scrollbar"
+                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] custom-scrollbar"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
+              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
                 Business Value
               </label>
               <input
                 type="text"
                 value={editBusinessValue}
                 onChange={(e) => setEditBusinessValue(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:border-white"
+                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#2A2A2A]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
               <Button
                 type="button"
                 variant="outline"
@@ -809,40 +813,40 @@ export function RoadmapView({
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TicketIcon className="h-4 w-4 text-white" />
+              <TicketIcon className="h-4 w-4 text-[#003049]" />
               <span>Generate Tickets for Feature</span>
             </DialogTitle>
             <DialogDescription>
               Generate granular, developer-ready tickets scoped specifically to{' '}
-              <strong>"{generatingForFeature?.name}"</strong>.
+              <strong>&ldquo;{generatingForFeature?.name}&rdquo;</strong>.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 pt-2">
-            <div className="p-4 rounded-xl bg-[#141414] border border-[#2A2A2A] space-y-1">
-              <span className="text-xs font-semibold text-white block">
+            <div className="p-4 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 space-y-1">
+              <span className="text-xs font-semibold text-[#003049] block">
                 Feature Scope:
               </span>
-              <p className="text-[11px] text-neutral-400 leading-relaxed">
+              <p className="text-[11px] text-[#526174] leading-relaxed">
                 {generatingForFeature?.description}
               </p>
             </div>
 
             {generatedTickets ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-white">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#17212B]">
                   <span>Generated Tickets ({generatedTickets.length}):</span>
-                  <span className="text-[11px] text-neutral-400">Added to project backlog</span>
+                  <span className="text-[11px] text-[#526174]">Added to project backlog</span>
                 </div>
 
                 <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                   {generatedTickets.map((t) => (
                     <div
                       key={t.id}
-                      className="p-3 rounded-xl bg-[#141414] border border-[#2A2A2A] space-y-1"
+                      className="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1 shadow-xs"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-white truncate">
+                        <span className="text-xs font-semibold text-[#17212B] truncate">
                           {t.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -850,7 +854,7 @@ export function RoadmapView({
                           <Badge variant="priority" priority={t.priority} size="sm" />
                         </div>
                       </div>
-                      <p className="text-[11px] text-neutral-400 line-clamp-2">
+                      <p className="text-[11px] text-[#526174] line-clamp-2">
                         {t.description}
                       </p>
                     </div>
@@ -858,12 +862,12 @@ export function RoadmapView({
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-neutral-400 leading-relaxed">
+              <p className="text-xs text-[#526174] leading-relaxed">
                 Click below to generate implementation tickets with acceptance criteria, technical notes, and complexity estimates. Tickets will enter the project backlog for your review.
               </p>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#2A2A2A]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
               <Button
                 type="button"
                 variant="outline"

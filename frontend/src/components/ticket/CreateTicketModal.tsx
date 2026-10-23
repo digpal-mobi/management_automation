@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { Ticket, ProjectMember, TicketStatus, TicketPriority, TicketType } from '@/types';
+import { Ticket, ProjectMember, TicketStatus } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,9 @@ import {
   DialogDescription,
 } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
 import { PlusCircle } from 'lucide-react';
 
 const createTicketFormSchema = z.object({
@@ -58,12 +61,26 @@ export function CreateTicketModal({
     defaultValues: {
       title: '',
       description: '',
-      type: 'Feature',
+      type: 'Task',
       priority: 'Medium',
       status: initialStatus,
       assigneeId: '',
     },
   });
+
+  // Re-sync initial status when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      reset({
+        title: '',
+        description: '',
+        type: 'Task',
+        priority: 'Medium',
+        status: initialStatus,
+        assigneeId: '',
+      });
+    }
+  }, [isOpen, initialStatus, reset]);
 
   const onSubmit = async (values: CreateTicketFormValues) => {
     try {
@@ -79,11 +96,10 @@ export function CreateTicketModal({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        toast.error(data.error || 'Failed to create ticket');
-        return;
+        throw new Error(data.error || 'Failed to create ticket');
       }
 
-      toast.success('Ticket created successfully!');
+      toast.success('Ticket created successfully');
       onTicketCreated(data.ticket);
       reset();
       onClose();
@@ -99,114 +115,65 @@ export function CreateTicketModal({
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <PlusCircle className="h-5 w-5 text-white" />
+            <PlusCircle className="h-5 w-5 text-[#003049]" />
             <span>Create New Ticket</span>
           </DialogTitle>
           <DialogDescription>
-            Add a developer-ready ticket directly to this project's Kanban board.
+            Add a developer-ready ticket directly to this project&apos;s Kanban board.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           {/* Title */}
-          <div>
-            <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-              Title *
-            </label>
-            <input
-              type="text"
-              {...register('title')}
-              placeholder="e.g. Implement user authentication middleware"
-              className={`w-full px-3.5 py-2.5 rounded-xl bg-[#000000] border text-xs text-white placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white ${
-                errors.title ? 'border-white' : 'border-[#2A2A2A]'
-              }`}
-            />
-            {errors.title && (
-              <span className="text-[11px] text-[#A3A3A3] mt-1 block">
-                {errors.title.message}
-              </span>
-            )}
-          </div>
+          <Input
+            label="Title *"
+            placeholder="e.g. Implement user authentication middleware"
+            error={errors.title?.message}
+            {...register('title')}
+          />
 
           {/* Description */}
-          <div>
-            <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-              Description
-            </label>
-            <textarea
-              rows={4}
-              {...register('description')}
-              placeholder="Detailed explanation of what needs to be built and why..."
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs text-white placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white custom-scrollbar"
-            />
-          </div>
+          <Textarea
+            label="Description"
+            rows={4}
+            placeholder="Detailed explanation of what needs to be built and why..."
+            {...register('description')}
+          />
 
           {/* Grid: Type, Priority, Status, Assignee */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-                Type
-              </label>
-              <select
-                {...register('type')}
-                className="w-full px-3 py-2 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
-              >
-                <option value="Feature">Feature</option>
-                <option value="Bug">Bug</option>
-                <option value="Task">Task</option>
-                <option value="Improvement">Improvement</option>
-              </select>
-            </div>
+            <Select label="Type" {...register('type')}>
+              <option value="Feature">Feature</option>
+              <option value="Bug">Bug</option>
+              <option value="Task">Task</option>
+              <option value="Improvement">Improvement</option>
+            </Select>
 
-            <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-                Priority
-              </label>
-              <select
-                {...register('priority')}
-                className="w-full px-3 py-2 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-                <option value="Critical">Critical</option>
-              </select>
-            </div>
+            <Select label="Priority" {...register('priority')}>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </Select>
 
-            <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-                Status
-              </label>
-              <select
-                {...register('status')}
-                className="w-full px-3 py-2 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
-              >
-                <option value="To Do">To Do</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Done">Done</option>
-              </select>
-            </div>
+            <Select label="Status" {...register('status')}>
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </Select>
 
-            <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-                Assignee
-              </label>
-              <select
-                {...register('assigneeId')}
-                className="w-full px-3 py-2 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
-              >
-                <option value="">Unassigned</option>
-                {members.map((m) => (
-                  <option key={m.user.id} value={m.user.id}>
-                    {m.user.username} ({m.role})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select label="Assignee" {...register('assigneeId')}>
+              <option value="">Unassigned</option>
+              {members.map((m) => (
+                <option key={m.user.id} value={m.user.id}>
+                  {m.user.username} ({m.role})
+                </option>
+              ))}
+            </Select>
           </div>
 
           {/* Form Actions */}
-          <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-[#2A2A2A]">
+          <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-[#E2E8F0]">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>
@@ -215,9 +182,8 @@ export function CreateTicketModal({
               variant="primary"
               size="sm"
               isLoading={submitting}
-              className="gap-1.5"
+              leftIcon={<PlusCircle className="h-4 w-4" />}
             >
-              <PlusCircle className="h-4 w-4" />
               Create Ticket
             </Button>
           </div>

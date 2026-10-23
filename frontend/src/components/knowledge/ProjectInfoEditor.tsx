@@ -5,7 +5,20 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Project } from '@/types';
 import { Button } from '@/components/ui/Button';
-import { Save, Edit3, X, Check, Calendar, Server, Users, Target, Shield, Link2, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import {
+  Edit3,
+  Calendar,
+  Server,
+  Users,
+  Target,
+  Shield,
+  Link2,
+  FileText,
+  Info,
+} from 'lucide-react';
 
 interface ProjectInfoEditorProps {
   project: Project;
@@ -28,11 +41,21 @@ export function ProjectInfoEditor({
   const [goals, setGoals] = useState(project.goals || '');
   const [targetUsers, setTargetUsers] = useState(project.targetUsers || '');
   const [techStack, setTechStack] = useState(project.techStack || '');
-  const [businessRequirements, setBusinessRequirements] = useState(project.businessRequirements || '');
-  const [technicalConstraints, setTechnicalConstraints] = useState(project.technicalConstraints || '');
-  const [knownDependencies, setKnownDependencies] = useState(project.knownDependencies || '');
-  const [targetReleaseDate, setTargetReleaseDate] = useState(project.targetReleaseDate || '');
-  const [additionalNotes, setAdditionalNotes] = useState(project.additionalNotes || '');
+  const [businessRequirements, setBusinessRequirements] = useState(
+    project.businessRequirements || ''
+  );
+  const [technicalConstraints, setTechnicalConstraints] = useState(
+    project.technicalConstraints || ''
+  );
+  const [knownDependencies, setKnownDependencies] = useState(
+    project.knownDependencies || ''
+  );
+  const [targetReleaseDate, setTargetReleaseDate] = useState(
+    project.targetReleaseDate || ''
+  );
+  const [additionalNotes, setAdditionalNotes] = useState(
+    project.additionalNotes || ''
+  );
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,171 +113,116 @@ export function ProjectInfoEditor({
   };
 
   return (
-    <div className="rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] overflow-hidden">
+    <Card>
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-[#2A2A2A] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-white" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-            Project Specification & Metadata
-          </h3>
-        </div>
+      <CardHeader>
+        <div className="flex items-center justify-between w-full">
+          <CardTitle>
+            <FileText className="h-4 w-4 text-[#003049]" />
+            <span>Project Specification & Metadata</span>
+          </CardTitle>
 
-        {canEdit && !isEditing && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-            className="text-[11px] h-7 px-2.5"
-          >
-            <Edit3 className="h-3 w-3 mr-1.5" />
-            Edit Info
-          </Button>
-        )}
-      </div>
+          {canEdit && !isEditing && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+              leftIcon={<Edit3 className="h-3.5 w-3.5" />}
+            >
+              Edit Info
+            </Button>
+          )}
+        </div>
+      </CardHeader>
 
       {/* Body */}
       {isEditing ? (
-        <form onSubmit={handleSave} className="p-6 space-y-5">
+        <form onSubmit={handleSave} className="p-5 sm:p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Project Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Target Release Date
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Q4 2026 or 2026-12-15"
-                value={targetReleaseDate}
-                onChange={(e) => setTargetReleaseDate(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-              Short Description *
-            </label>
-            <textarea
-              rows={2}
+            <Input
+              label="Project Name *"
               required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+
+            <Input
+              label="Target Release Date"
+              placeholder="e.g. Q4 2026 or 2026-12-15"
+              value={targetReleaseDate}
+              onChange={(e) => setTargetReleaseDate(e.target.value)}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Goals & Objectives
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Key goals, success metrics, and milestones..."
-                value={goals}
-                onChange={(e) => setGoals(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Target Users & Personas
-              </label>
-              <textarea
-                rows={3}
-                placeholder="End users, administrators, roles, customer segments..."
-                value={targetUsers}
-                onChange={(e) => setTargetUsers(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
-              />
-            </div>
-          </div>
+          <Textarea
+            label="Short Description *"
+            rows={2}
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Brief project summary..."
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Technology Stack
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Frameworks, languages, databases, hosting, services..."
-                value={techStack}
-                onChange={(e) => setTechStack(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
-              />
-            </div>
+            <Input
+              label="Target Personas & Users"
+              value={targetUsers}
+              onChange={(e) => setTargetUsers(e.target.value)}
+              placeholder="e.g. Frontend Engineers, DevSecOps"
+            />
 
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Technical Constraints
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Latency limits, compliance, security, SLA guarantees..."
-                value={technicalConstraints}
-                onChange={(e) => setTechnicalConstraints(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Business Requirements
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Domain rules, workflows, business expectations..."
-                value={businessRequirements}
-                onChange={(e) => setBusinessRequirements(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
-              />
-            </div>
-
-            <div>
-              <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-                Known Dependencies & Integrations
-              </label>
-              <textarea
-                rows={3}
-                placeholder="External APIs, vendor dependencies, identity providers..."
-                value={knownDependencies}
-                onChange={(e) => setKnownDependencies(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[11px] font-semibold text-neutral-300 block mb-1">
-              Additional Notes
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Any other context relevant for development..."
-              value={additionalNotes}
-              onChange={(e) => setAdditionalNotes(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white custom-scrollbar"
+            <Input
+              label="Technology Stack"
+              value={techStack}
+              onChange={(e) => setTechStack(e.target.value)}
+              placeholder="e.g. React, Next.js, FastAPI, PostgreSQL"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#2A2A2A]">
+          <Textarea
+            label="Goals & Success Criteria"
+            rows={3}
+            value={goals}
+            onChange={(e) => setGoals(e.target.value)}
+            placeholder="Primary milestones and technical goals..."
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Textarea
+              label="Technical Constraints & Compliance"
+              rows={3}
+              value={technicalConstraints}
+              onChange={(e) => setTechnicalConstraints(e.target.value)}
+              placeholder="e.g. SOC2, Zero-Trust network latency requirements..."
+            />
+
+            <Textarea
+              label="Business Requirements & SLAs"
+              rows={3}
+              value={businessRequirements}
+              onChange={(e) => setBusinessRequirements(e.target.value)}
+              placeholder="Core commercial or operating deliverables..."
+            />
+          </div>
+
+          <Textarea
+            label="Known Dependencies & External APIs"
+            rows={2}
+            value={knownDependencies}
+            onChange={(e) => setKnownDependencies(e.target.value)}
+            placeholder="e.g. Stripe, Sendgrid, OAuth 2.0 Identity Server"
+          />
+
+          <Textarea
+            label="Additional Notes / Architecture Details"
+            rows={2}
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes(e.target.value)}
+            placeholder="Other relevant project notes..."
+          />
+
+          {/* Form Actions */}
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E2E8F0]">
             <Button
               type="button"
               variant="outline"
@@ -268,89 +236,112 @@ export function ProjectInfoEditor({
               type="submit"
               variant="primary"
               size="sm"
-              disabled={isSaving}
+              isLoading={isSaving}
             >
-              <Save className="h-3.5 w-3.5 mr-1.5" />
-              {isSaving ? 'Saving...' : 'Save Information'}
+              Save Specifications
             </Button>
           </div>
         </form>
       ) : (
-        <div className="p-6 space-y-6">
+        <CardContent className="space-y-6">
           {/* Main Description */}
           <div>
-            <h4 className="text-[11px] uppercase tracking-wider text-neutral-500 font-mono mb-1">
+            <h4 className="text-[11px] uppercase tracking-wider text-[#526174] font-mono mb-1 font-semibold">
               Description
             </h4>
-            <p className="text-xs text-neutral-300 leading-relaxed">
+            <p className="text-xs text-[#17212B] leading-relaxed">
               {project.description || 'No description provided.'}
             </p>
           </div>
 
           {/* Grid of Key Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2 border-t border-[#2A2A2A]">
-            <div>
-              <div className="flex items-center gap-1.5 text-neutral-400 text-xs font-semibold mb-1">
-                <Target className="h-3.5 w-3.5 text-white" />
-                <span>Goals & Objectives</span>
-              </div>
-              <p className="text-xs text-neutral-300 leading-relaxed">
-                {project.goals || <span className="text-neutral-600 italic">Not set</span>}
-              </p>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-1.5 text-neutral-400 text-xs font-semibold mb-1">
-                <Users className="h-3.5 w-3.5 text-white" />
-                <span>Target Users</span>
-              </div>
-              <p className="text-xs text-neutral-300 leading-relaxed">
-                {project.targetUsers || <span className="text-neutral-600 italic">Not set</span>}
-              </p>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-1.5 text-neutral-400 text-xs font-semibold mb-1">
-                <Calendar className="h-3.5 w-3.5 text-white" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Release Date */}
+            <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-[#526174]">
+                <Calendar className="h-3.5 w-3.5 text-[#003049]" />
                 <span>Target Release</span>
               </div>
-              <p className="text-xs text-neutral-300 leading-relaxed">
-                {project.targetReleaseDate || <span className="text-neutral-600 italic">Not set</span>}
+              <p className="text-xs text-[#17212B] font-semibold">
+                {project.targetReleaseDate || 'Not specified'}
               </p>
             </div>
 
-            <div>
-              <div className="flex items-center gap-1.5 text-neutral-400 text-xs font-semibold mb-1">
-                <Server className="h-3.5 w-3.5 text-white" />
-                <span>Technology Stack</span>
+            {/* Target Users */}
+            <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-[#526174]">
+                <Users className="h-3.5 w-3.5 text-[#003049]" />
+                <span>Target Personas</span>
               </div>
-              <p className="text-xs font-mono text-neutral-300 leading-relaxed bg-[#141414] p-2 rounded-lg border border-[#2A2A2A]">
-                {project.techStack || <span className="text-neutral-600 italic font-sans">Not set</span>}
+              <p className="text-xs text-[#17212B] font-semibold line-clamp-1">
+                {project.targetUsers || 'Not specified'}
               </p>
             </div>
 
-            <div>
-              <div className="flex items-center gap-1.5 text-neutral-400 text-xs font-semibold mb-1">
-                <Shield className="h-3.5 w-3.5 text-white" />
-                <span>Constraints</span>
+            {/* Tech Stack */}
+            <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-1.5 text-xs text-[#526174]">
+                <Server className="h-3.5 w-3.5 text-[#003049]" />
+                <span>Tech Stack</span>
               </div>
-              <p className="text-xs text-neutral-300 leading-relaxed">
-                {project.technicalConstraints || <span className="text-neutral-600 italic">Not set</span>}
-              </p>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-1.5 text-neutral-400 text-xs font-semibold mb-1">
-                <Link2 className="h-3.5 w-3.5 text-white" />
-                <span>Dependencies</span>
-              </div>
-              <p className="text-xs text-neutral-300 leading-relaxed">
-                {project.knownDependencies || <span className="text-neutral-600 italic">Not set</span>}
+              <p className="text-xs text-[#17212B] font-semibold line-clamp-1">
+                {project.techStack || 'Not specified'}
               </p>
             </div>
           </div>
-        </div>
+
+          {/* Extended Detail Accordion / Blocks */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            {project.goals && (
+              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-[#003049] font-semibold">
+                  <Target className="h-3.5 w-3.5 text-[#003049]" />
+                  <span>Goals & Objectives</span>
+                </div>
+                <p className="text-xs text-[#526174] leading-relaxed whitespace-pre-line">
+                  {project.goals}
+                </p>
+              </div>
+            )}
+
+            {project.technicalConstraints && (
+              <div className="p-4 rounded-xl bg-[#FDF0D5]/50 border border-[#F7DFAB] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-[#780000] font-semibold">
+                  <Shield className="h-3.5 w-3.5 text-[#780000]" />
+                  <span>Technical Constraints</span>
+                </div>
+                <p className="text-xs text-[#17212B] leading-relaxed whitespace-pre-line">
+                  {project.technicalConstraints}
+                </p>
+              </div>
+            )}
+
+            {project.businessRequirements && (
+              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-[#003049] font-semibold">
+                  <Info className="h-3.5 w-3.5 text-[#003049]" />
+                  <span>Business Requirements</span>
+                </div>
+                <p className="text-xs text-[#526174] leading-relaxed whitespace-pre-line">
+                  {project.businessRequirements}
+                </p>
+              </div>
+            )}
+
+            {project.knownDependencies && (
+              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-[#003049] font-semibold">
+                  <Link2 className="h-3.5 w-3.5 text-[#003049]" />
+                  <span>Known Dependencies</span>
+                </div>
+                <p className="text-xs text-[#526174] leading-relaxed whitespace-pre-line">
+                  {project.knownDependencies}
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
       )}
-    </div>
+    </Card>
   );
 }

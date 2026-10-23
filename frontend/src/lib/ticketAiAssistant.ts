@@ -3,7 +3,8 @@ import { TicketPriority } from '@/types';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:5001';
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+const GROQ_FALLBACK_MODEL = process.env.GROQ_FALLBACK_MODEL || 'openai/gpt-oss-20b';
 
 // Common acknowledgments that should NOT trigger a noisy reply
 const ACKNOWLEDGMENT_PATTERNS = [
@@ -314,9 +315,13 @@ async function callAiMicroservice(params: GenerateResponseParams): Promise<Gener
 }
 
 /**
- * Calls Groq API directly
+ * Calls Groq API directly with primary or fallback model
  */
-async function callGroqDirect(systemPrompt: string, userPrompt: string): Promise<GenerateResponseResult | null> {
+async function callGroqDirect(
+  systemPrompt: string,
+  userPrompt: string,
+  modelToUse: string = GROQ_MODEL
+): Promise<GenerateResponseResult | null> {
   if (!GROQ_API_KEY) return null;
 
   try {
@@ -330,7 +335,7 @@ async function callGroqDirect(systemPrompt: string, userPrompt: string): Promise
         Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: modelToUse,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -349,60 +354,15 @@ async function callGroqDirect(systemPrompt: string, userPrompt: string): Promise
       if (content) {
         return {
           response: content.trim(),
-          provider: 'groq (llama-3.3-70b-versatile)',
+          provider: `groq (${modelToUse})`,
           citations: [],
         };
       }
+    } else {
+      console.warn(`[AI Assistant] Direct Groq call (${modelToUse}) failed with status ${res.status}.`);
     }
   } catch (err: any) {
-    console.warn(`[AI Assistant] Direct Groq call failed (${err.message}).`);
-  }
-  return null;
-}
-
-/**
- * Calls OpenAI API directly
- */
-async function callOpenAiDirect(systemPrompt: string, userPrompt: string): Promise<GenerateResponseResult | null> {
-  if (!OPENAI_API_KEY) return null;
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 1500,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (res.ok) {
-      const json = await res.json();
-      const content = json.choices?.[0]?.message?.content;
-      if (content) {
-        return {
-          response: content.trim(),
-          provider: 'openai (gpt-4o)',
-          citations: [],
-        };
-      }
-    }
-  } catch (err: any) {
-    console.warn(`[AI Assistant] Direct OpenAI call failed (${err.message}).`);
+    console.warn(`[AI Assistant] Direct Groq call (${modelToUse}) failed (${err.message}).`);
   }
   return null;
 }
@@ -427,18 +387,20 @@ async function generateAiDiscussionResponse(params: GenerateResponseParams): Pro
         return microserviceResult;
       }
 
-      // Tier 2: Try direct Groq
+      // Tier 2: Try direct Groq (Primary Model)
       const systemPrompt = buildSystemPrompt();
       const userPrompt = buildUserPrompt(params);
-      const groqResult = await callGroqDirect(systemPrompt, userPrompt);
+      const groqResult = await callGroqDirect(systemPrompt, userPrompt, GROQ_MODEL);
       if (groqResult && groqResult.response) {
         return groqResult;
       }
 
-      // Tier 3: Try direct OpenAI
-      const openAiResult = await callOpenAiDirect(systemPrompt, userPrompt);
-      if (openAiResult && openAiResult.response) {
-        return openAiResult;
+      // Tier 3: Try direct Groq (Fallback Model)
+      if (GROQ_FALLBACK_MODEL && GROQ_FALLBACK_MODEL !== GROQ_MODEL) {
+        const fallbackGroqResult = await callGroqDirect(systemPrompt, userPrompt, GROQ_FALLBACK_MODEL);
+        if (fallbackGroqResult && fallbackGroqResult.response) {
+          return fallbackGroqResult;
+        }
       }
 
       // Tier 4: Intelligent heuristic rule engine (guaranteed deterministic fallback)

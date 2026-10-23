@@ -45,14 +45,14 @@ export function Badge({
   const sizeClasses =
     size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs';
 
-  // 1. Priority Badges (Monochrome)
+  // 1. Priority Badges (Semantic with approved Brand Accents)
   if (variant === 'priority' || priority) {
     const p = priority || (children as TicketPriority);
     const styles: Record<TicketPriority, { bg: string; dot: string; text: string }> = {
-      Critical: { bg: 'bg-white text-black border-white font-bold', dot: 'bg-black', text: 'text-black' },
-      High: { bg: 'bg-[#1E1E1E] text-white border-[#404040] font-semibold', dot: 'bg-white', text: 'text-white' },
-      Medium: { bg: 'bg-[#141414] text-neutral-300 border-[#2A2A2A]', dot: 'bg-neutral-400', text: 'text-neutral-300' },
-      Low: { bg: 'bg-transparent text-neutral-400 border-[#2A2A2A]', dot: 'bg-neutral-600', text: 'text-neutral-400' },
+      Critical: { bg: 'bg-[#FDF2F2] text-[#C1121F] border-[#FDE8E8] font-bold', dot: 'bg-[#C1121F]', text: 'text-[#C1121F]' },
+      High: { bg: 'bg-[#FFFBEB] text-[#B45309] border-[#FDE68A] font-semibold', dot: 'bg-[#B45309]', text: 'text-[#B45309]' },
+      Medium: { bg: 'bg-[#EFF5F9] text-[#003049] border-[#669BBC]/40', dot: 'bg-[#669BBC]', text: 'text-[#003049]' },
+      Low: { bg: 'bg-[#F1F4F7] text-[#526174] border-[#E2E8F0]', dot: 'bg-[#94A3B8]', text: 'text-[#526174]' },
     };
 
     const s = styles[p] || styles.Medium;
@@ -66,20 +66,20 @@ export function Badge({
     );
   }
 
-  // 2. Type Badges (Monochrome)
+  // 2. Type Badges
   if (variant === 'type' || type) {
     const t = type || (children as TicketType);
     const typeStyles: Record<TicketType, string> = {
-      Feature: 'bg-[#141414] text-white border-[#333333]',
-      Bug: 'bg-white text-black border-white font-semibold',
-      Task: 'bg-[#0A0A0A] text-neutral-300 border-[#2A2A2A]',
-      Improvement: 'bg-[#1E1E1E] text-neutral-200 border-[#333333]',
+      Feature: 'bg-[#EFF5F9] text-[#003049] border-[#669BBC]/40 font-medium',
+      Bug: 'bg-[#FDF2F2] text-[#C1121F] border-[#FDE8E8] font-semibold',
+      Task: 'bg-[#F1F4F7] text-[#17212B] border-[#E2E8F0]',
+      Improvement: 'bg-[#FDF0D5] text-[#780000] border-[#F7DFAB] font-medium',
     };
 
     return (
       <span
         className={`inline-flex items-center font-medium rounded-md border ${sizeClasses} ${
-          typeStyles[t] || 'bg-[#141414] text-white border-[#2A2A2A]'
+          typeStyles[t] || 'bg-[#F1F4F7] text-[#17212B] border-[#E2E8F0]'
         } ${className}`}
       >
         {t}
@@ -87,19 +87,19 @@ export function Badge({
     );
   }
 
-  // 3. Status Badges (Monochrome)
+  // 3. Status Badges
   if (variant === 'status' || status) {
     const st = status || (children as TicketStatus);
     const statusStyles: Record<TicketStatus, string> = {
-      'To Do': 'bg-transparent text-neutral-400 border-[#2A2A2A]',
-      'In Progress': 'bg-[#1E1E1E] text-white border-[#404040] font-medium',
-      Done: 'bg-white text-black border-white font-bold',
+      'To Do': 'bg-[#F1F4F7] text-[#526174] border-[#CBD5E1]',
+      'In Progress': 'bg-[#EFF5F9] text-[#003049] border-[#669BBC]/40 font-medium',
+      Done: 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0] font-semibold',
     };
 
     return (
       <span
         className={`inline-flex items-center font-medium rounded-md border ${sizeClasses} ${
-          statusStyles[st] || 'bg-[#141414] text-white border-[#2A2A2A]'
+          statusStyles[st] || 'bg-[#F1F4F7] text-[#17212B] border-[#E2E8F0]'
         } ${className}`}
       >
         {st}
@@ -107,14 +107,14 @@ export function Badge({
     );
   }
 
-  // 4. Role Badges (Monochrome)
+  // 4. Role Badges
   if (variant === 'role' || role) {
     const r = role || (children as ProjectMemberRole);
     const roleStyles: Record<ProjectMemberRole, { bg: string; label: string }> = {
-      owner: { bg: 'bg-white text-black border-white font-bold', label: 'Owner' },
-      manager: { bg: 'bg-[#1E1E1E] text-white border-[#404040] font-semibold', label: 'Manager' },
-      developer: { bg: 'bg-[#141414] text-neutral-200 border-[#2A2A2A]', label: 'Developer' },
-      editor: { bg: 'bg-transparent text-neutral-400 border-[#2A2A2A]', label: 'Editor' },
+      owner: { bg: 'bg-[#003049] text-white border-[#003049] font-bold shadow-xs', label: 'Owner' },
+      manager: { bg: 'bg-[#EFF5F9] text-[#003049] border-[#669BBC]/40 font-semibold', label: 'Manager' },
+      developer: { bg: 'bg-[#F1F4F7] text-[#17212B] border-[#E2E8F0]', label: 'Developer' },
+      editor: { bg: 'bg-white text-[#526174] border-[#E2E8F0]', label: 'Editor' },
     };
 
     const s = roleStyles[r] || roleStyles.developer;
@@ -127,13 +127,13 @@ export function Badge({
     );
   }
 
-  // 5. Feature Review Status (Monochrome)
+  // 5. Feature Review Status
   if (variant === 'featureStatus' || featureStatus) {
     const fs = featureStatus || (children as FeatureReviewStatus);
     const fStyles: Record<FeatureReviewStatus, { bg: string; label: string }> = {
-      PROPOSED: { bg: 'bg-transparent text-neutral-400 border-[#2A2A2A]', label: 'Proposed' },
-      ACCEPTED: { bg: 'bg-white text-black border-white font-bold', label: 'Accepted' },
-      DEFERRED: { bg: 'bg-[#141414] text-neutral-500 border-[#2A2A2A]', label: 'Deferred' },
+      PROPOSED: { bg: 'bg-[#FDF0D5] text-[#780000] border-[#F7DFAB] font-medium', label: 'Proposed' },
+      ACCEPTED: { bg: 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0] font-semibold', label: 'Accepted' },
+      DEFERRED: { bg: 'bg-[#F1F4F7] text-[#526174] border-[#E2E8F0]', label: 'Deferred' },
     };
 
     const s = fStyles[fs] || fStyles.PROPOSED;
@@ -146,14 +146,14 @@ export function Badge({
     );
   }
 
-  // 6. Document Processing Status (Monochrome)
+  // 6. Document Processing Status
   if (variant === 'docStatus' || docStatus) {
     const ds = docStatus || (children as DocumentProcessingStatus);
     const dStyles: Record<DocumentProcessingStatus, { bg: string; label: string }> = {
-      COMPLETED: { bg: 'bg-[#141414] text-white border-[#404040]', label: 'Processed' },
-      PROCESSING: { bg: 'bg-[#1E1E1E] text-neutral-200 border-[#333333] animate-pulse', label: 'Processing' },
-      FAILED: { bg: 'bg-white text-black border-white font-bold', label: 'Failed' },
-      PENDING: { bg: 'bg-transparent text-neutral-400 border-[#2A2A2A]', label: 'Pending' },
+      COMPLETED: { bg: 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0] font-medium', label: 'Processed' },
+      PROCESSING: { bg: 'bg-[#EFF5F9] text-[#003049] border-[#669BBC]/50 animate-pulse font-medium', label: 'Processing' },
+      FAILED: { bg: 'bg-[#FDF2F2] text-[#C1121F] border-[#FDE8E8] font-bold', label: 'Failed' },
+      PENDING: { bg: 'bg-[#F1F4F7] text-[#526174] border-[#E2E8F0]', label: 'Pending' },
     };
 
     const s = dStyles[ds] || dStyles.PENDING;
@@ -169,7 +169,7 @@ export function Badge({
   // Fallback default badge
   return (
     <span
-      className={`inline-flex items-center font-medium rounded-md border border-[#2A2A2A] bg-[#141414] text-neutral-300 ${sizeClasses} ${className}`}
+      className={`inline-flex items-center font-medium rounded-md border border-[#E2E8F0] bg-[#F1F4F7] text-[#17212B] ${sizeClasses} ${className}`}
     >
       {children}
     </span>

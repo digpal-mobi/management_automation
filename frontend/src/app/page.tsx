@@ -7,16 +7,18 @@ import { useAuth } from '@/context/AuthContext';
 import { Project } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import {
   Sparkles,
   Kanban,
   PlusCircle,
   FolderKanban,
   ArrowRight,
-  Loader2,
   Users,
   Compass,
   FileText,
+  BarChart3,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -52,9 +54,21 @@ export default function HomePage() {
 
   if (authLoading || (loading && !projects.length)) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-7 w-7 text-white animate-spin" />
-        <p className="text-xs text-[#A3A3A3]">Loading your workspaces...</p>
+      <div className="space-y-8 animate-in fade-in duration-200">
+        <Skeleton className="h-44 w-full rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24 rounded-2xl" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48 rounded-xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <Skeleton className="h-56 rounded-2xl" />
+            <Skeleton className="h-56 rounded-2xl" />
+            <Skeleton className="h-56 rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -63,28 +77,26 @@ export default function HomePage() {
   const totalMembers = projects.reduce((acc, p) => acc + (p.memberCount || 0), 0);
 
   return (
-    <div className="space-y-8 py-4 max-w-7xl mx-auto">
-      {/* Welcome Banner - Strict Monochrome */}
-      <div className="relative overflow-hidden rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] p-8 sm:p-10 shadow-sm">
+    <div className="space-y-8">
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-white border border-[#E2E8F0] p-6 sm:p-8 md:p-10 shadow-card">
         <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#141414] border border-[#2A2A2A] text-xs font-semibold text-[#F5F5F5]">
-            <Sparkles className="h-3.5 w-3.5 text-white" />
-            AI Project Management & Delivery Platform
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EFF5F9] border border-[#669BBC]/30 text-xs font-semibold text-[#003049]">
+            <Sparkles className="h-3.5 w-3.5 text-[#003049]" />
+            <span>AI Project Management & Delivery Platform</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#17212B] tracking-tight leading-tight">
             Welcome back, {user?.username}
           </h1>
-          <p className="text-sm sm:text-base text-[#A3A3A3] leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#526174] leading-relaxed">
             Ingest technical documentation, extract structured requirements and roadmap features,
             and autonomously generate developer-ready backlog tickets on your terms.
           </p>
           <div className="pt-2 flex flex-wrap items-center gap-3">
-            <Link
-              href="/projects/new"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-[#F5F5F5] text-black font-semibold text-sm transition-all"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Create New Project
+            <Link href="/projects/new">
+              <Button variant="primary" size="md" leftIcon={<PlusCircle className="h-4 w-4" />}>
+                Create New Project
+              </Button>
             </Link>
           </div>
         </div>
@@ -92,32 +104,38 @@ export default function HomePage() {
 
       {/* Global Stat Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] flex items-center justify-between shadow-card">
           <div>
-            <div className="text-xs text-[#525252] font-medium uppercase tracking-wider">Your Projects</div>
-            <div className="text-2xl font-bold text-white mt-0.5">{projects.length}</div>
+            <div className="text-[11px] text-[#526174] font-semibold uppercase tracking-wider">
+              Your Workspaces
+            </div>
+            <div className="text-2xl font-bold text-[#17212B] mt-0.5">{projects.length}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center text-[#003049]">
             <FolderKanban className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] flex items-center justify-between shadow-card">
           <div>
-            <div className="text-xs text-[#525252] font-medium uppercase tracking-wider">Total Tickets</div>
-            <div className="text-2xl font-bold text-white mt-0.5">{totalTickets}</div>
+            <div className="text-[11px] text-[#526174] font-semibold uppercase tracking-wider">
+              Total Tickets
+            </div>
+            <div className="text-2xl font-bold text-[#17212B] mt-0.5">{totalTickets}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center text-[#003049]">
             <Kanban className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-[#0A0A0A] border border-[#2A2A2A] flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] flex items-center justify-between shadow-card">
           <div>
-            <div className="text-xs text-[#525252] font-medium uppercase tracking-wider">Collaborators</div>
-            <div className="text-2xl font-bold text-white mt-0.5">{totalMembers}</div>
+            <div className="text-[11px] text-[#526174] font-semibold uppercase tracking-wider">
+              Collaborators
+            </div>
+            <div className="text-2xl font-bold text-[#17212B] mt-0.5">{totalMembers}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center text-[#003049]">
             <Users className="h-5 w-5" />
           </div>
         </div>
@@ -125,51 +143,43 @@ export default function HomePage() {
 
       {/* Projects List Section */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
           <div>
-            <h2 className="text-lg font-bold text-white tracking-tight">Your Workspaces</h2>
-            <p className="text-xs text-[#A3A3A3]">
+            <h2 className="text-lg font-bold text-[#17212B] tracking-tight">Your Workspaces</h2>
+            <p className="text-xs text-[#526174]">
               Workspaces you own or collaborate on with your engineering team
             </p>
           </div>
-          <Link
-            href="/projects/new"
-            className="flex items-center gap-1.5 text-xs font-semibold text-white hover:text-[#A3A3A3] transition-colors"
-          >
-            <PlusCircle className="h-4 w-4" />
-            New Project
+          <Link href="/projects/new">
+            <Button variant="outline" size="sm" leftIcon={<PlusCircle className="h-3.5 w-3.5" />}>
+              New Project
+            </Button>
           </Link>
         </div>
 
         {projects.length === 0 ? (
-          <div className="p-16 text-center rounded-2xl bg-[#0A0A0A] border border-dashed border-[#2A2A2A] space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#141414] border border-[#2A2A2A] text-white flex items-center justify-center mx-auto">
-              <FolderKanban className="h-6 w-6" />
-            </div>
-            <h3 className="text-base font-semibold text-white">
-              No projects yet. Create your first project.
-            </h3>
-            <p className="text-xs text-[#A3A3A3] max-w-sm mx-auto">
-              Enter your project name, upload technical PRDs or specifications, and let AI analyze modules, constraints, and features.
-            </p>
-            <Link
-              href="/projects/new"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white text-black hover:bg-[#F5F5F5] text-xs font-semibold transition-colors"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Create Your First Project
-            </Link>
-          </div>
+          <EmptyState
+            icon={<FolderKanban className="h-6 w-6" />}
+            title="No projects yet"
+            description="Enter your project name, upload technical PRDs or specifications, and let AI analyze modules, constraints, and features."
+            action={
+              <Link href="/projects/new">
+                <Button variant="primary" size="md" leftIcon={<PlusCircle className="h-4 w-4" />}>
+                  Create Your First Project
+                </Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {projects.map((proj) => (
               <div
                 key={proj.id}
-                className="group flex flex-col justify-between p-5 rounded-2xl bg-[#0A0A0A] hover:bg-[#141414] border border-[#2A2A2A] hover:border-[#404040] transition-all duration-200 shadow-sm"
+                className="group flex flex-col justify-between p-5 rounded-2xl bg-white hover:bg-[#FDFDFE] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-all duration-200 shadow-card hover:shadow-card-hover"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-base font-bold text-white transition-colors line-clamp-1">
+                    <h3 className="text-base font-bold text-[#17212B] tracking-tight line-clamp-1">
                       {proj.name}
                     </h3>
                     {proj.userRole && (
@@ -177,51 +187,62 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <p className="text-xs text-[#A3A3A3] line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[#526174] line-clamp-2 leading-relaxed min-h-[32px]">
                     {proj.description || 'No description provided.'}
                   </p>
 
-                  <div className="flex items-center gap-3 text-xs text-[#525252] pt-1">
-                    <span className="flex items-center gap-1">
-                      <Kanban className="h-3.5 w-3.5 text-[#525252]" />
+                  <div className="flex items-center gap-3 text-xs text-[#526174] pt-1">
+                    <span className="flex items-center gap-1.5">
+                      <Kanban className="h-3.5 w-3.5 text-[#669BBC]" />
                       {proj.ticketCount || 0} tickets
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5 text-[#525252]" />
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-[#669BBC]" />
                       {proj.memberCount || 1} members
                     </span>
                   </div>
                 </div>
 
                 {/* Direct Section Access & Board Link */}
-                <div className="pt-4 mt-4 border-t border-[#2A2A2A] space-y-3">
-                  <div className="grid grid-cols-3 gap-1 text-[11px] font-medium text-[#A3A3A3]">
+                <div className="pt-4 mt-4 border-t border-[#E2E8F0] space-y-3">
+                  <div className="grid grid-cols-4 gap-1 text-[11px] font-medium text-[#526174]">
                     <Link
                       href={`/projects/${proj.id}/knowledge`}
-                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2A2A2A] hover:text-white transition-colors"
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      title="Knowledge Base"
                     >
                       <FileText className="h-3 w-3" />
-                      Knowledge
+                      <span className="hidden sm:inline">Docs</span>
                     </Link>
                     <Link
                       href={`/projects/${proj.id}/roadmap`}
-                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2A2A2A] hover:text-white transition-colors"
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      title="Roadmap"
                     >
                       <Compass className="h-3 w-3" />
-                      Roadmap
+                      <span className="hidden sm:inline">Roadmap</span>
+                    </Link>
+                    <Link
+                      href={`/projects/${proj.id}/analytics`}
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      title="Analytics"
+                    >
+                      <BarChart3 className="h-3 w-3" />
+                      <span className="hidden sm:inline">Stats</span>
                     </Link>
                     <Link
                       href={`/projects/${proj.id}/members`}
-                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#141414] hover:bg-[#2A2A2A] hover:text-white transition-colors"
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      title="Team"
                     >
                       <Users className="h-3 w-3" />
-                      Team
+                      <span className="hidden sm:inline">Team</span>
                     </Link>
                   </div>
 
                   <Link
                     href={`/projects/${proj.id}/board`}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white hover:bg-[#F5F5F5] text-black text-xs font-semibold transition-all"
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#003049] hover:bg-[#002437] text-white text-xs font-semibold shadow-sm transition-all"
                   >
                     <span>Open Kanban Board</span>
                     <ArrowRight className="h-3.5 w-3.5" />

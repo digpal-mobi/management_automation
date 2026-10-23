@@ -288,11 +288,11 @@ export function Board({
       {/* Board Header Action Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
-            <Kanban className="h-5 w-5 text-white" />
+          <h2 className="text-xl font-bold text-[#17212B] flex items-center gap-2.5">
+            <Kanban className="h-5 w-5 text-[#003049]" />
             <span>Sprint & Task Board</span>
           </h2>
-          <p className="text-xs text-[#A3A3A3] mt-1">
+          <p className="text-xs text-[#526174] mt-1">
             Manage workflow and drag tickets across columns.
           </p>
         </div>
@@ -314,17 +314,17 @@ export function Board({
 
       {/* Semantic Search Banner */}
       {filters.isSemantic && filters.search.trim() && (
-        <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-between text-xs text-[#F5F5F5]">
+        <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-between text-xs text-[#003049]">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-white animate-spin" />
+            <Sparkles className="h-4 w-4 text-[#003049] animate-spin" />
             <span>
-              pgvector semantic match: <strong>"{filters.search}"</strong> (
+              pgvector semantic match: <strong>&ldquo;{filters.search}&rdquo;</strong> (
               {filteredTickets.length} found)
             </span>
           </div>
           <button
             onClick={() => dispatch(setFilters({ search: '', isSemantic: false }))}
-            className="text-[#A3A3A3] hover:text-white underline text-[11px] transition-colors"
+            className="text-[#526174] hover:text-[#003049] underline text-[11px] font-medium transition-colors"
           >
             Clear Search
           </button>
@@ -333,14 +333,14 @@ export function Board({
 
       {/* Empty State when no tickets exist anywhere in project */}
       {tickets.length === 0 && !isLoading && (
-        <div className="py-20 px-4 text-center rounded-2xl border border-dashed border-[#2A2A2A] bg-[#0A0A0A]">
-          <div className="w-12 h-12 rounded-2xl bg-[#141414] border border-[#2A2A2A] text-white flex items-center justify-center mx-auto mb-4">
+        <div className="py-20 px-4 text-center rounded-2xl border border-dashed border-[#CBD5E1] bg-white shadow-card">
+          <div className="w-12 h-12 rounded-2xl bg-[#EFF5F9] border border-[#669BBC]/30 text-[#003049] flex items-center justify-center mx-auto mb-4">
             <Kanban className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-semibold text-white mb-1">
+          <h3 className="text-base font-semibold text-[#17212B] mb-1">
             No tickets yet
           </h3>
-          <p className="text-xs text-[#A3A3A3] max-w-sm mx-auto mb-6">
+          <p className="text-xs text-[#526174] max-w-sm mx-auto mb-6">
             Get started by manually creating a ticket, or generate tickets incrementally from selected roadmap features.
           </p>
           <Button
