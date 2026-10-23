@@ -25,7 +25,7 @@ An enterprise-grade, full-stack AI-powered Project Management and Ticket Generat
                                          ▼               ▼
           ┌─────────────────────────────┐     ┌─────────────────────────────┐
           │      Python AI Service      │     │      PostgreSQL 16/18       │
-          │ (Flask, Groq/OpenAI, pgvec) │────▶│      + pgvector (1536)      │
+          │   (Flask, Groq LPU, pgvec)  │────▶│      + pgvector (1536)      │
           │         Port 5001           │     │         Port 5432           │
           └─────────────────────────────┘     └─────────────────────────────┘
 ```
@@ -90,9 +90,9 @@ An enterprise-grade, full-stack AI-powered Project Management and Ticket Generat
 |---|---|
 | **Frontend** | Next.js 14 (App Router), TypeScript, Redux Toolkit, Tailwind CSS, Shadcn UI styling, `@dnd-kit`, Socket.IO Client, React Markdown |
 | **Backend Core** | Node.js, Express, TypeScript, Prisma ORM, Socket.IO, Axios |
-| **AI Microservice** | Python 3, Flask, psycopg2 with pgvector, Groq SDK, OpenAI SDK, NumPy |
+| **AI Microservice** | Python 3, Flask, psycopg2 with pgvector, Groq SDK, NumPy |
 | **Database** | PostgreSQL 16/18 with `pgvector` extension (`vector(1536)`) |
-| **LLM Orchestration** | Abstracted LLM Provider (Groq primary for ultra-fast inference, OpenAI fallback, Intelligent heuristic fallback) |
+| **LLM Orchestration** | Abstracted LLM Provider (Groq Cloud models: `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `meta-llama/llama-prompt-guard-2-86m`, `openai/gpt-oss-safeguard-20b`, with intelligent heuristic fallback) |
 
 ---
 
@@ -112,9 +112,12 @@ An enterprise-grade, full-stack AI-powered Project Management and Ticket Generat
    AI_SERVICE_URL="http://localhost:5001"
    CORE_API_URL="http://localhost:3001"
 
-   # Optional LLM Keys (Groq is primary for ultra-fast inference)
+   # LLM Keys & Models (Exclusively Groq Cloud)
    GROQ_API_KEY="your-groq-api-key"
-   OPENAI_API_KEY="your-openai-api-key"
+   GROQ_MODEL="openai/gpt-oss-120b"
+   GROQ_FALLBACK_MODEL="openai/gpt-oss-20b"
+   GROQ_PROMPT_GUARD_MODEL="meta-llama/llama-prompt-guard-2-86m"
+   GROQ_SAFEGUARD_MODEL="openai/gpt-oss-safeguard-20b"
    ```
 
 2. **Start All Services with One Command**:

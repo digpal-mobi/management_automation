@@ -31,9 +31,10 @@ declare module 'jsonwebtoken' {
     options?: { json?: boolean; complete?: boolean }
   ): any;
 
-  export default {
+  const jwt = {
     sign,
     verify,
     decode,
   };
+  export default jwt;
 }

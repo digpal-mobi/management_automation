@@ -10,6 +10,14 @@ import { useAuth } from '@/context/AuthContext';
 import { Project, ProjectMember, ProjectMemberRole } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Avatar } from '@/components/ui/Avatar';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { ProjectNav } from '@/components/layout/ProjectNav';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   Dialog,
   DialogContent,
@@ -21,12 +29,9 @@ import {
   Users,
   UserPlus,
   Trash2,
-  ArrowLeft,
-  Kanban,
-  Loader2,
   AlertCircle,
-  FileText,
-  Compass,
+  Shield,
+  ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -139,7 +144,7 @@ export default function ProjectMembersPage() {
       const res = await fetchWithAuth(
         `/api/projects/${projectId}/members/${targetUserId}`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ role: newRole }),
         }
@@ -196,138 +201,113 @@ export default function ProjectMembersPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-7 w-7 text-white animate-spin" />
-        <p className="text-xs text-[#A3A3A3]">Loading team members...</p>
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <Skeleton className="h-16 w-full rounded-2xl" />
+        <Skeleton className="h-10 w-96 rounded-xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+          <Skeleton className="h-20 rounded-xl" />
+        </div>
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center space-y-3 text-center">
-        <AlertCircle className="h-7 w-7 text-white" />
-        <h3 className="text-sm font-semibold text-white">Unable to view members</h3>
-        <p className="text-xs text-[#A3A3A3] max-w-sm">{error}</p>
-        <Link
-          href="/"
-          className="px-4 py-2 rounded-xl bg-[#141414] border border-[#2A2A2A] text-xs text-white hover:bg-[#2A2A2A]"
-        >
-          Return to Dashboard
-        </Link>
-      </div>
+      <EmptyState
+        icon={<AlertCircle className="h-6 w-6 text-[#526174]" />}
+        title="Unable to view members"
+        description={error || 'Project not found or you lack permission to view this workspace.'}
+        action={
+          <Link href="/">
+            <Button variant="outline" size="sm">
+              Return to Workspaces
+            </Button>
+          </Link>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2A2A2A]">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-[#525252] mb-1.5">
-            <Link href="/" className="hover:text-white flex items-center gap-1 transition-colors">
-              <ArrowLeft className="h-3 w-3" />
-              <span>Projects</span>
-            </Link>
-            <span>/</span>
-            <span className="text-white font-medium truncate max-w-xs">{project.name}</span>
+    <div className="space-y-6">
+      {/* Standardized Page Header */}
+      <PageHeader
+        backLink={{ label: 'All Projects', href: '/' }}
+        breadcrumbs={[
+          { label: 'Projects', href: '/' },
+          { label: project.name },
+          { label: 'Team & Collaboration' },
+        ]}
+        icon={<Users className="h-6 w-6 text-[#003049]" />}
+        title="Team & Collaboration"
+        description="Manage workspace collaborators, assign project roles, and configure contributor permissions."
+        actions={
+          <div className="flex items-center gap-3">
+            <ProjectNav
+              projectId={projectId}
+              memberCount={members.length}
+              ticketCount={project.ticketCount}
+            />
+            {isOwnerOrManager && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<UserPlus className="h-3.5 w-3.5" />}
+                onClick={() => setIsInviteOpen(true)}
+              >
+                Invite
+              </Button>
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <Users className="h-6 w-6 text-white" />
-            <span>Team & Collaboration</span>
-          </h1>
-          <p className="text-xs text-[#A3A3A3] mt-1">
-            Manage members, assign project roles, and configure contributor permissions.
-          </p>
-        </div>
-
-        {/* Tab links & Invite Button */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-[#0A0A0A] p-1 rounded-xl border border-[#2A2A2A]">
-            <Link
-              href={`/projects/${projectId}/knowledge`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              <span>Knowledge</span>
-            </Link>
-            <Link
-              href={`/projects/${projectId}/roadmap`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
-            >
-              <Compass className="h-3.5 w-3.5" />
-              <span>Roadmap</span>
-            </Link>
-            <Link
-              href={`/projects/${projectId}/board`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#A3A3A3] hover:text-white hover:bg-[#141414] transition-colors"
-            >
-              <Kanban className="h-3.5 w-3.5" />
-              <span>Board</span>
-            </Link>
-            <Link
-              href={`/projects/${projectId}/members`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-black shadow-sm"
-            >
-              <Users className="h-3.5 w-3.5" />
-              <span>Team</span>
-            </Link>
-          </div>
-
-          {isOwnerOrManager && (
-            <Button
-              onClick={() => setIsInviteOpen(true)}
-              variant="primary"
-              size="sm"
-              className="flex items-center gap-1.5"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span>Invite Member</span>
-            </Button>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       {/* Permissions Legend */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
-          <Badge variant="role" role="owner" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-[#A3A3A3]">
+        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+          <Badge variant="role" role="owner" size="sm" />
+          <p className="text-[11px] text-[#526174]">
             Full control: delete project, manage team, all CRUD.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
-          <Badge variant="role" role="manager" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-[#A3A3A3]">
+        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+          <Badge variant="role" role="manager" size="sm" />
+          <p className="text-[11px] text-[#526174]">
             Manage tickets & boards, invite and manage team members.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
-          <Badge variant="role" role="developer" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-[#A3A3A3]">
+        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+          <Badge variant="role" role="developer" size="sm" />
+          <p className="text-[11px] text-[#526174]">
             Create, update and move tickets, add comments.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A]">
-          <Badge variant="role" role="editor" size="sm" className="mb-1.5" />
-          <p className="text-[11px] text-[#A3A3A3]">
+        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+          <Badge variant="role" role="editor" size="sm" />
+          <p className="text-[11px] text-[#526174]">
             View-only access and comment on tickets.
           </p>
         </div>
       </div>
 
       {/* Members List Table */}
-      <div className="rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] overflow-hidden shadow-sm">
-        <div className="px-5 py-3.5 border-b border-[#2A2A2A] flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">
-            Project Members ({members.length})
-          </h3>
-          <span className="text-xs text-[#525252]">
-            Your role: <strong className="text-white capitalize">{userRole}</strong>
-          </span>
-        </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle>
+              <span>Project Members ({members.length})</span>
+            </CardTitle>
+            <span className="text-xs text-[#526174]">
+              Your role: <strong className="text-[#17212B] capitalize">{userRole}</strong>
+            </span>
+          </div>
+        </CardHeader>
 
-        <div className="divide-y divide-[#2A2A2A]">
+        <div className="divide-y divide-[#E2E8F0]">
           {members.map((member) => {
             const isSelf = member.userId === user?.id;
             const isOwner = member.role === 'owner';
@@ -340,26 +320,28 @@ export default function ProjectMembersPage() {
             return (
               <div
                 key={member.id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#141414] transition-colors"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#F7F8FA] transition-colors"
               >
                 {/* User Info */}
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#2A2A2A] text-white font-bold text-sm flex items-center justify-center">
-                    {(member.user.username || member.user.email)[0].toUpperCase()}
-                  </div>
+                  <Avatar
+                    name={member.user.username}
+                    email={member.user.email}
+                    size="md"
+                  />
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white">
+                      <span className="text-sm font-semibold text-[#17212B]">
                         {member.user.username}
                       </span>
                       {isSelf && (
-                        <span className="text-[10px] bg-[#141414] text-[#A3A3A3] px-1.5 py-0.5 rounded border border-[#2A2A2A]">
+                        <span className="text-[10px] bg-[#EFF5F9] text-[#003049] px-1.5 py-0.5 rounded border border-[#669BBC]/30 font-medium">
                           You
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-[#A3A3A3] block">
+                    <span className="text-xs text-[#526174] block">
                       {member.user.email}
                     </span>
                   </div>
@@ -369,35 +351,38 @@ export default function ProjectMembersPage() {
                 <div className="flex items-center gap-3 self-end sm:self-auto">
                   {/* Role Selector or Badge */}
                   {canModifyThisMember ? (
-                    <select
-                      value={member.role}
-                      disabled={updatingUserId === member.userId}
-                      onChange={(e) =>
-                        handleRoleChange(
-                          member.userId,
-                          e.target.value as ProjectMemberRole
-                        )
-                      }
-                      className="px-3 py-1.5 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs font-medium text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer disabled:opacity-50"
-                    >
-                      <option value="manager">Manager</option>
-                      <option value="developer">Developer</option>
-                      <option value="editor">Editor</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={member.role}
+                        disabled={updatingUserId === member.userId}
+                        onChange={(e) =>
+                          handleRoleChange(
+                            member.userId,
+                            e.target.value as ProjectMemberRole
+                          )
+                        }
+                        className="py-1 pl-3 pr-7 rounded-lg bg-white border border-[#E2E8F0] hover:border-[#669BBC] text-xs font-medium text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] cursor-pointer appearance-none disabled:opacity-50 transition-colors shadow-sm"
+                      >
+                        <option value="manager">Manager</option>
+                        <option value="developer">Developer</option>
+                        <option value="editor">Editor</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+                    </div>
                   ) : (
-                    <Badge variant="role" role={member.role} size="md" />
+                    <Badge variant="role" role={member.role} size="sm" />
                   )}
 
-                  {/* Remove Button */}
+                  {/* Remove Button if authorized */}
                   {canModifyThisMember && (
                     <button
-                      type="button"
-                      disabled={updatingUserId === member.userId}
                       onClick={() =>
                         handleRemoveMember(member.userId, member.user.username)
                       }
-                      className="p-1.5 rounded-lg text-[#525252] hover:text-white hover:bg-[#2A2A2A] transition-colors disabled:opacity-50"
+                      disabled={updatingUserId === member.userId}
+                      className="p-1.5 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#C1121F]/20 transition-colors disabled:opacity-50"
                       title="Remove member from project"
+                      aria-label={`Remove ${member.user.username} from project`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -408,62 +393,42 @@ export default function ProjectMembersPage() {
           })}
 
           {members.length === 0 && (
-            <div className="py-12 text-center text-[#525252] text-xs">
+            <div className="py-12 text-center text-[#526174] text-xs">
               No members found in this project.
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Invite Member Modal */}
       <Dialog open={isInviteOpen} onOpenChange={(open) => !open && setIsInviteOpen(false)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-white" />
+              <UserPlus className="h-5 w-5 text-[#003049]" />
               <span>Invite Team Member</span>
             </DialogTitle>
             <DialogDescription>
               Invite an existing user by email or username to collaborate on{' '}
-              <strong className="text-white">{project.name}</strong>.
+              <strong className="text-[#17212B]">{project.name}</strong>.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onInviteSubmit)} className="space-y-4 pt-2">
-            <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-                Email or Username *
-              </label>
-              <input
-                type="text"
-                {...register('identifier')}
-                placeholder="e.g. dev@example.com or techlead"
-                className={`w-full px-3.5 py-2.5 rounded-xl bg-[#000000] border text-xs text-white placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white ${
-                  errors.identifier ? 'border-white' : 'border-[#2A2A2A]'
-                }`}
-              />
-              {errors.identifier && (
-                <span className="text-[11px] text-[#A3A3A3] mt-1 block">
-                  {errors.identifier.message}
-                </span>
-              )}
-            </div>
+            <Input
+              label="Email or Username *"
+              placeholder="e.g. dev@example.com or techlead"
+              error={errors.identifier?.message}
+              {...register('identifier')}
+            />
 
-            <div>
-              <label className="text-xs font-semibold text-[#A3A3A3] block mb-1">
-                Role *
-              </label>
-              <select
-                {...register('role')}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#000000] border border-[#2A2A2A] text-xs text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer"
-              >
-                <option value="developer">Developer (Create/edit tickets & comments)</option>
-                <option value="manager">Manager (Manage tickets, board & members)</option>
-                <option value="editor">Editor (View-only & comments)</option>
-              </select>
-            </div>
+            <Select label="Role *" {...register('role')}>
+              <option value="developer">Developer (Create/edit tickets & comments)</option>
+              <option value="manager">Manager (Manage tickets, board & members)</option>
+              <option value="editor">Editor (View-only & comments)</option>
+            </Select>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#2A2A2A]">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E2E8F0]">
               <Button
                 type="button"
                 variant="outline"
@@ -476,16 +441,10 @@ export default function ProjectMembersPage() {
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={isInviting}
+                isLoading={isInviting}
+                leftIcon={<UserPlus className="h-3.5 w-3.5" />}
               >
-                {isInviting ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    Sending Invite...
-                  </>
-                ) : (
-                  'Send Invite'
-                )}
+                Send Invite
               </Button>
             </div>
           </form>

@@ -58,14 +58,49 @@ export interface AnalysisOutput {
 }
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+const GROQ_FALLBACK_MODEL = process.env.GROQ_FALLBACK_MODEL || 'openai/gpt-oss-20b';
 
 /**
- * Calls LLM (Groq primary, OpenAI fallback) to analyze project context
+ * Calls LLM (Groq Cloud models) to analyze project context
  */
 async function callLlmJson(systemPrompt: string, userPrompt: string): Promise<any> {
-  // 1. Try Groq
-  if (GROQ_API_KEY) {
+  if (!GROQ_API_KEY) return null;
+
+  // 1. Try Primary Groq Model
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      const content = json.choices?.[0]?.message?.content;
+      if (content) {
+        return JSON.parse(content);
+      }
+    } else {
+      console.warn(`[LLM] Groq (${GROQ_MODEL}) returned status ${res.status}`);
+    }
+  } catch (err) {
+    console.warn(`[LLM] Groq (${GROQ_MODEL}) request failed:`, err);
+  }
+
+  // 2. Try Fallback Groq Model
+  if (GROQ_FALLBACK_MODEL && GROQ_FALLBACK_MODEL !== GROQ_MODEL) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -74,7 +109,7 @@ async function callLlmJson(systemPrompt: string, userPrompt: string): Promise<an
           Authorization: `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: GROQ_FALLBACK_MODEL,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -92,39 +127,7 @@ async function callLlmJson(systemPrompt: string, userPrompt: string): Promise<an
         }
       }
     } catch (err) {
-      console.warn('[LLM] Groq request failed, checking fallback...', err);
-    }
-  }
-
-  // 2. Try OpenAI
-  if (OPENAI_API_KEY) {
-    try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.2,
-          response_format: { type: 'json_object' },
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        const content = json.choices?.[0]?.message?.content;
-        if (content) {
-          return JSON.parse(content);
-        }
-      }
-    } catch (err) {
-      console.warn('[LLM] OpenAI request failed:', err);
+      console.warn(`[LLM] Groq fallback (${GROQ_FALLBACK_MODEL}) request failed:`, err);
     }
   }
 

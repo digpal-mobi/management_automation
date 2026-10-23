@@ -6,17 +6,16 @@ import { useAuth } from '@/context/AuthContext';
 import { ProjectDocument } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   UploadCloud,
   FileText,
   FileSpreadsheet,
   FileCheck,
-  AlertTriangle,
   RotateCw,
   Trash2,
-  CheckCircle2,
   Loader2,
-  HelpCircle,
   File,
 } from 'lucide-react';
 
@@ -142,9 +141,9 @@ export function DocumentLibrary({
       );
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to remove document');
+        throw new Error(data.error || 'Failed to delete document');
       }
-      toast.success('Document removed.');
+      toast.success('Document removed from knowledge base.');
       onDocumentsChange();
     } catch (err: any) {
       toast.error(err.message || 'Delete failed');
@@ -157,15 +156,15 @@ export function DocumentLibrary({
     switch (format.toLowerCase()) {
       case 'xlsx':
       case 'csv':
-        return <FileSpreadsheet className="h-4 w-4 text-white" />;
+        return <FileSpreadsheet className="h-4 w-4 text-[#003049]" />;
       case 'pdf':
       case 'docx':
-        return <FileText className="h-4 w-4 text-white" />;
+        return <FileText className="h-4 w-4 text-[#003049]" />;
       case 'md':
       case 'txt':
-        return <FileCheck className="h-4 w-4 text-white" />;
+        return <FileCheck className="h-4 w-4 text-[#003049]" />;
       default:
-        return <File className="h-4 w-4 text-white" />;
+        return <File className="h-4 w-4 text-[#003049]" />;
     }
   };
 
@@ -180,8 +179,8 @@ export function DocumentLibrary({
           onClick={() => fileInputRef.current?.click()}
           className={`relative border border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-150 ${
             isDragging
-              ? 'border-white bg-[#141414]'
-              : 'border-[#2A2A2A] hover:border-[#404040] bg-[#0A0A0A] hover:bg-[#101010]'
+              ? 'border-[#003049] bg-[#EFF5F9]'
+              : 'border-[#CBD5E1] hover:border-[#003049] bg-white hover:bg-[#FDFDFE] shadow-card'
           }`}
         >
           <input
@@ -194,7 +193,7 @@ export function DocumentLibrary({
           />
 
           <div className="max-w-md mx-auto space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-center mx-auto text-white">
+            <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center mx-auto text-[#003049]">
               {isUploading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
@@ -203,10 +202,10 @@ export function DocumentLibrary({
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-white">
+              <p className="text-xs font-bold text-[#17212B]">
                 {isUploading ? 'Parsing & Ingesting Documents...' : 'Upload Requirements & PRDs'}
               </p>
-              <p className="text-[11px] text-neutral-400 mt-0.5">
+              <p className="text-[11px] text-[#526174] mt-0.5">
                 Drag and drop files here, or click to browse from your computer
               </p>
             </div>
@@ -215,131 +214,101 @@ export function DocumentLibrary({
               {['.PDF', '.DOCX', '.MD', '.TXT', '.XLSX', '.CSV'].map((ext) => (
                 <span
                   key={ext}
-                  className="px-2 py-0.5 rounded bg-[#141414] border border-[#2A2A2A] text-[10px] font-mono text-neutral-300"
+                  className="px-2 py-0.5 rounded bg-[#F1F4F7] border border-[#E2E8F0] text-[10px] font-mono text-[#526174] font-medium"
                 >
                   {ext}
                 </span>
               ))}
-              <span className="text-[10px] text-neutral-500 ml-1">Up to 20MB per file</span>
+              <span className="text-[10px] text-[#526174] ml-1">Up to 20MB per file</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Documents List */}
-      <div className="rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-[#2A2A2A] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-white" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-white">
-              Project Documents ({documents.length})
-            </h3>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle>
+              <FileText className="h-4 w-4 text-[#003049]" />
+              <span>Project Documents ({documents.length})</span>
+            </CardTitle>
+            <span className="text-[11px] text-[#526174]">
+              Grounding context for AI analysis & roadmap
+            </span>
           </div>
-          <span className="text-[11px] text-neutral-500">
-            Grounding context for AI analysis & roadmap
-          </span>
-        </div>
+        </CardHeader>
 
         {documents.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2A2A2A] flex items-center justify-center mx-auto text-neutral-500">
-              <FileText className="h-5 w-5" />
-            </div>
-            <p className="text-xs font-medium text-neutral-300">No documents uploaded yet</p>
-            <p className="text-[11px] text-neutral-500 max-w-sm mx-auto">
-              Upload formal PRDs, architecture specifications, requirement matrices (.csv/.xlsx), or sprint notes to train the project context.
-            </p>
-          </div>
+          <EmptyState
+            icon={<FileText className="h-6 w-6 text-[#526174]" />}
+            title="No documents uploaded yet"
+            description="Upload formal PRDs, architecture specifications, requirement matrices (.csv/.xlsx), or sprint notes to train the project context."
+          />
         ) : (
-          <div className="divide-y divide-[#2A2A2A]">
+          <div className="divide-y divide-[#E2E8F0]">
             {documents.map((doc) => {
-              const sizeKb = Math.round(doc.fileSize / 1024);
-              const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
               const isRetrying = retryingDocId === doc.id;
               const isDeleting = deletingDocId === doc.id;
 
               return (
                 <div
                   key={doc.id}
-                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#101010] transition-colors"
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#F7F8FA] transition-colors"
                 >
-                  {/* Document Meta */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#141414] border border-[#2A2A2A] flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
                       {getFormatIcon(doc.fileFormat)}
                     </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-white">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#17212B] truncate max-w-sm">
                           {doc.filename}
-                        </span>
-                        <span className="text-[10px] font-mono text-neutral-400 uppercase bg-[#141414] px-1.5 py-0.5 rounded border border-[#2A2A2A]">
-                          {doc.fileFormat}
                         </span>
                         <Badge variant="docStatus" docStatus={doc.status} size="sm" />
                       </div>
-
-                      <div className="flex items-center gap-3 text-[11px] text-neutral-400 mt-1">
-                        <span>{sizeStr}</span>
-                        <span>•</span>
-                        <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
-                        {doc.metadata?.pageCount && (
-                          <>
-                            <span>•</span>
-                            <span>{doc.metadata.pageCount} pages</span>
-                          </>
+                      <div className="flex items-center gap-3 text-[11px] text-[#526174] mt-1">
+                        <span>{Math.round(doc.fileSize / 1024)} KB</span>
+                        {doc.chunks && doc.chunks.length > 0 && (
+                          <span>• {doc.chunks.length} vector chunks</span>
                         )}
-                        {doc.metadata?.wordCount && (
-                          <>
-                            <span>•</span>
-                            <span>{doc.metadata.wordCount} words</span>
-                          </>
-                        )}
+                        <span>• {new Date(doc.createdAt).toLocaleDateString()}</span>
                       </div>
-
                       {doc.errorMessage && (
-                        <div className="mt-1 text-[11px] text-neutral-400 flex items-center gap-1.5">
-                          <AlertTriangle className="h-3 w-3 text-white" />
-                          <span>{doc.errorMessage}</span>
-                        </div>
+                        <p className="text-[11px] text-[#C1121F] mt-1 font-medium">{doc.errorMessage}</p>
                       )}
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
-                    {doc.status === 'FAILED' && canEdit && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={isRetrying}
-                        onClick={() => handleRetry(doc.id)}
-                        className="text-[11px] h-7 px-2.5"
-                      >
-                        <RotateCw className={`h-3 w-3 mr-1 ${isRetrying ? 'animate-spin' : ''}`} />
-                        Retry
-                      </Button>
-                    )}
-
-                    {canEdit && (
+                  {canEdit && (
+                    <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+                      {doc.status === 'FAILED' && (
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => handleRetry(doc.id)}
+                          isLoading={isRetrying}
+                          leftIcon={<RotateCw className="h-3 w-3" />}
+                        >
+                          Retry
+                        </Button>
+                      )}
                       <button
-                        type="button"
-                        disabled={isDeleting}
                         onClick={() => handleDelete(doc.id, doc.filename)}
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#141414] border border-transparent hover:border-[#2A2A2A] transition-colors"
-                        title="Remove document"
+                        disabled={isDeleting}
+                        aria-label={`Delete ${doc.filename}`}
+                        className="p-1.5 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#FDE8E8] transition-colors disabled:opacity-50"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

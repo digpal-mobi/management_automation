@@ -4,7 +4,7 @@ import React from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { setFilters, clearFilters } from '@/store/boardSlice';
 import { TicketPriority, ProjectMember } from '@/types';
-import { Search, Filter, X, Sparkles } from 'lucide-react';
+import { Search, X, Sparkles, ChevronDown } from 'lucide-react';
 
 interface BoardFiltersProps {
   members?: ProjectMember[];
@@ -23,11 +23,11 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
     filters.isSemantic;
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-3 border-b border-[#2A2A2A] mb-6">
+    <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 py-3 border-b border-[#E2E8F0] mb-6">
       {/* Search Input & Semantic Toggle */}
-      <div className="flex items-center gap-2 flex-1 max-w-lg">
+      <div className="flex items-center gap-2 flex-1 max-w-xl">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#525252]" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174]" />
           <input
             type="text"
             value={filters.search}
@@ -37,14 +37,18 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
                 ? 'Semantic AI search (e.g. database schema, auth logic)...'
                 : 'Filter tickets by title or description...'
             }
-            className={`w-full pl-9 pr-4 py-2 rounded-xl bg-[#0A0A0A] border text-xs text-white placeholder-[#525252] focus:outline-none focus:ring-1 focus:ring-white transition-colors ${
-              filters.isSemantic ? 'border-white ring-1 ring-white/20' : 'border-[#2A2A2A]'
-            }`}
+            className={`w-full pl-9 pr-9 py-2 rounded-xl bg-white border text-xs text-[#17212B] placeholder-[#94A3B8] transition-all duration-150
+              focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] ${
+                filters.isSemantic
+                  ? 'border-[#003049] ring-1 ring-[#003049]/30'
+                  : 'border-[#E2E8F0] hover:border-[#CBD5E1]'
+              }`}
           />
           {filters.search && (
             <button
               onClick={() => dispatch(setFilters({ search: '' }))}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#525252] hover:text-white"
+              aria-label="Clear search input"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#526174] hover:text-[#17212B] transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -56,13 +60,13 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
           type="button"
           onClick={() => dispatch(setFilters({ isSemantic: !filters.isSemantic }))}
           title="Toggle pgvector semantic search on ticket descriptions"
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all duration-150 whitespace-nowrap active:scale-[0.98] ${
             filters.isSemantic
-              ? 'bg-white text-black border-white shadow-sm'
-              : 'bg-[#0A0A0A] text-[#A3A3A3] border-[#2A2A2A] hover:text-white hover:border-[#404040]'
+              ? 'bg-[#003049] text-white border-[#003049] shadow-sm'
+              : 'bg-white text-[#526174] border-[#E2E8F0] hover:text-[#003049] hover:border-[#CBD5E1]'
           }`}
         >
-          <Sparkles className={`h-3.5 w-3.5 ${filters.isSemantic ? 'text-black' : 'text-[#525252]'}`} />
+          <Sparkles className={`h-3.5 w-3.5 ${filters.isSemantic ? 'text-[#669BBC]' : 'text-[#526174]'}`} />
           <span>AI Search</span>
         </button>
       </div>
@@ -70,13 +74,13 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
       {/* Select Filter Controls */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Priority Filter */}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-initial min-w-[120px]">
           <select
             value={filters.priority}
             onChange={(e) =>
               dispatch(setFilters({ priority: e.target.value as 'ALL' | TicketPriority }))
             }
-            className="px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-xs font-medium text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer appearance-none pr-8"
+            className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs font-medium text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none pr-8 transition-colors"
           >
             <option value="ALL">All Priorities</option>
             <option value="Low">Low</option>
@@ -84,15 +88,15 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
             <option value="High">High</option>
             <option value="Critical">Critical</option>
           </select>
-          <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#525252] pointer-events-none" />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
         </div>
 
         {/* Type Filter */}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-initial min-w-[110px]">
           <select
             value={filters.type}
             onChange={(e) => dispatch(setFilters({ type: e.target.value }))}
-            className="px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-xs font-medium text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer appearance-none pr-8"
+            className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs font-medium text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none pr-8 transition-colors"
           >
             <option value="ALL">All Types</option>
             <option value="Feature">Feature</option>
@@ -100,15 +104,15 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
             <option value="Task">Task</option>
             <option value="Improvement">Improvement</option>
           </select>
-          <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#525252] pointer-events-none" />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
         </div>
 
         {/* Assignee Filter */}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-initial min-w-[130px]">
           <select
             value={filters.assigneeId}
             onChange={(e) => dispatch(setFilters({ assigneeId: e.target.value }))}
-            className="px-3 py-2 rounded-xl bg-[#0A0A0A] border border-[#2A2A2A] text-xs font-medium text-white focus:outline-none focus:ring-1 focus:ring-white cursor-pointer appearance-none pr-8"
+            className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs font-medium text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none pr-8 transition-colors"
           >
             <option value="ALL">All Assignees</option>
             {members.map((m) => (
@@ -117,17 +121,17 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
               </option>
             ))}
           </select>
-          <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#525252] pointer-events-none" />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
         </div>
 
         {/* Clear Filter Button */}
         {hasActiveFilters && (
           <button
             onClick={() => dispatch(clearFilters())}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-white bg-[#141414] hover:bg-[#2A2A2A] border border-[#2A2A2A] transition-colors"
+            className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium text-[#526174] hover:text-[#17212B] bg-[#F1F4F7] hover:bg-[#E2E8F0] border border-[#E2E8F0] transition-colors"
           >
-            <X className="h-3 w-3" />
-            Clear
+            <X className="h-3.5 w-3.5" />
+            <span>Clear</span>
           </button>
         )}
       </div>
