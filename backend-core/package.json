@@ -7,6 +7,11 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "test": "tsx --test tests/ingestion_and_generation.test.ts",
+    "test:planning": "tsx --test tests/sprint_planning.test.ts",
+    "test:slug": "tsx --test tests/slug_and_routing.test.ts",
+    "test:invitations": "tsx --test tests/invitations_and_notifications.test.ts",
+    "test:all": "tsx --test tests/ingestion_and_generation.test.ts tests/sprint_planning.test.ts tests/slug_and_routing.test.ts tests/invitations_and_notifications.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "seed": "tsx prisma/seed.ts"

@@ -9,10 +9,12 @@ import {
   Kanban,
   Users,
   BarChart3,
+  CalendarClock,
 } from 'lucide-react';
 
 export interface ProjectNavProps {
   projectId: string;
+  projectSlug?: string;
   memberCount?: number;
   ticketCount?: number;
   className?: string;
@@ -20,40 +22,48 @@ export interface ProjectNavProps {
 
 export function ProjectNav({
   projectId,
+  projectSlug,
   memberCount,
   ticketCount,
   className = '',
 }: ProjectNavProps) {
   const pathname = usePathname();
+  const slugOrId = projectSlug || projectId;
 
   const navItems = [
     {
-      href: `/projects/${projectId}/knowledge`,
+      href: `/projects/${slugOrId}/knowledge`,
       label: 'Knowledge',
       icon: BookOpen,
       isActive: pathname.includes('/knowledge'),
     },
     {
-      href: `/projects/${projectId}/roadmap`,
+      href: `/projects/${slugOrId}/roadmap`,
       label: 'Roadmap',
       icon: Compass,
       isActive: pathname.includes('/roadmap'),
     },
     {
-      href: `/projects/${projectId}/board`,
+      href: `/projects/${slugOrId}/plan`,
+      label: 'Sprint Plan',
+      icon: CalendarClock,
+      isActive: pathname.includes('/plan'),
+    },
+    {
+      href: `/projects/${slugOrId}/board`,
       label: 'Board',
       icon: Kanban,
       badge: ticketCount !== undefined ? String(ticketCount) : undefined,
       isActive: pathname.includes('/board'),
     },
     {
-      href: `/projects/${projectId}/analytics`,
+      href: `/projects/${slugOrId}/analytics`,
       label: 'Analytics',
       icon: BarChart3,
       isActive: pathname.includes('/analytics'),
     },
     {
-      href: `/projects/${projectId}/members`,
+      href: `/projects/${slugOrId}/members`,
       label: 'Team',
       icon: Users,
       badge: memberCount !== undefined ? String(memberCount) : undefined,

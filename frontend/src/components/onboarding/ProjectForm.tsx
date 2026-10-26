@@ -150,7 +150,8 @@ export function ProjectForm() {
       }
 
       toast.success('Project workspace created with knowledge base initialized!');
-      router.push(`/projects/${projectId}/knowledge`);
+      const projectSlug = data.project.slug || projectId;
+      router.push(`/projects/${projectSlug}/knowledge`);
     } catch (err: any) {
       console.error('Project creation failed:', err);
       setError(err.message || 'Failed to create project. Please try again.');
@@ -240,7 +241,7 @@ export function ProjectForm() {
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept=".pdf,.docx,.md,.txt,.xlsx,.csv"
+                accept=".pdf,.docx,.md,.txt,.xlsx,.xls,.csv"
                 className="hidden"
                 onChange={(e) => e.target.files && handleFilesAdded(e.target.files)}
               />
@@ -254,7 +255,7 @@ export function ProjectForm() {
                     Drag and drop PRDs or click to select files
                   </p>
                   <p className="text-[11px] text-[#526174]">
-                    Supports PDF, DOCX, Markdown, Text, and Excel (.pdf, .docx, .md, .txt, .xlsx)
+                    Supports PDF, DOCX, Markdown, Text, and Excel (.pdf, .docx, .md, .txt, .xlsx, .xls)
                   </p>
                 </div>
               </div>

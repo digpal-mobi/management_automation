@@ -67,16 +67,34 @@ export class DocumentController {
           continue;
         }
 
-        const doc = await prisma.projectDocument.create({
-          data: {
-            projectId,
-            filename,
-            fileSize: size,
-            fileFormat: validation.format,
-            mimeType,
-            status: 'PENDING',
-          },
+        // Check for existing document with same filename to avoid duplicate records
+        let doc = await prisma.projectDocument.findFirst({
+          where: { projectId, filename },
         });
+
+        if (doc) {
+          doc = await prisma.projectDocument.update({
+            where: { id: doc.id },
+            data: {
+              fileSize: size,
+              fileFormat: validation.format,
+              mimeType,
+              status: 'PENDING',
+              errorMessage: null,
+            },
+          });
+        } else {
+          doc = await prisma.projectDocument.create({
+            data: {
+              projectId,
+              filename,
+              fileSize: size,
+              fileFormat: validation.format,
+              mimeType,
+              status: 'PENDING',
+            },
+          });
+        }
 
         try {
           await processDocumentRecord(doc.id, file.buffer);

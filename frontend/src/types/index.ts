@@ -20,6 +20,46 @@ export interface User {
   createdAt?: string;
 }
 
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REVOKED' | 'EXPIRED';
+
+export type NotificationType =
+  | 'PROJECT_INVITATION'
+  | 'PROJECT_INVITATION_ACCEPTED'
+  | 'PROJECT_INVITATION_DECLINED'
+  | 'SYSTEM';
+
+export interface ProjectInvitation {
+  id: string;
+  projectId: string;
+  project?: { id: string; name: string; slug: string };
+  invitedUserId?: string | null;
+  recipientEmail: string;
+  invitee?: User | null;
+  inviterId: string;
+  inviter?: Pick<User, 'id' | 'username' | 'avatarUrl'> | null;
+  role: ProjectMemberRole;
+  status: InvitationStatus;
+  actionable: boolean;
+  expiresAt: string;
+  respondedAt?: string | null;
+  createdAt: string;
+}
+
+export interface UserNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  projectId?: string | null;
+  project?: { id: string; name: string; slug: string } | null;
+  invitationId?: string | null;
+  invitation?: ProjectInvitation | null;
+  readAt?: string | null;
+  createdAt: string;
+  metadata?: Record<string, unknown> | null;
+  href?: string | null;
+}
+
 export interface ProjectMember {
   id: string;
   projectId: string;
@@ -32,6 +72,7 @@ export interface ProjectMember {
 
 export interface Project {
   id: string;
+  slug: string;
   name: string;
   description?: string | null;
   goals?: string | null;
@@ -107,6 +148,10 @@ export interface ProjectFeature {
   suggestedPriority: TicketPriority;
   constraints?: string | null;
   sourceReferences?: SourceReference[] | null;
+  sprint?: string | null;
+  targetDate?: string | null;
+  sourceCandidateIds?: string[] | null;
+  proposedAcceptanceCriteria?: string[] | null;
   status: FeatureReviewStatus;
   isAiGenerated: boolean;
   order: number;
@@ -134,6 +179,10 @@ export interface ProjectAnalysis {
   technicalRequirements?: Array<{ area: string; details: string; source?: string }> | null;
   milestones?: Array<{ name: string; targetDate?: string; sequenceOrder?: number; isConfirmed?: boolean; details?: string }> | null;
   openQuestions?: Array<{ question: string; category?: string; impact?: string; resolution?: string }> | null;
+  brief?: any;
+  coverageReport?: any;
+  sprintSchedule?: any;
+  candidateReconciliations?: any;
   status: string;
   analyzedAt: string;
   createdAt: string;
@@ -197,6 +246,10 @@ export interface Ticket {
   projectId: string;
   featureId?: string | null;
   feature?: ProjectFeature | null;
+  sourceCandidateId?: string | null;
+  sprint?: string | null;
+  module?: string | null;
+  ownershipRole?: string | null;
   title: string;
   description?: string | null;
   status: TicketStatus;
@@ -205,7 +258,10 @@ export interface Ticket {
   acceptanceCriteria?: Array<{ id: string; text: string; completed: boolean }> | null;
   technicalNotes?: string | null;
   prChecklist?: Array<{ id: string; text: string; completed: boolean }> | null;
+  definitionOfDone?: Array<{ id: string; text: string; completed: boolean }> | null;
   storyPoints?: number | null;
+  executionOrder?: number;
+  isLocked?: boolean;
   assigneeId?: string | null;
   assignee?: User | null;
   reporterId?: string | null;
@@ -216,6 +272,136 @@ export interface Ticket {
   _count?: {
     comments: number;
   };
+}
+
+export interface AllocatedSprintTicket {
+  ticketId: string;
+  sourceCandidateId?: string | null;
+  title: string;
+  module?: string | null;
+  priority: string;
+  storyPoints: number;
+  ownershipRole: string;
+  executionOrder: number;
+  isLocked: boolean;
+  status: string;
+  prerequisitesInSprint: string[];
+  prerequisitesPriorSprints: string[];
+  explanation: string;
+}
+
+export interface PlanningSprintAllocation {
+  sprintId: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  goal: string;
+  capacityPoints: number;
+  allocatedPoints: number;
+  utilizationPercentage: number;
+  tickets: AllocatedSprintTicket[];
+  roleBreakdown: Record<string, number>;
+  deliverablesSummary: string;
+  warnings: string[];
+}
+
+export interface UnscheduledTicketItem {
+  ticketId: string;
+  sourceCandidateId?: string | null;
+  title: string;
+  module?: string | null;
+  priority: string;
+  storyPoints: number;
+  ownershipRole: string;
+  reasonCode:
+    | 'UNSCHEDULED_CAPACITY_EXCEEDED'
+    | 'UNSCHEDULED_DEPENDENCY_UNRESOLVED'
+    | 'UNSCHEDULED_MISSING_ESTIMATE'
+    | 'UNSCHEDULED_DEFERRED_BY_PM'
+    | 'UNSCHEDULED_BLOCKED'
+    | 'UNSCHEDULED_DEADLINE_BREACH';
+  reasonDescription: string;
+  actionRequired: string;
+  blockingPrerequisites: string[];
+}
+
+export interface PlanningValidationReport {
+  isValid: boolean;
+  totalTicketsAnalyzed: number;
+  totalScheduled: number;
+  totalUnscheduled: number;
+  totalSprintsUsed: number;
+  capacityUtilizationAverage: number;
+  criticalPathLength: number;
+  criticalPathTicketIds: string[];
+  dependencyViolationCount: number;
+  capacityViolationCount: number;
+  cycleCount: number;
+  detectedCycles: string[][];
+  warnings: string[];
+  ruleEvaluations: Array<{
+    rule: string;
+    passed: boolean;
+    details: string;
+  }>;
+}
+
+export interface SprintPlan {
+  id: string;
+  projectId: string;
+  version: number;
+  status: 'PROPOSED' | 'APPROVED' | 'SUPERSEDED' | 'REJECTED';
+  title: string;
+  summary: string;
+  sourceBriefRevision?: string;
+  sprintAllocations: PlanningSprintAllocation[];
+  dependencies?: Array<{
+    sourceTicketId: string;
+    sourceKey: string;
+    targetTicketId: string;
+    targetKey: string;
+    type: string;
+    isInferred: boolean;
+    reason?: string;
+  }>;
+  unscheduledTickets?: UnscheduledTicketItem[];
+  criticalPath?: {
+    ticketIds: string[];
+    totalPoints: number;
+    estimatedSprints: number;
+  };
+  capacitySettings?: {
+    defaultSprintCapacity: number;
+    sprintCount: number;
+    roleCapacities?: Record<string, number>;
+  };
+  validationReport?: PlanningValidationReport;
+  changeSummary?: {
+    ticketsMoved: number;
+    pointsShifted: number;
+    addedToSprints: number;
+    removedToUnscheduled: number;
+    details: string[];
+  };
+  planningAssumptions?: string[];
+  isApproved: boolean;
+  approvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketDependency {
+  id: string;
+  projectId: string;
+  sourceTicketId: string;
+  sourceTicket?: { id: string; title: string; sourceCandidateId?: string | null; sprint?: string | null; status?: string };
+  targetTicketId: string;
+  targetTicket?: { id: string; title: string; sourceCandidateId?: string | null; sprint?: string | null; status?: string };
+  type: string;
+  isInferred: boolean;
+  reason?: string | null;
+  confidence?: number | null;
+  createdAt: string;
 }
 
 export interface Message {

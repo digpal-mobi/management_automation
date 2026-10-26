@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Project } from '@/types';
+import { Project, ProjectInvitation } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -25,6 +25,7 @@ export default function HomePage() {
   const router = useRouter();
   const { user, fetchWithAuth, isLoading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<ProjectInvitation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,10 +38,17 @@ export default function HomePage() {
     const loadProjects = async () => {
       try {
         setLoading(true);
-        const res = await fetchWithAuth('/api/projects');
+        const [res, inviteRes] = await Promise.all([
+          fetchWithAuth('/api/projects'),
+          fetchWithAuth('/api/invitations/pending'),
+        ]);
         const data = await res.json();
         if (res.ok && data.success) {
           setProjects(data.projects || []);
+        }
+        const inviteData = await inviteRes.json();
+        if (inviteRes.ok && inviteData.success) {
+          setPendingInvitations(inviteData.invitations || []);
         }
       } catch (err) {
         console.error('Failed to load projects:', err);
@@ -141,6 +149,37 @@ export default function HomePage() {
         </div>
       </div>
 
+      {pendingInvitations.length > 0 && (
+        <section className="space-y-3" aria-label="Pending invitations">
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-[#17212B]">Pending invitations</h2>
+            <p className="text-xs text-[#526174]">
+              You will not see a project workspace until you accept its invitation.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {pendingInvitations.map((invitation) => (
+              <div
+                key={invitation.id}
+                className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-card"
+              >
+                <p className="text-sm font-semibold text-[#17212B]">
+                  {invitation.project?.name || 'Project invitation'}
+                </p>
+                <p className="mt-1 text-xs text-[#526174]">
+                  {invitation.inviter?.username || 'A teammate'} invited you as a {invitation.role}.
+                </p>
+                <Link href="/notifications" className="mt-3 inline-flex">
+                  <Button variant="outline" size="sm">
+                    Review invitation
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Projects List Section */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
@@ -179,9 +218,14 @@ export default function HomePage() {
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-base font-bold text-[#17212B] tracking-tight line-clamp-1">
-                      {proj.name}
-                    </h3>
+                    <Link
+                      href={`/projects/${proj.slug || proj.id}`}
+                      className="hover:underline"
+                    >
+                      <h3 className="text-base font-bold text-[#17212B] tracking-tight line-clamp-1">
+                        {proj.name}
+                      </h3>
+                    </Link>
                     {proj.userRole && (
                       <Badge variant="role" role={proj.userRole} size="sm" />
                     )}
@@ -207,7 +251,7 @@ export default function HomePage() {
                 <div className="pt-4 mt-4 border-t border-[#E2E8F0] space-y-3">
                   <div className="grid grid-cols-4 gap-1 text-[11px] font-medium text-[#526174]">
                     <Link
-                      href={`/projects/${proj.id}/knowledge`}
+                      href={`/projects/${proj.slug || proj.id}/knowledge`}
                       className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
                       title="Knowledge Base"
                     >
@@ -215,7 +259,7 @@ export default function HomePage() {
                       <span className="hidden sm:inline">Docs</span>
                     </Link>
                     <Link
-                      href={`/projects/${proj.id}/roadmap`}
+                      href={`/projects/${proj.slug || proj.id}/roadmap`}
                       className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
                       title="Roadmap"
                     >
@@ -223,7 +267,7 @@ export default function HomePage() {
                       <span className="hidden sm:inline">Roadmap</span>
                     </Link>
                     <Link
-                      href={`/projects/${proj.id}/analytics`}
+                      href={`/projects/${proj.slug || proj.id}/analytics`}
                       className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
                       title="Analytics"
                     >
@@ -231,7 +275,7 @@ export default function HomePage() {
                       <span className="hidden sm:inline">Stats</span>
                     </Link>
                     <Link
-                      href={`/projects/${proj.id}/members`}
+                      href={`/projects/${proj.slug || proj.id}/members`}
                       className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
                       title="Team"
                     >
@@ -241,7 +285,7 @@ export default function HomePage() {
                   </div>
 
                   <Link
-                    href={`/projects/${proj.id}/board`}
+                    href={`/projects/${proj.slug || proj.id}/board`}
                     className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#003049] hover:bg-[#002437] text-white text-xs font-semibold shadow-sm transition-all"
                   >
                     <span>Open Kanban Board</span>

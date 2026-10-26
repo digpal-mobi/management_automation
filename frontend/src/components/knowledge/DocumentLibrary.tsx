@@ -187,6 +187,7 @@ export function DocumentLibrary({
   const getFormatIcon = (format: string) => {
     switch (format.toLowerCase()) {
       case 'xlsx':
+      case 'xls':
       case 'csv':
         return <FileSpreadsheet className="h-4 w-4 text-[#003049]" />;
       case 'pdf':
@@ -220,7 +221,7 @@ export function DocumentLibrary({
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.docx,.md,.txt,.xlsx,.csv"
+              accept=".pdf,.docx,.md,.txt,.xlsx,.xls,.csv"
               className="hidden"
               onChange={(e) => e.target.files && handleUploadFiles(e.target.files)}
             />
@@ -244,7 +245,7 @@ export function DocumentLibrary({
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                {['.PDF', '.DOCX', '.MD', '.TXT', '.XLSX', '.CSV'].map((ext) => (
+                {['.PDF', '.DOCX', '.MD', '.TXT', '.XLSX', '.XLS', '.CSV'].map((ext) => (
                   <span
                     key={ext}
                     className="px-2 py-0.5 rounded bg-[#F1F4F7] border border-[#E2E8F0] text-[10px] font-mono text-[#526174] font-medium"

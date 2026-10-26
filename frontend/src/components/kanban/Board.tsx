@@ -36,6 +36,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog';
+import Link from 'next/link';
 import {
   Plus,
   Kanban,
@@ -44,12 +45,14 @@ import {
   ChevronRight,
   Columns3,
   AlertTriangle,
+  CalendarClock,
 } from 'lucide-react';
 import { boardApi } from '@/lib/api';
 
 interface BoardProps {
   projectId: string;
   project: Project;
+  initialColumns?: BoardColumn[];
   initialTickets?: Ticket[];
   members?: ProjectMember[];
 }
@@ -57,6 +60,7 @@ interface BoardProps {
 export function Board({
   projectId,
   project,
+  initialColumns,
   initialTickets = [],
   members = [],
 }: BoardProps) {
@@ -65,10 +69,17 @@ export function Board({
   const dispatch = useAppDispatch();
   const { filters } = useAppSelector((state) => state.board);
 
-  // Board columns state
-  const [columns, setColumns] = useState<BoardColumn[]>([]);
+  // Board columns state (initialized with SSR columns if available)
+  const [columns, setColumns] = useState<BoardColumn[]>(() => {
+    if (initialColumns && initialColumns.length > 0) {
+      return [...initialColumns].sort((a, b) => a.position - b.position);
+    }
+    return [];
+  });
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(
+    !(initialColumns && initialColumns.length > 0)
+  );
   const [semanticResults, setSemanticResults] = useState<Ticket[] | null>(null);
 
   // Horizontal scroll container ref
@@ -155,9 +166,16 @@ export function Board({
     }
   }, [projectId]);
 
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (initialColumns && initialColumns.length > 0) {
+        return;
+      }
+    }
     fetchBoardData();
-  }, [fetchBoardData]);
+  }, [fetchBoardData, initialColumns]);
 
   // Semantic search handler with debounce
   useEffect(() => {
@@ -556,6 +574,18 @@ export function Board({
               <span>+ Add Column</span>
             </Button>
           )}
+
+          {/* AI Sprint Planning Brain Shortcut */}
+          <Link href={`/projects/${project?.slug || projectId}/plan`}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 border-[#003049] text-[#003049] hover:bg-[#EFF5F9] shadow-sm font-semibold"
+            >
+              <CalendarClock className="h-4 w-4 text-[#003049]" />
+              <span>Plan Sprints with AI</span>
+            </Button>
+          </Link>
 
           {/* Prominent Create Ticket Button */}
           <Button

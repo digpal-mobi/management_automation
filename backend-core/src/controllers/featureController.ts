@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateRequest } from '../lib/auth.js';
 import { getProjectRole } from '../lib/permissions.js';
-import { generateTicketsForSelectedFeature } from '../lib/ai.js';
+import { ProjectSynthesisService } from '../lib/projectSynthesis.js';
 import { FeatureReviewStatus, TicketPriority, TicketType, TicketStatus } from '@prisma/client';
 
 const createFeatureSchema = z.object({
@@ -120,6 +120,11 @@ export class FeatureController {
       }
 
       const { id: projectId, featureId } = req.params;
+      const userRole = await getProjectRole(projectId, user.id);
+      if (!userRole) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
       const feature = await prisma.projectFeature.findUnique({
         where: { id: featureId },
         include: { tickets: true },
@@ -206,6 +211,9 @@ export class FeatureController {
     }
   }
 
+  /**
+   * Mode B: Generate Tickets for a Single Selected Feature
+   */
   static async generateTickets(req: Request, res: Response) {
     try {
       const user = await authenticateRequest(req);
@@ -216,78 +224,48 @@ export class FeatureController {
       const { id: projectId, featureId } = req.params;
       const userRole = await getProjectRole(projectId, user.id);
       if (!userRole || userRole === 'editor') {
-        return res.status(403).json({ success: false, error: 'Forbidden' });
+        return res.status(403).json({ success: false, error: 'Forbidden. Editors cannot generate tickets.' });
       }
 
-      const feature = await prisma.projectFeature.findUnique({
-        where: { id: featureId },
-        include: { project: true },
-      });
-
-      if (!feature || feature.projectId !== projectId) {
-        return res.status(404).json({ success: false, error: 'Feature not found' });
-      }
-
-      let board = await prisma.board.findFirst({
-        where: { projectId },
-        include: { columns: { orderBy: { position: 'asc' } } },
-      });
-
-      if (!board) {
-        board = await prisma.board.create({
-          data: { projectId, name: `${feature.project.name} Board` },
-          include: { columns: true },
-        });
-      }
-
-      const targetCol = board.columns?.[0];
-
-      const generated = await generateTicketsForSelectedFeature(featureId);
-      const createdTickets = [];
-
-      for (const t of generated) {
-        let typeVal: TicketType = TicketType.FEATURE;
-        const rawType = (t.type || '').toUpperCase();
-        if (rawType.includes('BUG')) typeVal = TicketType.BUG;
-        else if (rawType.includes('TASK')) typeVal = TicketType.TASK;
-        else if (rawType.includes('IMPROVE')) typeVal = TicketType.IMPROVEMENT;
-        else typeVal = TicketType.FEATURE;
-
-        let prioVal: TicketPriority = TicketPriority.MEDIUM;
-        const rawPrio = (t.priority || '').toUpperCase();
-        if (rawPrio.includes('CRIT')) prioVal = TicketPriority.CRITICAL;
-        else if (rawPrio.includes('HIGH')) prioVal = TicketPriority.HIGH;
-        else if (rawPrio.includes('LOW')) prioVal = TicketPriority.LOW;
-        else prioVal = TicketPriority.MEDIUM;
-
-        const ticket = await prisma.ticket.create({
-          data: {
-            projectId,
-            boardId: board.id,
-            columnId: targetCol?.id || null,
-            featureId,
-            title: t.title,
-            description: t.description,
-            type: typeVal,
-            priority: prioVal,
-            storyPoints: t.storyPoints || 3,
-            status: TicketStatus.TODO,
-            acceptanceCriteria: t.acceptanceCriteria || [],
-            technicalNotes: t.technicalNotes || null,
-            prChecklist: t.prChecklist || [],
-          },
-        });
-        createdTickets.push(ticket);
-      }
+      const result = await ProjectSynthesisService.generateTicketsForFeature(projectId, featureId);
 
       return res.status(200).json({
         success: true,
-        tickets: createdTickets,
-        count: createdTickets.length,
+        tickets: result.tickets,
+        count: result.ticketCount,
+        featureName: result.featureName,
       });
     } catch (error: any) {
       console.error('[FeatureController.generateTickets] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Ticket generation failed' });
+    }
+  }
+
+  /**
+   * Mode A: Generate Whole-Project Backlog from Approved Brief and Candidates
+   */
+  static async generateAllTickets(req: Request, res: Response) {
+    try {
+      const user = await authenticateRequest(req);
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const { id: projectId } = req.params;
+      const userRole = await getProjectRole(projectId, user.id);
+      if (userRole !== 'owner' && userRole !== 'manager') {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden. Only owners and managers can generate the entire project backlog.',
+        });
+      }
+
+      const result = await ProjectSynthesisService.generateAllBacklogTickets(projectId);
+
+      return res.status(200).json(result);
+    } catch (error: any) {
+      console.error('[FeatureController.generateAllTickets] Error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Whole-project backlog generation failed' });
     }
   }
 }

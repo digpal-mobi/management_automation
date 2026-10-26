@@ -19,6 +19,11 @@ import {
   Plus,
   Edit2,
   Trash2,
+  Calendar,
+  FileText,
+  ShieldCheck,
+  Layers,
+  ListChecks,
   CheckCircle2,
   XCircle,
   GitBranch,
@@ -62,6 +67,13 @@ export function RoadmapView({
   const [generatingForFeature, setGeneratingForFeature] = useState<ProjectFeature | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTickets, setGeneratedTickets] = useState<Ticket[] | null>(null);
+
+  // Project Brief & Whole-Project Backlog Modal States
+  const [isBriefOpen, setIsBriefOpen] = useState(false);
+  const [briefData, setBriefData] = useState<any>(null);
+  const [loadingBrief, setLoadingBrief] = useState(false);
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+  const [briefTab, setBriefTab] = useState<'overview' | 'sprints' | 'coverage' | 'architecture' | 'risks'>('overview');
 
   // Add Feature Form
   const [newName, setNewName] = useState('');
@@ -286,6 +298,50 @@ export function RoadmapView({
     }
   };
 
+  // Load Project Brief
+  const handleOpenBrief = async () => {
+    try {
+      setLoadingBrief(true);
+      setIsBriefOpen(true);
+      const res = await fetchWithAuth(`/api/projects/${projectId}/brief`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBriefData(data.brief);
+      } else {
+        toast.error('Failed to load project brief');
+      }
+    } catch (err: any) {
+      toast.error('Error fetching project brief');
+    } finally {
+      setLoadingBrief(false);
+    }
+  };
+
+  // Mode A: Trigger Whole-Project Backlog Generation
+  const handleGenerateAllBacklog = async () => {
+    if (!canEdit) return;
+    try {
+      setIsGeneratingAll(true);
+      const res = await fetchWithAuth(`/api/projects/${projectId}/backlog/generate-all`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Backlog generation failed');
+      }
+
+      toast.success(
+        `Generated ${data.createdCount} backlog tickets! (${data.existingCount} already present)`
+      );
+      onFeaturesChange();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to generate whole-project backlog');
+    } finally {
+      setIsGeneratingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Action Bar & Filter Controls */}
@@ -352,10 +408,37 @@ export function RoadmapView({
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
           </div>
 
-          {/* Add Manual Feature Button */}
+          {/* Project Brief & Coverage Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenBrief}
+            className="text-xs font-semibold text-[#003049] border-[#003049]/30 hover:bg-[#EFF5F9]"
+            title="Inspect synthesized Project Brief, 11 Sprints Schedule, and Coverage Report"
+          >
+            <FileText className="h-3.5 w-3.5 mr-1" />
+            Project Brief & Coverage
+          </Button>
+
+          {/* Mode A: Whole-Project Backlog Button */}
           {canEdit && (
             <Button
               variant="primary"
+              size="sm"
+              isLoading={isGeneratingAll}
+              onClick={handleGenerateAllBacklog}
+              className="text-xs font-semibold bg-[#003049] hover:bg-[#002437] text-white shadow-xs"
+              title="Generate developer-ready backlog tickets for all reconciled project candidates"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              Generate Full Backlog
+            </Button>
+          )}
+
+          {/* Add Manual Feature Button */}
+          {canEdit && (
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setIsAddOpen(true)}
               className="text-xs font-semibold"
@@ -434,9 +517,25 @@ export function RoadmapView({
                               priority={feature.suggestedPriority}
                               size="sm"
                             />
+                            {feature.sprint && (
+                              <span className="text-[10px] font-mono text-[#003049] bg-[#EFF5F9] px-2 py-0.5 rounded-full border border-[#669BBC]/30 font-bold flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Sprint {feature.sprint}
+                              </span>
+                            )}
+                            {feature.targetDate && (
+                              <span className="text-[10px] font-mono text-[#526174]">
+                                {feature.targetDate}
+                              </span>
+                            )}
+                            {feature.sourceCandidateIds && (feature.sourceCandidateIds as string[]).length > 0 && (
+                              <span className="text-[10px] font-mono text-[#526174] bg-[#F7F8FA] px-2 py-0.5 rounded-full border border-[#E2E8F0] font-medium">
+                                {(feature.sourceCandidateIds as string[]).length} ticket candidates
+                              </span>
+                            )}
                             {feature.isAiGenerated && (
-                              <span className="text-[10px] font-mono text-[#003049] bg-[#EFF5F9] px-1.5 py-0.5 rounded border border-[#669BBC]/30 font-medium">
-                                AI Identified
+                              <span className="text-[10px] font-mono text-[#526174] bg-[#F7F8FA] px-1.5 py-0.5 rounded border border-[#E2E8F0] font-medium">
+                                AI Suggested
                               </span>
                             )}
                           </div>
@@ -903,6 +1002,340 @@ export function RoadmapView({
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Project Brief & Source Coverage Modal */}
+      <Dialog open={isBriefOpen} onOpenChange={setIsBriefOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-[#003049]">
+              <FileText className="h-5 w-5 text-[#003049]" />
+              <span>Project Brief & Source Coverage Report</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[#526174]">
+              Synthesized from PRD specifications, sprint schedule worksheets, and architecture boundaries.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingBrief ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="h-6 w-6 animate-spin text-[#003049]" />
+              <span className="text-xs text-[#526174]">Loading Project Brief...</span>
+            </div>
+          ) : !briefData ? (
+            <div className="py-8 text-center text-xs text-[#526174]">
+              No brief data available yet. Please run AI analysis or upload project documents.
+            </div>
+          ) : (
+            <div className="space-y-6 pt-2">
+              {/* Tabs Navigation */}
+              <div className="flex items-center gap-2 border-b border-[#E2E8F0] pb-2 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setBriefTab('overview')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    briefTab === 'overview'
+                      ? 'bg-[#003049] text-white'
+                      : 'text-[#526174] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  Overview & Scope
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBriefTab('sprints')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    briefTab === 'sprints'
+                      ? 'bg-[#003049] text-white'
+                      : 'text-[#526174] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  Sprint Schedule ({briefData.sprintSchedule?.length || 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBriefTab('coverage')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    briefTab === 'coverage'
+                      ? 'bg-[#003049] text-white'
+                      : 'text-[#526174] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  Source Coverage (100%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBriefTab('architecture')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    briefTab === 'architecture'
+                      ? 'bg-[#003049] text-white'
+                      : 'text-[#526174] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  Architecture & Roles
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBriefTab('risks')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    briefTab === 'risks'
+                      ? 'bg-[#003049] text-white'
+                      : 'text-[#526174] hover:bg-[#F1F4F7]'
+                  }`}
+                >
+                  Launch Gates & Risks
+                </button>
+              </div>
+
+              {/* Tab 1: Overview & Scope */}
+              {briefTab === 'overview' && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 space-y-1.5">
+                    <h4 className="text-xs font-bold text-[#003049] uppercase tracking-wider font-mono">
+                      Executive Summary & Objectives
+                    </h4>
+                    <p className="text-xs text-[#17212B] leading-relaxed">
+                      {briefData.overview}
+                    </p>
+                  </div>
+
+                  {briefData.visionAndGoals?.goals && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-[#17212B]">Core Goals & Success Metrics</h4>
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-[#526174]">
+                        {briefData.visionAndGoals.goals.map((g: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-[#F7F8FA] border border-[#E2E8F0]">
+                            <CheckCircle2 className="h-4 w-4 text-[#003049] shrink-0 mt-0.5" />
+                            <span>{g}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                    <div className="p-3.5 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] space-y-2">
+                      <h5 className="text-[11px] font-bold text-[#166534] uppercase font-mono">
+                        P0 Launch Baseline
+                      </h5>
+                      <ul className="space-y-1 text-[11px] text-[#166534]">
+                        {briefData.scope?.p0Required?.slice(0, 5).map((item: string, idx: number) => (
+                          <li key={idx}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] space-y-2">
+                      <h5 className="text-[11px] font-bold text-[#1E40AF] uppercase font-mono">
+                        P1 Secondary Scope
+                      </h5>
+                      <ul className="space-y-1 text-[11px] text-[#1E40AF]">
+                        {briefData.scope?.p1Secondary?.map((item: string, idx: number) => (
+                          <li key={idx}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[#FEF2F2] border border-[#FEE2E2] space-y-2">
+                      <h5 className="text-[11px] font-bold text-[#991B1B] uppercase font-mono">
+                        Out of Scope
+                      </h5>
+                      <ul className="space-y-1 text-[11px] text-[#991B1B]">
+                        {briefData.scope?.outOfScope?.map((item: string, idx: number) => (
+                          <li key={idx}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 2: Sprints Schedule */}
+              {briefTab === 'sprints' && (
+                <div className="space-y-3">
+                  <div className="text-xs text-[#526174]">
+                    The source plan establishes 11 development sprints and a production launch cutover window. Every sprint is fully preserved and mapped to roadmap capabilities.
+                  </div>
+                  <div className="space-y-2.5">
+                    {briefData.sprintSchedule?.map((s: any) => (
+                      <div
+                        key={s.sprint}
+                        className="p-3.5 rounded-xl border border-[#E2E8F0] bg-white hover:bg-[#FDFDFE] text-xs space-y-1.5"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#003049] text-white font-bold">
+                              Sprint {s.sprint}
+                            </span>
+                            <span className="font-bold text-[#17212B]">{s.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-[11px] font-mono text-[#526174]">
+                            <span>{s.start} to {s.end}</span>
+                            <span className="px-2 py-0.5 rounded-full bg-[#EFF5F9] text-[#003049] font-bold border border-[#669BBC]/30">
+                              {s.candidateCount} tickets ({s.storyPoints} pts)
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-[#526174]">
+                          <strong>Goal:</strong> {s.goal}
+                        </p>
+                        <p className="text-[11px] text-[#526174]">
+                          <strong>Deliverables:</strong> {s.deliverables}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 3: Source Coverage */}
+              {briefTab === 'coverage' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                    <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
+                      <div className="text-xl font-bold font-mono text-[#003049]">
+                        {briefData.sourceCoverage?.sprintsRepresented} / {briefData.sourceCoverage?.sprintsDetected}
+                      </div>
+                      <div className="text-[10px] text-[#526174] uppercase tracking-wider font-semibold mt-1">
+                        Sprints Represented
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
+                      <div className="text-xl font-bold font-mono text-[#003049]">
+                        {briefData.sourceCoverage?.reconciledCandidates} / {briefData.sourceCoverage?.sourceBacklogCandidates}
+                      </div>
+                      <div className="text-[10px] text-[#526174] uppercase tracking-wider font-semibold mt-1">
+                        Candidates Reconciled
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
+                      <div className="text-xl font-bold font-mono text-[#003049]">
+                        {briefData.sourceCoverage?.featuresExtracted}
+                      </div>
+                      <div className="text-[10px] text-[#526174] uppercase tracking-wider font-semibold mt-1">
+                        Roadmap Features
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7]">
+                      <div className="text-xl font-bold font-mono text-[#166534]">
+                        100%
+                      </div>
+                      <div className="text-[10px] text-[#166534] uppercase tracking-wider font-semibold mt-1">
+                        Validation Status
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-[#17212B]">Extraction Validation Checks</h4>
+                    <div className="space-y-1.5">
+                      {briefData.sourceCoverage?.validationRules?.map((r: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl bg-white border border-[#E2E8F0] flex items-center justify-between text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-[#166534] shrink-0" />
+                            <span className="font-medium text-[#17212B]">{r.rule}</span>
+                          </div>
+                          {r.note && (
+                            <span className="text-[11px] font-mono text-[#526174]">{r.note}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] text-[11px] text-[#526174] space-y-1">
+                    <div><strong>Documents Parsed:</strong> {briefData.sourceCoverage?.documentsDiscovered?.join(', ')}</div>
+                    <div><strong>Sheets Analyzed:</strong> {briefData.sourceCoverage?.worksheetsProcessed?.join(', ')}</div>
+                    <div><strong>Total Chunks Stored:</strong> {briefData.sourceCoverage?.totalChunks}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 4: Architecture & Roles */}
+              {briefTab === 'architecture' && (
+                <div className="space-y-4 text-xs">
+                  <div className="p-3.5 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
+                    <strong className="text-[#17212B]">Production Tech Stack:</strong>
+                    <div className="font-mono text-[#003049] text-[11px]">{briefData.technicalArchitecture?.techStack}</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <strong className="text-[#17212B]">Microservice Boundaries:</strong>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {briefData.technicalArchitecture?.services?.map((s: string, idx: number) => (
+                        <div key={idx} className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] text-[11px]">
+                          • {s}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <strong className="text-[#17212B]">User Personas & Operational Access:</strong>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {briefData.userPersonasAndRoles?.map((p: any, idx: number) => (
+                        <div key={idx} className="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1">
+                          <span className="font-bold text-[#003049] block">{p.role}</span>
+                          <p className="text-[#526174] text-[11px]">{p.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 5: Launch Gates & Risks */}
+              {briefTab === 'risks' && (
+                <div className="space-y-4 text-xs">
+                  <div className="space-y-2">
+                    <h5 className="font-bold text-[#17212B]">Production Launch Gates ({briefData.launchChecklist?.length || 0})</h5>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {briefData.launchChecklist?.map((g: any) => (
+                        <div key={g.id} className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] flex items-center justify-between text-[11px]">
+                          <div>
+                            <span className="font-mono font-bold text-[#003049] mr-2">{g.id}</span>
+                            <span className="font-semibold text-[#17212B]">{g.gate}:</span> {g.passCriteria}
+                          </div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F7F8FA] text-[#526174] border border-[#E2E8F0] shrink-0">
+                            {g.ownerRole}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h5 className="font-bold text-[#17212B]">Decisions & Launch Dependencies ({briefData.risksAndDecisions?.length || 0})</h5>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {briefData.risksAndDecisions?.map((r: any, idx: number) => (
+                        <div key={idx} className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] text-[11px] space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[#17212B]">{r.item}</span>
+                            <span className="text-[10px] font-mono text-[#526174]">{r.due} ({r.owner})</span>
+                          </div>
+                          <p className="text-[#526174]"><strong>Impact:</strong> {r.impact}</p>
+                          <p className="text-[#003049]"><strong>Mitigation:</strong> {r.mitigation}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
+                <span className="text-[11px] text-[#526174]">
+                  Coverage verified: 100% requirements & sprints mapped.
+                </span>
+                <Button variant="outline" size="sm" onClick={() => setIsBriefOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

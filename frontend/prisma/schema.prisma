@@ -86,12 +86,16 @@ model User {
   comments        Comment[]
   refreshTokens   RefreshToken[]
   userRoles       UserRole[]
+  invitationsSent     ProjectInvitation[] @relation("InvitationInviter")
+  invitationsReceived ProjectInvitation[] @relation("InvitationRecipient")
+  notifications       Notification[]
 
   @@map("users")
 }
 
 model Project {
   id                   String   @id @default(uuid())
+  slug                 String   @unique
   name                 String
   description          String?  @db.Text
   goals                String?  @db.Text
@@ -115,6 +119,9 @@ model Project {
   features       ProjectFeature[]
   documentChunks DocumentChunk[]
   userRoles      UserRole[]
+  slugRedirects  ProjectSlugRedirect[]
+  invitations    ProjectInvitation[]
+  notifications  Notification[]
 
   @@map("projects")
 }
@@ -389,3 +396,83 @@ model UserRole {
   @@index([projectId])
   @@map("user_roles")
 }
+
+model ProjectSlugRedirect {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([slug])
+  @@index([projectId])
+  @@map("project_slug_redirects")
+}
+
+enum InvitationStatus {
+  PENDING  @map("pending")
+  ACCEPTED @map("accepted")
+  DECLINED @map("declined")
+  REVOKED  @map("revoked")
+  EXPIRED  @map("expired")
+
+  @@map("invitation_status")
+}
+
+enum NotificationType {
+  PROJECT_INVITATION          @map("project_invitation")
+  PROJECT_INVITATION_ACCEPTED @map("project_invitation_accepted")
+  PROJECT_INVITATION_DECLINED @map("project_invitation_declined")
+  SYSTEM                      @map("system")
+
+  @@map("notification_type")
+}
+
+model ProjectInvitation {
+  id             String           @id @default(uuid())
+  projectId      String           @map("project_id")
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedUserId  String?          @map("invited_user_id")
+  invitedUser    User?            @relation("InvitationRecipient", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  recipientEmail String           @map("recipient_email")
+  inviterId      String           @map("inviter_id")
+  inviter        User             @relation("InvitationInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  role           ProjectRole
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime         @map("expires_at")
+  respondedAt    DateTime?        @map("responded_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  notifications Notification[]
+
+  @@index([projectId, status])
+  @@index([invitedUserId, status])
+  @@index([recipientEmail, status])
+  @@index([inviterId])
+  @@map("project_invitations")
+}
+
+model Notification {
+  id           String             @id @default(uuid())
+  recipientId  String             @map("recipient_id")
+  recipient    User               @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  type         NotificationType
+  title        String
+  message      String             @db.Text
+  projectId    String?            @map("project_id")
+  project      Project?           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitationId String?            @map("invitation_id")
+  invitation   ProjectInvitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  readAt       DateTime?          @map("read_at")
+  metadata     Json?
+  createdAt    DateTime           @default(now()) @map("created_at")
+
+  @@unique([invitationId, type, recipientId])
+  @@index([recipientId, createdAt])
+  @@index([recipientId, readAt])
+  @@index([projectId])
+  @@index([invitationId])
+  @@map("notifications")
+}
+

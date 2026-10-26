@@ -33,6 +33,10 @@ export const ALLOWED_FORMATS: Record<string, { ext: string; mimes: string[] }> =
       'application/vnd.ms-excel',
     ],
   },
+  xls: {
+    ext: '.xls',
+    mimes: ['application/vnd.ms-excel', 'application/msexcel'],
+  },
   csv: {
     ext: '.csv',
     mimes: ['text/csv', 'application/csv', 'text/plain'],
@@ -89,7 +93,7 @@ export function validateFile(
     return {
       valid: false,
       format: '',
-      error: `Unsupported format "${ext}". Supported formats: .pdf, .docx, .md, .txt, .xlsx, .csv`,
+      error: `Unsupported format "${ext}". Supported formats: .pdf, .docx, .md, .txt, .xlsx, .xls, .csv`,
     };
   }
 
@@ -221,7 +225,64 @@ function parseCsv(content: string): ParsingResult {
 }
 
 /**
- * Parse Excel .xlsx file
+ * Structured entities extracted from multi-sheet spreadsheets
+ */
+export interface ExcelStructuredData {
+  sprints: Array<{
+    sprint: string;
+    sprintName: string;
+    start: string;
+    end: string;
+    goal: string;
+    deliverables: string;
+    exitCriteria: string;
+    capacityNote?: string;
+    dependencies?: string;
+    sourceLocation?: string;
+  }>;
+  ticketCandidates: Array<{
+    ticketId: string;
+    sprint: string;
+    epic: string;
+    title: string;
+    description: string;
+    acceptanceCriteria: string;
+    priority: string;
+    ownerRole: string;
+    storyPoints: number;
+    dependencies: string;
+    status: string;
+    notes?: string;
+    prdTraceability?: string;
+    sourceLocation?: string;
+  }>;
+  risksAndDecisions: Array<{
+    type: string;
+    item: string;
+    impact: string;
+    mitigation: string;
+    owner: string;
+    due: string;
+    sourceLocation?: string;
+  }>;
+  launchChecklist: Array<{
+    id: string;
+    gate: string;
+    passCriteria: string;
+    ownerRole: string;
+    status: string;
+    sourceLocation?: string;
+  }>;
+  sheetSummaries: Array<{
+    sheetName: string;
+    totalRows: number;
+    dataRows: number;
+    headers: string[];
+  }>;
+}
+
+/**
+ * Parse Excel .xlsx / .xls file across every worksheet
  */
 function parseExcel(buffer: Buffer): ParsingResult {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -230,23 +291,206 @@ function parseExcel(buffer: Buffer): ParsingResult {
   const fullTextParts: string[] = [];
   let order = 0;
 
+  const structuredData: ExcelStructuredData = {
+    sprints: [],
+    ticketCandidates: [],
+    risksAndDecisions: [],
+    launchChecklist: [],
+    sheetSummaries: [],
+  };
+
   for (const sheetName of sheetNames) {
     const sheet = workbook.Sheets[sheetName];
-    const csvData = XLSX.utils.sheet_to_csv(sheet);
-    if (!csvData.trim()) continue;
+    if (!sheet) continue;
 
-    fullTextParts.push(`=== Sheet: ${sheetName} ===\n${csvData}`);
+    const rawRows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, raw: false, defval: '' });
+    if (!rawRows || rawRows.length === 0) continue;
 
-    const lines = csvData.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    const rowsPerChunk = 15;
-    for (let r = 0; r < lines.length; r += rowsPerChunk) {
-      const slice = lines.slice(r, r + rowsPerChunk);
+    const nonEmptyRows = rawRows.filter(
+      (r) => Array.isArray(r) && r.some((c) => c && String(c).trim().length > 0)
+    );
+    if (nonEmptyRows.length === 0) continue;
+
+    const lowerSheet = sheetName.toLowerCase();
+
+    // 1. Identify sheet header row index
+    let headerIdx = -1;
+    if (lowerSheet.includes('roadmap')) {
+      headerIdx = rawRows.findIndex(
+        (r) =>
+          Array.isArray(r) &&
+          r.some((c) => String(c).trim() === 'Sprint') &&
+          r.some((c) => String(c).toLowerCase().includes('sprint name'))
+      );
+    } else if (lowerSheet.includes('ticket') || lowerSheet.includes('backlog')) {
+      headerIdx = rawRows.findIndex(
+        (r) =>
+          Array.isArray(r) &&
+          r.some((c) => String(c).toLowerCase().includes('ticket id') || String(c).trim() === 'Ticket ID')
+      );
+    } else if (lowerSheet.includes('risk') || lowerSheet.includes('decision')) {
+      headerIdx = rawRows.findIndex(
+        (r) =>
+          Array.isArray(r) &&
+          r.some((c) => String(c).trim() === 'Item' || String(c).trim() === 'Type') &&
+          r.some((c) => String(c).toLowerCase().includes('impact'))
+      );
+    } else if (lowerSheet.includes('launch') || lowerSheet.includes('checklist') || lowerSheet.includes('gate')) {
+      headerIdx = rawRows.findIndex(
+        (r) =>
+          Array.isArray(r) &&
+          r.some((c) => String(c).toLowerCase().includes('gate')) &&
+          r.some((c) => String(c).toLowerCase().includes('pass criteria'))
+      );
+    }
+
+    if (headerIdx === -1) {
+      for (let i = 0; i < Math.min(6, rawRows.length); i++) {
+        const r = rawRows[i];
+        if (Array.isArray(r) && r.filter((c) => c && String(c).trim().length > 0).length >= 2) {
+          headerIdx = i;
+          break;
+        }
+      }
+    }
+
+    const headers = headerIdx >= 0 ? rawRows[headerIdx].map((h) => String(h || '').trim()) : [];
+    const validHeaders = headers.filter(Boolean);
+
+    structuredData.sheetSummaries.push({
+      sheetName,
+      totalRows: rawRows.length,
+      dataRows: headerIdx >= 0 ? Math.max(0, rawRows.length - headerIdx - 1) : rawRows.length,
+      headers: validHeaders,
+    });
+
+    // 2. Extract specific structured entities
+    if (lowerSheet.includes('roadmap') && headerIdx >= 0) {
+      for (let i = headerIdx + 1; i < rawRows.length; i++) {
+        const r = rawRows[i];
+        if (!r || !r[0]) continue;
+        const sprintCode = String(r[0]).trim();
+        if (!sprintCode || sprintCode.toLowerCase().includes('sprint')) continue;
+
+        structuredData.sprints.push({
+          sprint: sprintCode,
+          sprintName: String(r[1] || '').trim(),
+          start: String(r[2] || '').trim(),
+          end: String(r[3] || '').trim(),
+          goal: String(r[4] || '').trim(),
+          deliverables: String(r[5] || '').trim(),
+          exitCriteria: String(r[6] || '').trim(),
+          capacityNote: String(r[7] || '').trim(),
+          dependencies: String(r[8] || '').trim(),
+          sourceLocation: `Sheet "Roadmap", Row ${i + 1}`,
+        });
+      }
+    } else if ((lowerSheet.includes('ticket') || lowerSheet.includes('backlog')) && headerIdx >= 0) {
+      for (let i = headerIdx + 1; i < rawRows.length; i++) {
+        const r = rawRows[i];
+        if (!r || !r[0]) continue;
+        const ticketId = String(r[0]).trim();
+        if (!ticketId || ticketId.toLowerCase().includes('ticket id')) continue;
+
+        const storyPoints = parseInt(String(r[8] || '3'), 10) || 3;
+
+        structuredData.ticketCandidates.push({
+          ticketId,
+          sprint: String(r[1] || '').trim(),
+          epic: String(r[2] || '').trim(),
+          title: String(r[3] || '').trim(),
+          description: String(r[4] || '').trim(),
+          acceptanceCriteria: String(r[5] || '').trim(),
+          priority: String(r[6] || 'P0').trim(),
+          ownerRole: String(r[7] || '').trim(),
+          storyPoints,
+          dependencies: String(r[9] || 'None').trim(),
+          status: String(r[10] || 'Not Started').trim(),
+          notes: String(r[11] || '').trim(),
+          prdTraceability: String(r[12] || '').trim(),
+          sourceLocation: `Sheet "Ticket Backlog", Row ${i + 1}`,
+        });
+      }
+    } else if ((lowerSheet.includes('risk') || lowerSheet.includes('decision')) && headerIdx >= 0) {
+      for (let i = headerIdx + 1; i < rawRows.length; i++) {
+        const r = rawRows[i];
+        if (!r || !r[1]) continue;
+        structuredData.risksAndDecisions.push({
+          type: String(r[0] || 'Risk').trim(),
+          item: String(r[1] || '').trim(),
+          impact: String(r[2] || '').trim(),
+          mitigation: String(r[3] || '').trim(),
+          owner: String(r[4] || '').trim(),
+          due: String(r[5] || '').trim(),
+          sourceLocation: `Sheet "Risks & Decisions", Row ${i + 1}`,
+        });
+      }
+    } else if ((lowerSheet.includes('launch') || lowerSheet.includes('checklist')) && headerIdx >= 0) {
+      for (let i = headerIdx + 1; i < rawRows.length; i++) {
+        const r = rawRows[i];
+        if (!r || !r[1]) continue;
+        structuredData.launchChecklist.push({
+          id: String(r[0] || '').trim(),
+          gate: String(r[1] || '').trim(),
+          passCriteria: String(r[2] || '').trim(),
+          ownerRole: String(r[3] || '').trim(),
+          status: String(r[4] || 'Not Started').trim(),
+          sourceLocation: `Sheet "Launch Checklist", Row ${i + 1}`,
+        });
+      }
+    }
+
+    // 3. Generate high-fidelity semantic chunks with column headers on every chunk
+    if (lowerSheet.includes('ticket') || lowerSheet.includes('backlog')) {
+      const tickets = structuredData.ticketCandidates;
+      fullTextParts.push(`=== Sheet: ${sheetName} (${tickets.length} Ticket Candidates) ===`);
+      const chunkSize = 10;
+      for (let k = 0; k < tickets.length; k += chunkSize) {
+        const batch = tickets.slice(k, k + chunkSize);
+        const chunkLines = [
+          `[Sheet: ${sheetName} | Rows ${k + 2}–${k + 1 + batch.length} | Candidates ${batch[0].ticketId} to ${batch[batch.length - 1].ticketId}]`,
+          `Table Columns: Ticket ID | Sprint | Epic | Title | Priority | Owner | Points | Scope | Acceptance Criteria | PRD Ref`,
+          ...batch.map(
+            (t) =>
+              `- [${t.ticketId}] (${t.sprint}, ${t.epic}, ${t.priority}, ${t.storyPoints} pts, ${t.ownerRole}): "${t.title}". Scope: ${t.description} | Acceptance: ${t.acceptanceCriteria} | Deps: ${t.dependencies} | PRD: ${t.prdTraceability}`
+          ),
+        ];
+        chunks.push({
+          chunkText: chunkLines.join('\n'),
+          location: `Sheet "${sheetName}", Rows ${k + 2}–${k + 1 + batch.length} (${batch[0].ticketId}–${batch[batch.length - 1].ticketId})`,
+          sourceHeading: `Sheet: ${sheetName}`,
+          order: order++,
+        });
+      }
+    } else if (lowerSheet.includes('roadmap')) {
+      const sps = structuredData.sprints;
+      fullTextParts.push(`=== Sheet: ${sheetName} (${sps.length} Sprints) ===`);
+      const sprintLines = sps.map(
+        (s) =>
+          `Sprint ${s.sprint} [${s.sprintName}] (${s.start} to ${s.end}): Goal: ${s.goal}. Deliverables: ${s.deliverables}. Exit Criteria: ${s.exitCriteria}. Deps: ${s.dependencies}`
+      );
+      fullTextParts.push(sprintLines.join('\n\n'));
       chunks.push({
-        chunkText: slice.join('\n'),
-        location: `Sheet "${sheetName}", Rows ${r + 1}–${Math.min(r + rowsPerChunk, lines.length)}`,
+        chunkText: `[Sheet: ${sheetName} | Sprints Overview]\n` + sprintLines.join('\n\n'),
+        location: `Sheet "${sheetName}", Rows 3–${sps.length + 2}`,
         sourceHeading: `Sheet: ${sheetName}`,
         order: order++,
       });
+    } else {
+      const csv = XLSX.utils.sheet_to_csv(sheet);
+      fullTextParts.push(`=== Sheet: ${sheetName} ===\n${csv}`);
+      const lines = csv.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      const rowsPerChunk = 15;
+      for (let r = 0; r < lines.length; r += rowsPerChunk) {
+        const slice = lines.slice(r, r + rowsPerChunk);
+        const headerPrefix = validHeaders.length > 0 ? `[Headers: ${validHeaders.join(' | ')}]\n` : '';
+        chunks.push({
+          chunkText: `[Sheet: ${sheetName} | Rows ${r + 1}–${Math.min(r + rowsPerChunk, lines.length)}]\n${headerPrefix}${slice.join('\n')}`,
+          location: `Sheet "${sheetName}", Rows ${r + 1}–${Math.min(r + rowsPerChunk, lines.length)}`,
+          sourceHeading: `Sheet: ${sheetName}`,
+          order: order++,
+        });
+      }
     }
   }
 
@@ -256,6 +500,12 @@ function parseExcel(buffer: Buffer): ParsingResult {
     chunks,
     metadata: {
       sheetNames,
+      totalSheets: sheetNames.length,
+      sprintsCount: structuredData.sprints.length,
+      ticketCandidatesCount: structuredData.ticketCandidates.length,
+      risksCount: structuredData.risksAndDecisions.length,
+      launchGatesCount: structuredData.launchChecklist.length,
+      structuredData: structuredData as any,
       wordCount: fullText.split(/\s+/).filter(Boolean).length,
       characterCount: fullText.length,
     },
@@ -263,12 +513,13 @@ function parseExcel(buffer: Buffer): ParsingResult {
 }
 
 /**
- * Parse PDF file
+ * Parse PDF file with section heading detection and semantic chunking
  */
 async function parsePdf(buffer: Buffer): Promise<ParsingResult> {
   const pageChunks: ExtractedChunk[] = [];
   let fullText = '';
   let totalPages = 1;
+  const detectedSections: Array<{ title: string; page?: number }> = [];
 
   try {
     // pdf-parse v2 provides { PDFParse } class; v1 exported a default function
@@ -286,21 +537,46 @@ async function parsePdf(buffer: Buffer): Promise<ParsingResult> {
           const pageText = (p.text || '').trim();
           if (!pageText) return;
 
-          // If page text is large, split into chunks within the page
-          if (pageText.length > 1500) {
-            for (let i = 0; i < pageText.length; i += 1500) {
-              pageChunks.push({
-                chunkText: pageText.slice(i, i + 1500).trim(),
-                location: `Page ${pageNum} (Part ${Math.floor(i / 1500) + 1})`,
-                sourceHeading: `PDF Page ${pageNum}`,
-                order: order++,
-              });
+          // Scan page text for section headers
+          const lines = pageText.split('\n');
+          let currentPageHeading = `PDF Page ${pageNum}`;
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.match(/^[0-9]+(\.[0-9]+)*\s+[A-Z]/)) {
+              const headingTitle = trimmed.slice(0, 80);
+              if (currentPageHeading === `PDF Page ${pageNum}`) {
+                currentPageHeading = headingTitle;
+              }
+              if (!detectedSections.some((s) => s.title === headingTitle)) {
+                detectedSections.push({ title: headingTitle, page: pageNum });
+              }
+            }
+          }
+
+          // Chunk by paragraphs or length within page
+          const paragraphs = pageText.split(/\n\s*\n/).filter((pg: string) => pg.trim().length > 0);
+          if (paragraphs.length > 1) {
+            let currentParagraphGroup: string[] = [];
+            let partIndex = 1;
+            for (let i = 0; i < paragraphs.length; i++) {
+              currentParagraphGroup.push(paragraphs[i].trim());
+              const currentText = currentParagraphGroup.join('\n\n');
+              if (currentText.length > 1200 || i === paragraphs.length - 1) {
+                pageChunks.push({
+                  chunkText: `[PDF Page ${pageNum} | ${currentPageHeading}]\n${currentText}`,
+                  location: `Page ${pageNum} (Part ${partIndex})`,
+                  sourceHeading: currentPageHeading,
+                  order: order++,
+                });
+                partIndex++;
+                currentParagraphGroup = [];
+              }
             }
           } else {
             pageChunks.push({
-              chunkText: pageText,
+              chunkText: `[PDF Page ${pageNum} | ${currentPageHeading}]\n${pageText}`,
               location: `Page ${pageNum}`,
-              sourceHeading: `PDF Page ${pageNum}`,
+              sourceHeading: currentPageHeading,
               order: order++,
             });
           }
@@ -351,6 +627,8 @@ async function parsePdf(buffer: Buffer): Promise<ParsingResult> {
     metadata: {
       totalPages,
       pageCount: totalPages,
+      sections: detectedSections,
+      sectionsCount: detectedSections.length,
       wordCount,
       characterCount: fullText.length,
     },
@@ -398,8 +676,19 @@ async function parseDocx(buffer: Buffer): Promise<ParsingResult> {
  */
 export async function parseDocumentBuffer(
   buffer: Buffer,
-  format: string
+  formatOrFilename: string
 ): Promise<ParsingResult> {
+  let format = formatOrFilename.toLowerCase();
+  if (format.includes('/')) {
+    if (format.includes('pdf')) format = 'pdf';
+    else if (format.includes('spreadsheet') || format.includes('excel')) format = 'xlsx';
+    else if (format.includes('wordprocessing') || format.includes('docx')) format = 'docx';
+    else if (format.includes('csv')) format = 'csv';
+    else if (format.includes('text') || format.includes('markdown')) format = 'md';
+  } else if (format.includes('.')) {
+    format = format.split('.').pop() || '';
+  }
+
   switch (format) {
     case 'md':
     case 'txt':
@@ -407,13 +696,14 @@ export async function parseDocumentBuffer(
     case 'csv':
       return parseCsv(buffer.toString('utf-8'));
     case 'xlsx':
+    case 'xls':
       return parseExcel(buffer);
     case 'pdf':
       return await parsePdf(buffer);
     case 'docx':
       return await parseDocx(buffer);
     default:
-      throw new Error(`Unsupported document format: ${format}`);
+      throw new Error(`Unsupported document format: ${formatOrFilename}`);
   }
 }
 

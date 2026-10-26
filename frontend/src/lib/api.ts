@@ -14,6 +14,8 @@ import {
   Permission,
   UserRole,
   UserEffectivePermissions,
+  SprintPlan,
+  TicketDependency,
 } from '@/types';
 
 class ApiError extends Error {
@@ -368,6 +370,60 @@ export const authorizationApi = {
     projectId?: string | null;
   }): Promise<{ success: boolean; message: string }> {
     return request('/api/authorization/unassign', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+export const planApi = {
+  async generatePlan(
+    projectId: string,
+    options?: { defaultSprintCapacity?: number; maxSprints?: number; strictCapacity?: boolean; allowCoSprintDependencies?: boolean }
+  ): Promise<{ success: boolean; plan: SprintPlan }> {
+    return request(`/api/projects/${projectId}/plan/generate`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    });
+  },
+
+  async getLatestPlan(projectId: string): Promise<{ success: boolean; plan: SprintPlan }> {
+    return request(`/api/projects/${projectId}/plan/latest`);
+  },
+
+  async getPlanHistory(projectId: string): Promise<{ success: boolean; history: any[] }> {
+    return request(`/api/projects/${projectId}/plan/history`);
+  },
+
+  async approvePlan(
+    projectId: string,
+    planId: string
+  ): Promise<{ success: boolean; planId: string; version?: number; status: string; appliedTicketsCount: number }> {
+    return request(`/api/projects/${projectId}/plan/${planId}/approve`, {
+      method: 'POST',
+    });
+  },
+
+  async updateAllocation(
+    projectId: string,
+    planId: string,
+    payload: { ticketId: string; targetSprintId: string; isLocked?: boolean }
+  ): Promise<{ success: boolean; plan: SprintPlan }> {
+    return request(`/api/projects/${projectId}/plan/${planId}/allocation`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getDependencies(projectId: string): Promise<{ success: boolean; dependencies: TicketDependency[] }> {
+    return request(`/api/projects/${projectId}/dependencies`);
+  },
+
+  async createDependency(
+    projectId: string,
+    payload: { sourceTicketId: string; targetTicketId: string; type?: string; reason?: string }
+  ): Promise<{ success: boolean; dependency: TicketDependency }> {
+    return request(`/api/projects/${projectId}/dependencies`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });

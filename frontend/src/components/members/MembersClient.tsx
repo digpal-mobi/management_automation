@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { Project, ProjectMember, ProjectMemberRole } from '@/types';
+import { Project, ProjectInvitation, ProjectMember, ProjectMemberRole, User } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -32,6 +32,7 @@ import {
   AlertCircle,
   Shield,
   ChevronDown,
+  Mail,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -42,17 +43,30 @@ const inviteSchema = z.object({
 
 type InviteFormValues = z.infer<typeof inviteSchema>;
 
-export default function ProjectMembersPage() {
-  const params = useParams();
+interface MembersClientProps {
+  projectId: string;
+  projectSlug: string;
+  project: Project;
+  initialMembers: ProjectMember[];
+}
+
+export function MembersClient({
+  projectId,
+  projectSlug,
+  project: initialProject,
+  initialMembers,
+}: MembersClientProps) {
   const router = useRouter();
-  const projectId = params.id as string;
   const { user, fetchWithAuth, isLoading: authLoading } = useAuth();
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [userRole, setUserRole] = useState<ProjectMemberRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [project, setProject] = useState<Project | null>(initialProject);
+  const [members, setMembers] = useState<ProjectMember[]>(initialMembers);
+  const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
+  const [userRole, setUserRole] = useState<ProjectMemberRole | null>(initialProject.userRole || null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   // Invite Modal
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -65,6 +79,8 @@ export default function ProjectMembersPage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
@@ -73,6 +89,13 @@ export default function ProjectMembersPage() {
       role: 'developer',
     },
   });
+
+  const loadInvitations = useCallback(async () => {
+    const response = await fetchWithAuth(`/api/projects/${projectId}/invitations`);
+    if (!response.ok) return;
+    const data = await response.json();
+    if (data.success) setInvitations(data.invitations || []);
+  }, [fetchWithAuth, projectId]);
 
   const loadData = useCallback(async () => {
     try {
@@ -93,22 +116,55 @@ export default function ProjectMembersPage() {
       if (mRes.ok && mData.success) {
         setMembers(mData.members || []);
       }
+      await loadInvitations();
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to load team members');
     } finally {
       setLoading(false);
     }
-  }, [projectId, fetchWithAuth]);
+  }, [projectId, fetchWithAuth, loadInvitations]);
 
+  const isInitialMount = React.useRef(true);
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push(`/login?redirect=/projects/${projectId}/members`);
+      router.push(`/login?redirect=/projects/${projectSlug}/members`);
       return;
     }
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (initialProject && initialMembers.length > 0) {
+        void loadInvitations();
+        return;
+      }
+    }
     loadData();
-  }, [authLoading, user, projectId, router, loadData]);
+  }, [authLoading, user, projectId, projectSlug, router, loadData, loadInvitations, initialProject, initialMembers]);
+
+  const identifierValue = watch('identifier');
+
+  useEffect(() => {
+    if (!isInviteOpen) {
+      setSearchResults([]);
+      return;
+    }
+    const query = identifierValue?.trim() || '';
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timeout = window.setTimeout(async () => {
+      try {
+        const response = await fetchWithAuth(`/api/users/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        if (response.ok && data.success) setSearchResults(data.users || []);
+      } catch {
+        setSearchResults([]);
+      }
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [identifierValue, isInviteOpen, fetchWithAuth]);
 
   // Invite Member Handler
   const onInviteSubmit = async (values: InviteFormValues) => {
@@ -197,7 +253,36 @@ export default function ProjectMembersPage() {
     }
   };
 
+  const handleRevokeInvitation = async (invitationId: string) => {
+    if (!confirm('Revoke this pending invitation? The invitee will no longer be able to accept it.')) {
+      return;
+    }
+    try {
+      setRevokingId(invitationId);
+      const response = await fetchWithAuth(
+        `/api/projects/${projectId}/invitations/${invitationId}/revoke`,
+        { method: 'POST' }
+      );
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        toast.error(data.error || 'Failed to revoke invitation');
+        return;
+      }
+      toast.success('Invitation revoked');
+      setInvitations((current) =>
+        current.map((invitation) =>
+          invitation.id === invitationId ? { ...invitation, ...data.invitation, actionable: false } : invitation
+        )
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to revoke invitation');
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
   const isOwnerOrManager = userRole === 'owner' || userRole === 'manager';
+  const pendingInvitations = invitations.filter((invitation) => invitation.status === 'PENDING');
 
   if (loading || authLoading) {
     return (
@@ -239,7 +324,7 @@ export default function ProjectMembersPage() {
         backLink={{ label: 'All Projects', href: '/' }}
         breadcrumbs={[
           { label: 'Projects', href: '/' },
-          { label: project.name },
+          { label: project.name, href: `/projects/${projectSlug}` },
           { label: 'Team & Collaboration' },
         ]}
         icon={<Users className="h-6 w-6 text-[#003049]" />}
@@ -249,6 +334,7 @@ export default function ProjectMembersPage() {
           <div className="flex items-center gap-3">
             <ProjectNav
               projectId={projectId}
+              projectSlug={projectSlug}
               memberCount={members.length}
               ticketCount={project.ticketCount}
             />
@@ -400,6 +486,47 @@ export default function ProjectMembersPage() {
         </div>
       </Card>
 
+      {isOwnerOrManager && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Mail className="h-4 w-4 text-[#003049]" />
+              <span>Pending invitations ({pendingInvitations.length})</span>
+            </CardTitle>
+          </CardHeader>
+          <div className="divide-y divide-[#E2E8F0]">
+            {pendingInvitations.length === 0 && (
+              <p className="px-5 py-8 text-center text-xs text-[#526174]">
+                No pending invitations. Invited people do not get project access until they accept.
+              </p>
+            )}
+            {pendingInvitations.map((invitation) => (
+              <div
+                key={invitation.id}
+                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-[#17212B]">
+                    {invitation.invitee?.username || invitation.recipientEmail}
+                  </p>
+                  <p className="text-xs text-[#526174]">
+                    {invitation.recipientEmail} · {invitation.role} · pending
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  isLoading={revokingId === invitation.id}
+                  onClick={() => void handleRevokeInvitation(invitation.id)}
+                >
+                  Revoke
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Invite Member Modal */}
       <Dialog open={isInviteOpen} onOpenChange={(open) => !open && setIsInviteOpen(false)}>
         <DialogContent className="max-w-md">
@@ -421,6 +548,25 @@ export default function ProjectMembersPage() {
               error={errors.identifier?.message}
               {...register('identifier')}
             />
+            {searchResults.length > 0 && (
+              <ul className="max-h-40 overflow-auto rounded-xl border border-[#E2E8F0]">
+                {searchResults.map((result) => (
+                  <li key={result.id}>
+                    <button
+                      type="button"
+                      className="flex w-full flex-col px-3 py-2 text-left hover:bg-[#F1F4F7]"
+                      onClick={() => {
+                        setValue('identifier', result.email, { shouldValidate: true });
+                        setSearchResults([]);
+                      }}
+                    >
+                      <span className="text-xs font-semibold text-[#17212B]">{result.username}</span>
+                      <span className="text-[11px] text-[#526174]">{result.email}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             <Select label="Role *" {...register('role')}>
               <option value="developer">Developer (Create/edit tickets & comments)</option>
