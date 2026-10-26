@@ -2,11 +2,21 @@ import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { AiService } from '../services/aiService.js';
 import { socketService } from '../services/socketService.js';
+import { requireProjectAccess } from '../lib/projectAccess.js';
 
 export class MessageController {
   static async getTicketMessages(req: Request, res: Response) {
     try {
       const { id: ticketId } = req.params;
+      const ticket = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { projectId: true },
+      });
+      if (!ticket) {
+        return res.status(404).json({ success: false, error: 'Ticket not found' });
+      }
+      const role = await requireProjectAccess(req, res, ticket.projectId);
+      if (!role) return;
 
       const comments = await prisma.comment.findMany({
         where: { ticketId },
@@ -40,6 +50,8 @@ export class MessageController {
       if (!ticket) {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
+      const role = await requireProjectAccess(req, res, ticket.projectId);
+      if (!role) return;
 
       const isAi = senderType === 'AI';
       const comment = await prisma.comment.create({
@@ -87,6 +99,8 @@ export class MessageController {
       if (!ticket) {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
+      const role = await requireProjectAccess(req, res, ticket.projectId);
+      if (!role) return;
 
       const userMsg = await prisma.comment.create({
         data: {

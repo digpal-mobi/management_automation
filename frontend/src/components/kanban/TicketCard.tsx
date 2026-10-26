@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Ticket } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
-import { MessageSquare, User as UserIcon, CheckSquare } from 'lucide-react';
+import { MessageSquare, User as UserIcon, CheckSquare, Lock } from 'lucide-react';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -59,12 +59,29 @@ export function TicketCard({ ticket, onClick, isOverlay = false }: TicketCardPro
           : 'border-[#E2E8F0] hover:border-[#CBD5E1] hover:bg-[#FDFDFE]'
       }`}
     >
-      {/* Top Meta: Ticket ID, Type Badge, and Priority Badge */}
+      {/* Top Meta: Ticket ID / Candidate ID, Sprint badge, Type Badge, and Priority Badge */}
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-mono font-medium text-[#526174] bg-[#F1F4F7] px-1.5 py-0.5 rounded border border-[#E2E8F0]">
-            #{shortId}
-          </span>
+          {ticket.sourceCandidateId ? (
+            <span className="text-[11px] font-mono font-bold text-[#003049] bg-[#EFF5F9] px-1.5 py-0.5 rounded border border-[#669BBC]/30">
+              {ticket.sourceCandidateId}
+            </span>
+          ) : (
+            <span className="text-[11px] font-mono font-medium text-[#526174] bg-[#F1F4F7] px-1.5 py-0.5 rounded border border-[#E2E8F0]">
+              #{shortId}
+            </span>
+          )}
+          {ticket.sprint && (
+            <span className="text-[10px] font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+              {ticket.sprint}
+              {ticket.executionOrder ? ` · #${ticket.executionOrder}` : ''}
+            </span>
+          )}
+          {ticket.isLocked && (
+            <span title="Locked to sprint by PM" className="text-amber-600">
+              <Lock className="h-3 w-3 inline" />
+            </span>
+          )}
           <Badge variant="type" type={ticket.type} size="sm" />
         </div>
         <div className="flex items-center gap-1.5">

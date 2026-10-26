@@ -73,11 +73,24 @@ export async function authenticateRequest(req: Request): Promise<AuthenticatedUs
     token = (req as any).cookies.access_token;
   }
 
-  if (!token) {
-    return null;
+  let payload = token ? verifyAccessToken(token) : null;
+  if (!payload && (req as any).cookies?.refresh_token) {
+    const refreshToken = (req as any).cookies.refresh_token as string;
+    const refreshPayload = verifyRefreshToken(refreshToken);
+    if (refreshPayload) {
+      const activeToken = await prisma.refreshToken.findFirst({
+        where: {
+          tokenHash: hashToken(refreshToken),
+          userId: refreshPayload.userId,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { id: true },
+      });
+      if (activeToken) payload = refreshPayload;
+    }
   }
 
-  const payload = verifyAccessToken(token);
   if (!payload) {
     return null;
   }

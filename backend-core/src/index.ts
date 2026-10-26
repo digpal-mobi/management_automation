@@ -11,7 +11,10 @@ import projectRoutes from './routes/projectRoutes.js';
 import ticketRoutes from './routes/ticketRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import invitationRoutes from './routes/invitationRoutes.js';
 import { prisma } from './lib/prisma.js';
+import { ensureInvitationConstraints } from './services/invitationService.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -71,6 +74,8 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/tickets', messageRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/invitations', invitationRoutes);
 
 // 404 Handler
 app.use((req, res) => {
@@ -87,6 +92,10 @@ server.listen(config.port, () => {
   console.log(`🚀 Backend Core API running on http://localhost:${config.port}`);
   console.log(`🔌 WebSocket service active`);
   console.log(`🤖 Connected to AI Service at ${config.aiServiceUrl}`);
+  ensureInvitationConstraints().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[startup] invitation constraint check failed', message);
+  });
 });
 
 export { app, server };

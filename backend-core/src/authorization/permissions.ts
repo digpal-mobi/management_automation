@@ -50,6 +50,11 @@ export const PERMISSIONS = {
 
   // Analytics
   ANALYTICS_VIEW: 'analytics.view',
+
+  // Sprint Planning Brain
+  PLAN_VIEW: 'plan.view',
+  PLAN_GENERATE: 'plan.generate',
+  PLAN_APPROVE: 'plan.approve',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -361,5 +366,31 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     resource: 'analytics',
     action: 'view',
     category: 'Analytics',
+  },
+
+  // Sprint Planning Brain
+  {
+    key: PERMISSIONS.PLAN_VIEW,
+    name: 'View Sprint Plans',
+    description: 'Inspect sprint allocations, dependency graphs, and capacity forecasts',
+    resource: 'plan',
+    action: 'view',
+    category: 'Sprint Planning',
+  },
+  {
+    key: PERMISSIONS.PLAN_GENERATE,
+    name: 'Generate Sprint Plans',
+    description: 'Run the AI Sprint Planning Brain to sequence tickets and optimize allocations',
+    resource: 'plan',
+    action: 'generate',
+    category: 'Sprint Planning',
+  },
+  {
+    key: PERMISSIONS.PLAN_APPROVE,
+    name: 'Approve Sprint Plans',
+    description: 'Approve proposed sprint plans and apply allocations to live backlog and board',
+    resource: 'plan',
+    action: 'approve',
+    category: 'Sprint Planning',
   },
 ];

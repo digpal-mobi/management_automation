@@ -7,7 +7,6 @@ import { useAuth } from '@/context/AuthContext';
 import {
   Kanban,
   PlusCircle,
-  LogOut,
   LogIn,
   UserPlus,
   Users,
@@ -20,10 +19,11 @@ import {
   FolderKanban,
 } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Extract project ID if current pathname is /projects/[id]/...
@@ -129,33 +129,7 @@ export function Navbar() {
                 <span className="sm:hidden">New</span>
               </Link>
 
-              {/* Desktop User Profile Pill */}
-              <div className="hidden sm:flex items-center gap-2.5 pl-2 border-l border-[#E2E8F0]">
-                <Avatar
-                  name={user.username}
-                  email={user.email}
-                  avatarUrl={user.avatarUrl}
-                  size="sm"
-                />
-                <div className="text-left">
-                  <span className="text-xs font-semibold text-[#17212B] block leading-none">
-                    {user.username}
-                  </span>
-                  <span className="text-[10px] text-[#526174] block leading-none mt-1 truncate max-w-[140px]">
-                    {user.email}
-                  </span>
-                </div>
-              </div>
-
-              {/* Desktop Logout Button */}
-              <button
-                onClick={logout}
-                title="Log out"
-                aria-label="Log out"
-                className="hidden sm:flex p-1.5 rounded-xl text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#FDE8E8] transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
+              <ProfileDropdown onOpen={() => setMobileMenuOpen(false)} />
 
               {/* Mobile Menu Toggle Button */}
               <button
@@ -209,16 +183,7 @@ export function Navbar() {
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                logout();
-              }}
-              className="flex items-center gap-1 text-xs text-[#C1121F] hover:bg-[#FDF2F2] px-2.5 py-1.5 rounded-lg border border-[#E2E8F0]"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Logout</span>
-            </button>
+            <span className="text-[10px] text-[#526174]">Account menu</span>
           </div>
 
           {/* Navigation Links */}

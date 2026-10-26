@@ -4,6 +4,8 @@ import { prisma } from '../lib/prisma.js';
 import { authenticateRequest } from '../lib/auth.js';
 import { getProjectRole, canInviteMembers, canManageMembers } from '../lib/permissions.js';
 import { ProjectRole } from '@prisma/client';
+import { handleControllerError } from '../lib/apiError.js';
+import { InvitationService, InviteRole } from '../services/invitationService.js';
 
 const inviteSchema = z.object({
   identifier: z.string().min(1, 'Email or username is required'),
@@ -13,6 +15,13 @@ const inviteSchema = z.object({
 const roleSchema = z.object({
   role: z.enum(['manager', 'developer', 'editor']),
 });
+
+function serializeMember<T extends { role: string }>(member: T) {
+  return {
+    ...member,
+    role: member.role.toLowerCase(),
+  };
+}
 
 export class MemberController {
   static async getMembers(req: Request, res: Response) {
@@ -38,7 +47,7 @@ export class MemberController {
         orderBy: { invitedAt: 'asc' },
       });
 
-      return res.status(200).json({ success: true, members });
+      return res.status(200).json({ success: true, members: members.map(serializeMember) });
     } catch (error: any) {
       console.error('[MemberController.getMembers] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to fetch members' });
@@ -70,59 +79,21 @@ export class MemberController {
       }
 
       const { identifier, role } = parsed.data;
-      const cleanIdentifier = identifier.trim().toLowerCase();
-
-      const targetUser = await prisma.user.findFirst({
-        where: {
-          OR: [{ email: cleanIdentifier }, { username: cleanIdentifier }],
-        },
-      });
-
-      if (!targetUser) {
-        return res.status(404).json({
-          success: false,
-          error: `User "${identifier}" not found. Please ensure they have registered an account.`,
-        });
-      }
-
-      const existingMember = await prisma.projectMember.findUnique({
-        where: {
-          projectId_userId: { projectId, userId: targetUser.id },
-        },
-      });
-
-      if (existingMember) {
-        return res.status(409).json({
-          success: false,
-          error: `User "${targetUser.username}" is already a member of this project.`,
-        });
-      }
-
-      let prismaRole: ProjectRole = ProjectRole.DEVELOPER;
-      if (role === 'manager') prismaRole = ProjectRole.MANAGER;
-      if (role === 'editor') prismaRole = ProjectRole.EDITOR;
-
-      const member = await prisma.projectMember.create({
-        data: {
-          projectId,
-          userId: targetUser.id,
-          role: prismaRole,
-        },
-        include: {
-          user: {
-            select: { id: true, username: true, email: true, avatarUrl: true },
-          },
-        },
+      const result = await InvitationService.createInvitation({
+        projectId,
+        inviterId: user.id,
+        identifier,
+        role: role as InviteRole,
       });
 
       return res.status(201).json({
         success: true,
-        message: `${targetUser.username} has been added to the project as a ${role}.`,
-        member,
+        message: result.message,
+        invitation: result.invitation,
+        emailDelivered: result.emailDelivered,
       });
     } catch (error: any) {
-      console.error('[MemberController.inviteMember] Error:', error);
-      return res.status(500).json({ success: false, error: error.message || 'Failed to invite member' });
+      return handleControllerError(res, error, '[MemberController.inviteMember]');
     }
   }
 
@@ -178,7 +149,7 @@ export class MemberController {
         },
       });
 
-      return res.status(200).json({ success: true, member: updated });
+      return res.status(200).json({ success: true, member: serializeMember(updated) });
     } catch (error: any) {
       console.error('[MemberController.updateMemberRole] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to update member role' });

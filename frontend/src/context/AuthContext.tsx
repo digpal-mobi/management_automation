@@ -10,6 +10,7 @@ export interface AuthUser {
   username: string;
   role: string;
   avatarUrl?: string | null;
+  createdAt?: string;
 }
 
 interface AuthContextType {
@@ -187,9 +188,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
+        headers: memoryAccessToken
+          ? { Authorization: `Bearer ${memoryAccessToken}` }
+          : undefined,
       });
     } catch {
-      // Ignore
+      // The session is cleared locally even if the network call fails.
     } finally {
       setToken(null);
       setUser(null);

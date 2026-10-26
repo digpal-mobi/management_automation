@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { socketService } from '../services/socketService.js';
 import { TicketPriority, TicketStatus } from '@prisma/client';
+import { requireProjectAccess } from '../lib/projectAccess.js';
 
 export class TicketController {
   static async createTicket(req: Request, res: Response) {
@@ -23,6 +24,9 @@ export class TicketController {
       if (!projectId || !title) {
         return res.status(400).json({ success: false, error: 'projectId and title are required' });
       }
+
+      const role = await requireProjectAccess(req, res, projectId);
+      if (!role) return;
 
       // Resolve Board
       let bId = boardId;
@@ -98,6 +102,9 @@ export class TicketController {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
 
+      const role = await requireProjectAccess(req, res, ticket.projectId);
+      if (!role) return;
+
       return res.status(200).json({ success: true, ticket });
     } catch (error: any) {
       console.error('[TicketController.getTicketById] Error:', error);
@@ -125,6 +132,9 @@ export class TicketController {
       if (!existing) {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
+
+      const role = await requireProjectAccess(req, res, existing.projectId);
+      if (!role) return;
 
       const updateData: any = {};
       if (columnId !== undefined) {
@@ -180,6 +190,9 @@ export class TicketController {
       if (!ticket) {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
+
+      const role = await requireProjectAccess(req, res, ticket.projectId);
+      if (!role) return;
 
       await prisma.ticket.delete({ where: { id } });
 

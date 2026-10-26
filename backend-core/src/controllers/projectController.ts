@@ -5,6 +5,8 @@ import { socketService } from '../services/socketService.js';
 import { TicketPriority, TicketStatus } from '@prisma/client';
 import { authenticateRequest } from '../lib/auth.js';
 import { getProjectRole } from '../lib/permissions.js';
+import { listAccessibleProjectIds } from '../lib/projectAccess.js';
+import { generateUniqueProjectSlug, generateBaseSlug, isUuid } from '../lib/slug.js';
 
 export class ProjectController {
   static async createProject(req: Request, res: Response) {
@@ -12,6 +14,7 @@ export class ProjectController {
       const {
         name,
         description,
+        slug: requestedSlug,
         prdText,
         techStack,
         goals,
@@ -40,22 +43,39 @@ export class ProjectController {
         userId = defaultUser?.id;
       }
 
-      // 1. Create Project in PostgreSQL with all metadata fields
-      const project = await prisma.project.create({
-        data: {
-          name: name.trim(),
-          description: description.trim(),
-          goals: goals ? goals.trim() : null,
-          targetUsers: targetUsers ? targetUsers.trim() : null,
-          techStack: techStack ? techStack.trim() : null,
-          businessRequirements: businessRequirements ? businessRequirements.trim() : null,
-          technicalConstraints: technicalConstraints ? technicalConstraints.trim() : (constraints ? constraints.trim() : null),
-          knownDependencies: knownDependencies ? knownDependencies.trim() : null,
-          targetReleaseDate: targetReleaseDate ? targetReleaseDate.trim() : null,
-          additionalNotes: additionalNotes ? additionalNotes.trim() : null,
-          ownerId: userId || null,
-        },
-      });
+      // 1. Generate guaranteed unique slug
+      let slug = await generateUniqueProjectSlug(requestedSlug || name);
+
+      // 2. Create Project in PostgreSQL with all metadata fields (retry on race condition)
+      let project: any;
+      let attempts = 0;
+      while (!project && attempts < 5) {
+        try {
+          project = await prisma.project.create({
+            data: {
+              name: name.trim(),
+              slug,
+              description: description.trim(),
+              goals: goals ? goals.trim() : null,
+              targetUsers: targetUsers ? targetUsers.trim() : null,
+              techStack: techStack ? techStack.trim() : null,
+              businessRequirements: businessRequirements ? businessRequirements.trim() : null,
+              technicalConstraints: technicalConstraints ? technicalConstraints.trim() : (constraints ? constraints.trim() : null),
+              knownDependencies: knownDependencies ? knownDependencies.trim() : null,
+              targetReleaseDate: targetReleaseDate ? targetReleaseDate.trim() : null,
+              additionalNotes: additionalNotes ? additionalNotes.trim() : null,
+              ownerId: userId || null,
+            },
+          });
+        } catch (err: any) {
+          if (err.code === 'P2002' && (err.meta?.target?.includes('slug') || String(err).includes('slug'))) {
+            attempts++;
+            slug = await generateUniqueProjectSlug(`${name}-${attempts}`);
+          } else {
+            throw err;
+          }
+        }
+      }
 
       // Ensure Owner is registered as ProjectMember with OWNER role
       if (userId) {
@@ -71,6 +91,7 @@ export class ProjectController {
             projectId: project.id,
             userId,
             role: 'OWNER',
+            acceptedAt: new Date(),
           },
         });
       }
@@ -156,7 +177,13 @@ export class ProjectController {
   static async getProjects(req: Request, res: Response) {
     try {
       const authUser = await authenticateRequest(req);
+      if (!authUser) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const accessible = await listAccessibleProjectIds(authUser.id);
       const projects = await prisma.project.findMany({
+        where: accessible === 'all' ? undefined : { id: { in: accessible } },
         orderBy: { createdAt: 'desc' },
         include: {
           owner: {
@@ -191,13 +218,13 @@ export class ProjectController {
           const totalPoints = p.tickets.reduce((acc: number, t) => acc + (t.storyPoints || 0), 0);
           const completionRate = totalTickets > 0 ? Math.round((doneTickets / totalTickets) * 100) : 0;
 
-          let userRole = 'owner';
-          if (authUser) {
-            userRole = (await getProjectRole(p.id, authUser.id)) || (p.ownerId === authUser.id ? 'owner' : 'owner');
-          }
+          const userRole =
+            (await getProjectRole(p.id, authUser.id)) || (p.ownerId === authUser.id ? 'owner' : null);
+          if (!userRole) return null;
 
           return {
             id: p.id,
+            slug: p.slug,
             name: p.name,
             description: p.description,
             goals: p.goals,
@@ -226,7 +253,7 @@ export class ProjectController {
         })
       );
 
-      return res.status(200).json({ success: true, projects: formatted });
+      return res.status(200).json({ success: true, projects: formatted.filter(Boolean) });
     } catch (error: any) {
       console.error('[ProjectController.getProjects] Error:', error);
       return res.status(500).json({ success: false, error: error.message });
@@ -238,37 +265,73 @@ export class ProjectController {
       const { id } = req.params;
       const authUser = await authenticateRequest(req);
 
-      const project = await prisma.project.findUnique({
-        where: { id },
-        include: {
-          owner: { select: { id: true, username: true, email: true, avatarUrl: true } },
-          boards: {
-            include: {
-              columns: { orderBy: { position: 'asc' } },
-            },
-          },
-          _count: {
-            select: {
-              members: true,
-              tickets: true,
-              documents: true,
-              features: true,
-            },
+      const isIdUuid = isUuid(id);
+      let isRedirect = false;
+      let canonicalSlug: string | undefined = undefined;
+
+      const projectInclude = {
+        owner: { select: { id: true, username: true, email: true, avatarUrl: true } },
+        boards: {
+          include: {
+            columns: { orderBy: { position: 'asc' as const } },
           },
         },
+        _count: {
+          select: {
+            members: true,
+            tickets: true,
+            documents: true,
+            features: true,
+          },
+        },
+      };
+
+      let project: any = await prisma.project.findFirst({
+        where: isIdUuid ? { id } : { slug: id.toLowerCase() },
+        include: projectInclude,
       });
+
+      // If not found and not a UUID, check slug redirect history
+      if (!project && !isIdUuid) {
+        const redirectRecord = await prisma.projectSlugRedirect.findUnique({
+          where: { slug: id.toLowerCase() },
+          include: {
+            project: {
+              include: projectInclude,
+            },
+          },
+        });
+        if (redirectRecord?.project) {
+          project = redirectRecord.project;
+          isRedirect = true;
+          canonicalSlug = redirectRecord.project.slug;
+        }
+      }
 
       if (!project) {
         return res.status(404).json({ success: false, error: 'Project not found' });
       }
 
-      let userRole = 'owner';
-      if (authUser) {
-        userRole = (await getProjectRole(project.id, authUser.id)) || (project.ownerId === authUser.id ? 'owner' : 'owner');
+      if (!authUser) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const userRole =
+        (await getProjectRole(project.id, authUser.id)) ||
+        (project.ownerId === authUser.id ? 'owner' : null);
+      if (!userRole) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      // If accessed via legacy UUID, mark canonical slug
+      if (isIdUuid) {
+        canonicalSlug = project.slug;
       }
 
       return res.status(200).json({
         success: true,
+        isRedirect,
+        canonicalSlug: canonicalSlug || project.slug,
         project: {
           ...project,
           userRole,
@@ -370,6 +433,23 @@ export class ProjectController {
   static async getProjectAnalytics(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const authUser = await authenticateRequest(req);
+      if (!authUser) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const project = await prisma.project.findUnique({
+        where: { id },
+        select: { id: true, ownerId: true },
+      });
+      if (!project) {
+        return res.status(404).json({ success: false, error: 'Project not found' });
+      }
+
+      const userRole = await getProjectRole(project.id, authUser.id);
+      if (!userRole) {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
 
       const tickets = await prisma.ticket.findMany({
         where: { projectId: id },
@@ -431,6 +511,7 @@ export class ProjectController {
       const { id } = req.params;
       const {
         name,
+        slug: customSlug,
         description,
         techStack,
         goals,
@@ -443,14 +524,55 @@ export class ProjectController {
         additionalNotes,
       } = req.body;
 
+      const authUser = await authenticateRequest(req);
+      if (!authUser) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const current = await prisma.project.findFirst({
+        where: isUuid(id) ? { id } : { slug: id.toLowerCase() },
+        select: { id: true, name: true, slug: true, ownerId: true },
+      });
+
+      if (!current) {
+        return res.status(404).json({ success: false, error: 'Project not found' });
+      }
+
+      const userRole = await getProjectRole(current.id, authUser.id);
+      if (userRole !== 'owner' && userRole !== 'manager') {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      let nextSlug: string | undefined = undefined;
+      if (customSlug && customSlug.trim() && customSlug.trim().toLowerCase() !== current.slug) {
+        nextSlug = await generateUniqueProjectSlug(customSlug.trim(), current.id);
+      } else if (name && name.trim() && name.trim() !== current.name) {
+        nextSlug = await generateUniqueProjectSlug(name.trim(), current.id);
+      }
+
+      if (nextSlug && nextSlug !== current.slug) {
+        // Record previous slug in redirects table so old URLs continue working seamlessly
+        await prisma.projectSlugRedirect.upsert({
+          where: { slug: current.slug },
+          update: { projectId: current.id },
+          create: { slug: current.slug, projectId: current.id },
+        });
+
+        // Clean up any redirect record matching new slug
+        await prisma.projectSlugRedirect.deleteMany({
+          where: { slug: nextSlug },
+        });
+      }
+
       const effectiveConstraints = technicalConstraints !== undefined
         ? technicalConstraints
         : (constraints !== undefined ? constraints : undefined);
 
       const updated = await prisma.project.update({
-        where: { id },
+        where: { id: current.id },
         data: {
           name: name ? name.trim() : undefined,
+          slug: nextSlug || undefined,
           description: description !== undefined ? description : undefined,
           goals: goals !== undefined ? goals : undefined,
           targetUsers: targetUsers !== undefined ? targetUsers : undefined,
@@ -473,7 +595,25 @@ export class ProjectController {
   static async deleteProject(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      await prisma.project.delete({ where: { id } });
+      const authUser = await authenticateRequest(req);
+      if (!authUser) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const project = await prisma.project.findUnique({
+        where: { id },
+        select: { id: true, ownerId: true },
+      });
+      if (!project) {
+        return res.status(404).json({ success: false, error: 'Project not found' });
+      }
+
+      const userRole = await getProjectRole(project.id, authUser.id);
+      if (userRole !== 'owner') {
+        return res.status(403).json({ success: false, error: 'Access denied' });
+      }
+
+      await prisma.project.delete({ where: { id: project.id } });
       socketService.broadcast('project:deleted', { projectId: id });
       return res.status(200).json({ success: true, message: 'Project deleted' });
     } catch (error: any) {
