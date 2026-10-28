@@ -8,6 +8,8 @@ export interface BoardFilters {
   assigneeId: string;
   sprint: string;
   isSemantic: boolean;
+  assignedToMe?: boolean;
+  urgentOnly?: boolean;
 }
 
 interface BoardState {
@@ -30,6 +32,8 @@ const initialState: BoardState = {
     assigneeId: 'ALL',
     sprint: 'ALL',
     isSemantic: false,
+    assignedToMe: false,
+    urgentOnly: false,
   },
   loading: false,
   error: null,
@@ -79,6 +83,8 @@ export const boardSlice = createSlice({
         assigneeId: 'ALL',
         sprint: 'ALL',
         isSemantic: false,
+        assignedToMe: false,
+        urgentOnly: false,
       };
     },
     moveTicketOptimistic: (

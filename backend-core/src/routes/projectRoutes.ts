@@ -58,6 +58,7 @@ router.get('/:id/board', BoardColumnController.getProjectBoard);
 router.post('/:id/board/columns', BoardColumnController.createColumn);
 router.put('/:id/board/columns/reorder', BoardColumnController.reorderColumns);
 router.patch('/:id/board/columns/:columnId', BoardColumnController.updateColumn);
+router.post('/:id/board/columns/:columnId/duplicate', BoardColumnController.duplicateColumn);
 router.delete('/:id/board/columns/:columnId', BoardColumnController.deleteColumn);
 
 // --- Member Routes ---
@@ -96,15 +97,18 @@ router.post('/:id/brief/generate', AnalysisController.generateBrief);
 // --- Ticket Routes (Scoped under Project) ---
 router.get('/:id/tickets', ProjectTicketController.getTickets);
 router.post('/:id/tickets', ProjectTicketController.createTicket);
+router.put('/:id/tickets/reorder', ProjectTicketController.reorderTickets);
 router.delete('/:id/tickets', ProjectTicketController.clearProjectTickets);
 router.get('/:id/tickets/search', ProjectTicketController.searchTickets);
 router.get('/:id/tickets/:ticketId', ProjectTicketController.getTicketById);
+router.put('/:id/tickets/:ticketId', ProjectTicketController.updateTicket);
 router.patch('/:id/tickets/:ticketId', ProjectTicketController.updateTicket);
 router.delete('/:id/tickets/:ticketId', ProjectTicketController.deleteTicket);
 
 // --- Ticket Comments & AI Assistant ---
 router.get('/:id/tickets/:ticketId/comments', ProjectTicketController.getComments);
 router.post('/:id/tickets/:ticketId/comments', ProjectTicketController.createComment);
+router.put('/:id/tickets/:ticketId/comments/:commentId', ProjectTicketController.updateComment);
 router.patch('/:id/tickets/:ticketId/comments/:commentId', ProjectTicketController.updateComment);
 router.delete('/:id/tickets/:ticketId/comments/:commentId', ProjectTicketController.deleteComment);
 router.post('/:id/tickets/:ticketId/comments/:commentId/retry', ProjectTicketController.retryComment);

@@ -198,6 +198,8 @@ export interface BoardColumn {
   category: TicketStatus;
   isDefault: boolean;
   color?: string | null;
+  wipLimit?: number | null;
+  isCollapsed?: boolean;
   createdAt?: string;
   updatedAt?: string;
   tickets?: Ticket[];

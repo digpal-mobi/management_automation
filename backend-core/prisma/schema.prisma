@@ -352,6 +352,7 @@ model BoardColumn {
   category    TicketStatus @default(TODO)
   isDefault   Boolean      @default(false) @map("is_default")
   color       String?
+  wipLimit    Int?         @default(0) @map("wip_limit")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 

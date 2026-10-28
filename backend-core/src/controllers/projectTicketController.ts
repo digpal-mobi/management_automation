@@ -30,7 +30,28 @@ const updateTicketSchema = z.object({
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']).optional(),
   assigneeId: z.string().optional().nullable(),
   storyPoints: z.number().int().optional().nullable(),
+  executionOrder: z.number().int().optional().nullable(),
+  acceptanceCriteria: z.any().optional().nullable(),
+  technicalNotes: z.string().optional().nullable(),
+  prChecklist: z.any().optional().nullable(),
+  sprint: z.string().optional().nullable(),
 });
+
+const ticketOrderItemSchema = z.object({
+  id: z.string(),
+  columnId: z.string().optional(),
+  status: z.enum(['To Do', 'In Progress', 'Done', 'TODO', 'IN_PROGRESS', 'DONE']).optional(),
+  executionOrder: z.number().int().min(0),
+});
+
+const reorderTicketsSchema = z.union([
+  z.object({
+    ticketOrders: z.array(ticketOrderItemSchema).min(1, 'ticketOrders cannot be empty'),
+  }),
+  z.object({
+    updates: z.array(ticketOrderItemSchema).min(1, 'updates cannot be empty'),
+  }),
+]);
 
 const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty').max(3000),
@@ -290,30 +311,92 @@ export class ProjectTicketController {
         });
       }
 
-      const { title, description, status, columnId, priority, type, assigneeId, storyPoints } = parsed.data;
+      const {
+        title,
+        description,
+        status,
+        columnId,
+        priority,
+        type,
+        assigneeId,
+        storyPoints,
+        executionOrder,
+        acceptanceCriteria,
+        technicalNotes,
+        prChecklist,
+        sprint,
+      } = parsed.data;
 
-      // Status change check
-      if (status !== undefined || columnId !== undefined) {
+      // 1. Status / Column / Order change check
+      let hasStatusChanged = false;
+      let targetDbStatus: TicketStatus | undefined = undefined;
+      if (status !== undefined) {
+        if (status === 'In Progress' || status === 'IN_PROGRESS') targetDbStatus = TicketStatus.IN_PROGRESS;
+        else if (status === 'Done' || status === 'DONE') targetDbStatus = TicketStatus.DONE;
+        else targetDbStatus = TicketStatus.TODO;
+
+        if (targetDbStatus !== existingTicket.status) {
+          hasStatusChanged = true;
+        }
+      }
+      if (columnId !== undefined && columnId !== existingTicket.columnId) {
+        hasStatusChanged = true;
+      }
+      if (executionOrder !== undefined && executionOrder !== existingTicket.executionOrder) {
+        hasStatusChanged = true;
+      }
+
+      if (hasStatusChanged) {
         const statusAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_CHANGE_STATUS, projectId);
         if (!statusAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.change_status permission' });
         }
       }
 
-      // Assignment change check
-      if (assigneeId !== undefined && assigneeId !== existingTicket.assigneeId) {
+      // 2. Assignment change check
+      const normalizedAssignee = assigneeId === '' || assigneeId === undefined ? null : assigneeId;
+      const existingAssignee = existingTicket.assigneeId || null;
+      const hasAssigneeChanged = assigneeId !== undefined && normalizedAssignee !== existingAssignee;
+
+      if (hasAssigneeChanged) {
         const assignAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_ASSIGN, projectId);
         if (!assignAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.assign permission' });
         }
       }
 
-      // General update check
-      if (title !== undefined || description !== undefined || priority !== undefined || type !== undefined || storyPoints !== undefined) {
+      // 3. General update check
+      const hasTitleChanged = title !== undefined && title.trim() !== existingTicket.title;
+      const hasDescriptionChanged = description !== undefined && (description ? description.trim() : null) !== (existingTicket.description || null);
+      const hasPriorityChanged = priority !== undefined && priority.toUpperCase() !== existingTicket.priority;
+      const hasTypeChanged = type !== undefined && type.toUpperCase() !== existingTicket.type;
+      const hasStoryPointsChanged = storyPoints !== undefined && storyPoints !== existingTicket.storyPoints;
+      const hasTechnicalNotesChanged = technicalNotes !== undefined && (technicalNotes ? technicalNotes.trim() : null) !== (existingTicket.technicalNotes || null);
+      const hasSprintChanged = sprint !== undefined && (sprint ? sprint.trim() : null) !== (existingTicket.sprint || null);
+      const hasAcChanged = acceptanceCriteria !== undefined && JSON.stringify(acceptanceCriteria) !== JSON.stringify(existingTicket.acceptanceCriteria);
+      const hasPrChanged = prChecklist !== undefined && JSON.stringify(prChecklist) !== JSON.stringify(existingTicket.prChecklist);
+
+      const hasGeneralUpdate =
+        hasTitleChanged ||
+        hasDescriptionChanged ||
+        hasPriorityChanged ||
+        hasTypeChanged ||
+        hasStoryPointsChanged ||
+        hasTechnicalNotesChanged ||
+        hasSprintChanged ||
+        hasAcChanged ||
+        hasPrChanged;
+
+      if (hasGeneralUpdate) {
         const updateAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_UPDATE, projectId);
         if (!updateAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.update permission' });
         }
+      }
+
+      // If nothing changed, return existing ticket directly
+      if (!hasStatusChanged && !hasAssigneeChanged && !hasGeneralUpdate) {
+        return res.status(200).json({ success: true, ticket: existingTicket });
       }
 
       const updateData: any = {};
@@ -323,6 +406,11 @@ export class ProjectTicketController {
       if (type !== undefined) updateData.type = type.toUpperCase() as TicketType;
       if (assigneeId !== undefined) updateData.assigneeId = assigneeId || null;
       if (storyPoints !== undefined) updateData.storyPoints = storyPoints;
+      if (executionOrder !== undefined) updateData.executionOrder = executionOrder ?? 0;
+      if (acceptanceCriteria !== undefined) updateData.acceptanceCriteria = acceptanceCriteria;
+      if (technicalNotes !== undefined) updateData.technicalNotes = technicalNotes ? technicalNotes.trim() : null;
+      if (prChecklist !== undefined) updateData.prChecklist = prChecklist;
+      if (sprint !== undefined) updateData.sprint = sprint ? sprint.trim() : null;
 
       // Synchronize columnId and status
       if (columnId !== undefined && columnId !== null) {
@@ -372,6 +460,50 @@ export class ProjectTicketController {
     } catch (error: any) {
       console.error('[ProjectTicketController.updateTicket] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to update ticket' });
+    }
+  }
+
+  static async reorderTickets(req: Request, res: Response) {
+    try {
+      const { id: projectId } = req.params;
+      const auth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_CHANGE_STATUS, projectId);
+      if (!auth.authorized) {
+        return res.status(auth.status || 403).json({ success: false, error: auth.reason });
+      }
+
+      const parsed = reorderTicketsSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          error: (parsed.error as any).issues?.[0]?.message || parsed.error.message,
+        });
+      }
+
+      const ticketOrders = 'ticketOrders' in parsed.data ? parsed.data.ticketOrders : parsed.data.updates;
+
+      await prisma.$transaction(
+        ticketOrders.map((item) => {
+          const data: any = { executionOrder: item.executionOrder };
+          if (item.columnId) data.columnId = item.columnId;
+          if (item.status) {
+            let dbStatus: TicketStatus = TicketStatus.TODO;
+            if (item.status === 'In Progress' || item.status === 'IN_PROGRESS') dbStatus = TicketStatus.IN_PROGRESS;
+            else if (item.status === 'Done' || item.status === 'DONE') dbStatus = TicketStatus.DONE;
+            data.status = dbStatus;
+          }
+          return prisma.ticket.update({
+            where: { id: item.id },
+            data,
+          });
+        })
+      );
+
+      socketService.emitToProject(projectId, 'tickets:reordered', { ticketOrders });
+
+      return res.status(200).json({ success: true, message: 'Tickets reordered successfully' });
+    } catch (error: any) {
+      console.error('[ProjectTicketController.reorderTickets] Error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Failed to reorder tickets' });
     }
   }
 

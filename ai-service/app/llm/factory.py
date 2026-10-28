@@ -15,7 +15,7 @@ class LLMOrchestrator:
         if Config.GROQ_API_KEY:
             target_model = Config.GROQ_FALLBACK_MODEL if fallback_model else Config.GROQ_MODEL
             try:
-                provider_tag = f"groq ({target_model})"
+                provider_tag = "TaskPulse AI"
                 return GroqProvider(model=target_model), provider_tag
             except Exception as e:
                 logger.warning(f"Failed to initialize GroqProvider ({target_model}): {e}")
