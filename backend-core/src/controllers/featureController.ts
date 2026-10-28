@@ -49,9 +49,11 @@ export class FeatureController {
             select: {
               id: true,
               title: true,
+              description: true,
               status: true,
               priority: true,
               type: true,
+              storyPoints: true,
             },
           },
         },
@@ -266,6 +268,31 @@ export class FeatureController {
     } catch (error: any) {
       console.error('[FeatureController.generateAllTickets] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Whole-project backlog generation failed' });
+    }
+  }
+
+  /**
+   * Mode C: Generate Tickets for a Single Selected Sprint (e.g. S1, S2, etc.)
+   */
+  static async generateSprintTickets(req: Request, res: Response) {
+    try {
+      const user = await authenticateRequest(req);
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const { id: projectId, sprint } = req.params;
+      const userRole = await getProjectRole(projectId, user.id);
+      if (!userRole || userRole === 'editor') {
+        return res.status(403).json({ success: false, error: 'Forbidden. Editors cannot generate tickets.' });
+      }
+
+      const result = await ProjectSynthesisService.generateTicketsForSprint(projectId, sprint);
+
+      return res.status(200).json(result);
+    } catch (error: any) {
+      console.error('[FeatureController.generateSprintTickets] Error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Sprint ticket generation failed' });
     }
   }
 }

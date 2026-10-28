@@ -8,10 +8,11 @@ import { Search, X, Sparkles, ChevronDown } from 'lucide-react';
 
 interface BoardFiltersProps {
   members?: ProjectMember[];
+  sprints?: string[];
   onSemanticSearch?: (query: string) => void;
 }
 
-export function BoardFilters({ members = [] }: BoardFiltersProps) {
+export function BoardFilters({ members = [], sprints = [] }: BoardFiltersProps) {
   const dispatch = useAppDispatch();
   const { filters } = useAppSelector((state) => state.board);
 
@@ -20,6 +21,7 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
     filters.priority !== 'ALL' ||
     filters.type !== 'ALL' ||
     filters.assigneeId !== 'ALL' ||
+    filters.sprint !== 'ALL' ||
     filters.isSemantic;
 
   return (
@@ -73,6 +75,23 @@ export function BoardFilters({ members = [] }: BoardFiltersProps) {
 
       {/* Select Filter Controls */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Sprint Filter */}
+        <div className="relative flex-1 sm:flex-initial min-w-[125px]">
+          <select
+            value={filters.sprint}
+            onChange={(e) => dispatch(setFilters({ sprint: e.target.value }))}
+            className="w-full px-3 py-2 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#003049] text-xs font-semibold text-[#003049] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none pr-8 transition-colors shadow-xs"
+            title="Filter Kanban board by specific development sprint"
+          >
+            <option value="ALL">All Sprints</option>
+            {sprints.map((s) => (
+              <option key={s} value={s}>
+                Sprint {s}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#003049] pointer-events-none" />
+        </div>
         {/* Priority Filter */}
         <div className="relative flex-1 sm:flex-initial min-w-[120px]">
           <select

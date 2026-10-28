@@ -83,6 +83,7 @@ router.get('/:id/features/:featureId', FeatureController.getFeatureById);
 router.patch('/:id/features/:featureId', FeatureController.updateFeature);
 router.delete('/:id/features/:featureId', FeatureController.deleteFeature);
 router.post('/:id/features/:featureId/generate-tickets', FeatureController.generateTickets);
+router.post('/:id/sprints/:sprint/generate-tickets', FeatureController.generateSprintTickets);
 router.post('/:id/backlog/generate-all', FeatureController.generateAllTickets);
 
 // --- Analysis & Project Brief Routes ---
@@ -95,6 +96,7 @@ router.post('/:id/brief/generate', AnalysisController.generateBrief);
 // --- Ticket Routes (Scoped under Project) ---
 router.get('/:id/tickets', ProjectTicketController.getTickets);
 router.post('/:id/tickets', ProjectTicketController.createTicket);
+router.delete('/:id/tickets', ProjectTicketController.clearProjectTickets);
 router.get('/:id/tickets/search', ProjectTicketController.searchTickets);
 router.get('/:id/tickets/:ticketId', ProjectTicketController.getTicketById);
 router.patch('/:id/tickets/:ticketId', ProjectTicketController.updateTicket);
