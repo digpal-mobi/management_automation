@@ -37,6 +37,7 @@ export function RoadmapContainer({
   const canEdit =
     project.userRole === 'owner' ||
     project.userRole === 'manager' ||
+    project.userRole === 'developer' ||
     Boolean(user && (project.ownerId === user.id || (project as any).createdBy?.id === user.id)) ||
     user?.role === 'admin' ||
     !project.userRole;

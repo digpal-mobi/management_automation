@@ -141,9 +141,12 @@ export async function fetchServerBoard(
     if (!res.ok) return { columns: [], tickets: [] };
     const data = await res.json();
     const columns = data.board?.columns ? [...data.board.columns].sort((a: any, b: any) => a.position - b.position) : [];
+    const tickets = (data.tickets && data.tickets.length > 0)
+      ? data.tickets
+      : columns.flatMap((c: any) => c.tickets || []);
     return {
       columns,
-      tickets: data.tickets || [],
+      tickets,
     };
   } catch {
     return { columns: [], tickets: [] };

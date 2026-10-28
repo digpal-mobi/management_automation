@@ -1255,6 +1255,220 @@ export class ProjectSynthesisService {
   }
 
   /**
+   * Mode C: Sprint-Scoped Ticket Generation
+   * Generates or instantiates tickets ONLY for the specified sprint (e.g. 'S1', 'S2', etc.)
+   */
+  static async generateTicketsForSprint(projectId: string, sprintCode: string): Promise<{
+    success: boolean;
+    sprint: string;
+    totalCandidates: number;
+    createdCount: number;
+    existingCount: number;
+    boardId: string;
+    tickets: any[];
+  }> {
+    const cleanSprint = sprintCode.trim().toUpperCase();
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        analysis: true,
+        features: true,
+        boards: {
+          include: {
+            columns: { orderBy: { position: 'asc' } },
+          },
+        },
+      },
+    });
+
+    if (!project) throw new Error('Project not found');
+
+    let board = project.boards[0];
+    if (!board) {
+      board = await prisma.board.create({
+        data: {
+          projectId,
+          name: `${project.name} Delivery Board`,
+        },
+        include: { columns: true },
+      });
+    }
+
+    let todoCol = board.columns?.find((c) => c.category === TicketStatus.TODO) || board.columns?.[0];
+    if (!todoCol) {
+      todoCol = await prisma.boardColumn.create({
+        data: {
+          boardId: board.id,
+          name: 'To Do',
+          position: 0,
+          category: TicketStatus.TODO,
+          isDefault: true,
+        },
+      });
+    }
+
+    const reconciliations: CandidateReconciliationItem[] =
+      ((project.analysis?.candidateReconciliations as any) as CandidateReconciliationItem[]) || [];
+
+    if (reconciliations.length === 0) {
+      await this.synthesizeProject(projectId);
+      return this.generateTicketsForSprint(projectId, sprintCode);
+    }
+
+    // Filter candidate reconciliations strictly for this sprint
+    const sprintCandidates = reconciliations.filter(
+      (c) => (c.sprint || '').trim().toUpperCase() === cleanSprint
+    );
+
+    let createdCount = 0;
+    let existingCount = 0;
+    const createdTickets = [];
+
+    // Helper map of feature name to feature record
+    const featureMap = new Map<string, ProjectFeature>();
+    for (const f of project.features) {
+      featureMap.set(f.name.toLowerCase(), f);
+    }
+
+    for (const cand of sprintCandidates) {
+      // Check if ticket already exists
+      const existingTicket = await prisma.ticket.findFirst({
+        where: {
+          projectId,
+          OR: [
+            { sourceCandidateId: cand.candidateId },
+            { title: { contains: cand.candidateId } },
+            { title: cand.title },
+          ],
+        },
+      });
+
+      if (existingTicket) {
+        if (!existingTicket.sprint || existingTicket.sprint !== cleanSprint) {
+          const updated = await prisma.ticket.update({
+            where: { id: existingTicket.id },
+            data: { sprint: cleanSprint },
+          });
+          existingTicket.sprint = updated.sprint;
+        }
+        existingCount++;
+        createdTickets.push(existingTicket);
+        cand.mappedTicketId = existingTicket.id;
+        continue;
+      }
+
+      // Priority mapping
+      let priorityVal: TicketPriority = TicketPriority.MEDIUM;
+      const rawPrio = (cand.priority || '').toUpperCase();
+      if (rawPrio.includes('P0') || rawPrio.includes('CRIT') || rawPrio.includes('HIGH')) {
+        priorityVal = TicketPriority.HIGH;
+      } else if (rawPrio.includes('P1') || rawPrio.includes('MED')) {
+        priorityVal = TicketPriority.MEDIUM;
+      } else {
+        priorityVal = TicketPriority.LOW;
+      }
+
+      let typeVal: TicketType = TicketType.TASK;
+      const rawEpic = (cand.epic || '').toLowerCase();
+      if (rawEpic.includes('bug') || cand.title.toLowerCase().includes('bug') || cand.title.toLowerCase().includes('defect')) {
+        typeVal = TicketType.BUG;
+      } else if (rawEpic.includes('platform') || rawEpic.includes('infra') || rawEpic.includes('devops')) {
+        typeVal = TicketType.TASK;
+      } else if (rawEpic.includes('improve') || rawEpic.includes('tuning')) {
+        typeVal = TicketType.IMPROVEMENT;
+      } else {
+        typeVal = TicketType.FEATURE;
+      }
+
+      // Format Acceptance Criteria
+      const acList = cand.acceptanceCriteria
+        .split(/[;\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((text, idx) => ({
+          id: `ac-${idx + 1}`,
+          text: text.startsWith('Given') || text.startsWith('Verify') ? text : `Verify that ${text}`,
+          completed: false,
+        }));
+
+      if (acList.length === 0) {
+        acList.push({
+          id: 'ac-1',
+          text: `Verify implementation meets specifications for "${cand.title}".`,
+          completed: false,
+        });
+      }
+
+      // Match Parent Feature
+      const matchedFeature =
+        featureMap.get(cand.mappedFeatureName.toLowerCase()) ||
+        project.features.find((f) => f.sprint?.toUpperCase() === cleanSprint);
+
+      const ticket = await prisma.ticket.create({
+        data: {
+          projectId,
+          boardId: board.id,
+          columnId: todoCol.id,
+          featureId: matchedFeature?.id || null,
+          sourceCandidateId: cand.candidateId,
+          sprint: cand.sprint,
+          module: cand.mappedModuleName || cand.epic,
+          ownershipRole: cand.ownerRole,
+          title: `[${cand.candidateId}] ${cand.title}`,
+          description: `**User Objective / Scope:**\n${cand.description}\n\n**Sprint Allocation:** ${cand.sprint} | **Epic:** ${cand.epic}\n**PRD Traceability:** ${cand.prdTraceability || 'Standard Specifications'}\n${cand.notes ? `\n**Delivery Notes:** ${cand.notes}` : ''}`,
+          status: TicketStatus.TODO,
+          priority: priorityVal,
+          type: typeVal,
+          storyPoints: cand.storyPoints || 3,
+          acceptanceCriteria: acList,
+          technicalNotes: `Prerequisites / Dependencies: ${cand.dependencies}\nAssigned Role Category: ${cand.ownerRole}\nSource Reference: ${cand.sourceLocation}`,
+          prChecklist: [
+            { id: 'pr-1', text: 'Clean build with zero TypeScript or lint errors', completed: false },
+            { id: 'pr-2', text: 'Unit and integration tests written and passing', completed: false },
+            { id: 'pr-3', text: 'No secrets or sensitive tokens committed', completed: false },
+            { id: 'pr-4', text: 'PR description includes implementation notes and test verification', completed: false },
+          ],
+          definitionOfDone: [
+            { id: 'dod-1', text: 'All acceptance criteria verified in staging environment', completed: false },
+            { id: 'dod-2', text: 'Code review approved by designated lead', completed: false },
+            { id: 'dod-3', text: 'Documentation and API contracts updated if applicable', completed: false },
+          ],
+          sourceReferences: [
+            {
+              docTitle: 'Ecommerce_Sprint_Plan.xlsx',
+              location: cand.sourceLocation,
+              candidateId: cand.candidateId,
+            },
+          ],
+        },
+      });
+
+      cand.mappedTicketId = ticket.id;
+      createdTickets.push(ticket);
+      createdCount++;
+    }
+
+    // Update candidate reconciliations with mapped ticket IDs in analysis
+    await prisma.projectAnalysis.update({
+      where: { projectId },
+      data: {
+        candidateReconciliations: reconciliations as any,
+      },
+    });
+
+    return {
+      success: true,
+      sprint: cleanSprint,
+      totalCandidates: sprintCandidates.length,
+      createdCount,
+      existingCount,
+      boardId: board.id,
+      tickets: createdTickets,
+    };
+  }
+
+  /**
    * Mode B: Feature-by-Feature Ticket Generation
    */
   static async generateTicketsForFeature(projectId: string, featureId: string) {

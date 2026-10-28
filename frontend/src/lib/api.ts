@@ -196,6 +196,25 @@ export const featuresApi = {
       method: 'POST',
     });
   },
+
+  async generateSprintTickets(
+    projectId: string,
+    sprint: string
+  ): Promise<{ success: boolean; sprint: string; createdCount: number; existingCount: number; tickets: Ticket[] }> {
+    return request(`/api/projects/${projectId}/sprints/${encodeURIComponent(sprint)}/generate-tickets`, {
+      method: 'POST',
+    });
+  },
+
+  async clearTickets(
+    projectId: string,
+    sprint?: string
+  ): Promise<{ success: boolean; deletedCount: number; message: string }> {
+    const q = sprint && sprint !== 'ALL' ? `?sprint=${encodeURIComponent(sprint)}` : '';
+    return request(`/api/projects/${projectId}/tickets${q}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 export const membersApi = {

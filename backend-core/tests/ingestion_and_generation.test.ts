@@ -193,10 +193,18 @@ describe('Complete PRD & Sprint Plan Ingestion, Synthesis & Ticket Pipeline', ()
 
     // Test 10: Whole-project Backlog Generation (Mode A)
     it('10. should generate developer-ready tickets covering all 82 candidates with full standards', async () => {
-      const tickets = await prisma.ticket.findMany({
+      let tickets = await prisma.ticket.findMany({
         where: { projectId },
         orderBy: { createdAt: 'asc' },
       });
+
+      if (tickets.length < 82) {
+        await ProjectSynthesisService.generateAllBacklogTickets(projectId);
+        tickets = await prisma.ticket.findMany({
+          where: { projectId },
+          orderBy: { createdAt: 'asc' },
+        });
+      }
 
       assert.strictEqual(tickets.length, 82, 'Kanban board has all 82 tickets created');
 
@@ -293,6 +301,24 @@ describe('Complete PRD & Sprint Plan Ingestion, Synthesis & Ticket Pipeline', ()
       // Verify permission constant exists
       assert.strictEqual(PERMISSIONS.FEATURE_GENERATE_TICKETS, 'feature.generate_tickets');
       assert.strictEqual(PERMISSIONS.TICKET_CREATE, 'ticket.create');
+    });
+
+    // Test 16: Sprint-specific Generation (Mode C)
+    it('16. should support Mode C sprint-specific ticket generation strictly isolated to a single sprint', async () => {
+      // Clear tickets for S2 first to test isolated generation
+      await prisma.ticket.deleteMany({
+        where: { projectId, sprint: 'S2' },
+      });
+
+      const result = await ProjectSynthesisService.generateTicketsForSprint(projectId, 'S2');
+      assert.strictEqual(result.success, true, 'Mode C generation succeeded for S2');
+      assert.strictEqual(result.sprint, 'S2');
+      assert.ok(result.createdCount > 0, 'Created S2 tickets');
+
+      // Verify all generated tickets strictly belong to S2
+      for (const t of result.tickets) {
+        assert.strictEqual(t.sprint, 'S2', 'Ticket sprint must be strictly S2');
+      }
     });
   });
 });

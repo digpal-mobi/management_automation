@@ -593,4 +593,38 @@ export class ProjectTicketController {
       return res.status(500).json({ success: false, error: error.message || 'Retry failed' });
     }
   }
+
+  static async clearProjectTickets(req: Request, res: Response) {
+    try {
+      const user = await authenticateRequest(req);
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const { id: projectId } = req.params;
+      const { sprint } = req.query;
+      const userRole = await getProjectRole(projectId, user.id);
+      if (userRole !== 'owner' && userRole !== 'manager') {
+        return res.status(403).json({ success: false, error: 'Forbidden. Only owners and managers can clear tickets.' });
+      }
+
+      const whereClause: any = { projectId };
+      if (sprint && typeof sprint === 'string' && sprint !== 'ALL') {
+        whereClause.sprint = sprint.toUpperCase();
+      }
+
+      const result = await prisma.ticket.deleteMany({
+        where: whereClause,
+      });
+
+      return res.status(200).json({
+        success: true,
+        deletedCount: result.count,
+        message: sprint ? `Cleared ${result.count} tickets for sprint ${sprint}` : `Cleared all ${result.count} project tickets`,
+      });
+    } catch (error: any) {
+      console.error('[ProjectTicketController.clearProjectTickets] Error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Failed to clear tickets' });
+    }
+  }
 }

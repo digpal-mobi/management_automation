@@ -76,7 +76,13 @@ export function Board({
     }
     return [];
   });
-  const [tickets, setTickets] = useState<Ticket[]>(initialTickets);
+  const [tickets, setTickets] = useState<Ticket[]>(() => {
+    if (initialTickets && initialTickets.length > 0) return initialTickets;
+    if (initialColumns && initialColumns.length > 0) {
+      return initialColumns.flatMap((c) => c.tickets || []);
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(
     !(initialColumns && initialColumns.length > 0)
   );
@@ -157,7 +163,10 @@ export function Board({
       if (res.success && res.board) {
         const sortedCols = [...(res.board.columns || [])].sort((a, b) => a.position - b.position);
         setColumns(sortedCols);
-        setTickets(res.tickets || []);
+        const allTickets = (res.tickets && res.tickets.length > 0)
+          ? res.tickets
+          : sortedCols.flatMap((c: any) => c.tickets || []);
+        setTickets(allTickets);
       }
     } catch (err) {
       console.error('Failed to load board data:', err);
@@ -242,9 +251,23 @@ export function Board({
         return false;
       }
 
+      // Sprint filter
+      if (filters.sprint && filters.sprint !== 'ALL' && ticket.sprint !== filters.sprint) {
+        return false;
+      }
+
       return true;
     });
   }, [tickets, semanticResults, filters]);
+
+  // Distinct sprints available on board
+  const availableSprints = useMemo(() => {
+    const set = new Set<string>();
+    tickets.forEach((t) => {
+      if (t.sprint) set.add(t.sprint);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }, [tickets]);
 
   // Group tickets by columnId
   const columnTicketsMap = useMemo(() => {
@@ -526,7 +549,7 @@ export function Board({
     <div className="w-full min-w-0">
       {/* Board Header Action Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
+        {/* <div>
           <h2 className="text-xl font-bold text-[#17212B] flex items-center gap-2.5">
             <Kanban className="h-5 w-5 text-[#003049]" />
             <span>Interactive Kanban Board</span>
@@ -534,7 +557,7 @@ export function Board({
           <p className="text-xs text-[#526174] mt-1">
             Drag tickets across columns, add custom stages, and streamline development velocity.
           </p>
-        </div>
+        </div> */}
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5 flex-wrap">
@@ -601,7 +624,7 @@ export function Board({
       </div>
 
       {/* Board Filters & Semantic Search Bar */}
-      <BoardFilters members={members} />
+      <BoardFilters members={members} sprints={availableSprints} />
 
       {/* Semantic Search Banner */}
       {filters.isSemantic && filters.search.trim() && (

@@ -162,6 +162,8 @@ export class BoardColumnController {
         })),
       }));
 
+      const allTickets = formattedColumns.flatMap((col) => col.tickets);
+
       return res.status(200).json({
         success: true,
         project,
@@ -172,6 +174,7 @@ export class BoardColumnController {
           createdAt: board!.createdAt,
           columns: formattedColumns,
         },
+        tickets: allTickets,
       });
     } catch (error: any) {
       console.error('[BoardColumnController.getProjectBoard] Error:', error);

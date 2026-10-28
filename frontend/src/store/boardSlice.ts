@@ -6,6 +6,7 @@ export interface BoardFilters {
   priority: 'ALL' | TicketPriority;
   type: string;
   assigneeId: string;
+  sprint: string;
   isSemantic: boolean;
 }
 
@@ -27,6 +28,7 @@ const initialState: BoardState = {
     priority: 'ALL',
     type: 'ALL',
     assigneeId: 'ALL',
+    sprint: 'ALL',
     isSemantic: false,
   },
   loading: false,
@@ -75,6 +77,7 @@ export const boardSlice = createSlice({
         priority: 'ALL',
         type: 'ALL',
         assigneeId: 'ALL',
+        sprint: 'ALL',
         isSemantic: false,
       };
     },
