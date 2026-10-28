@@ -265,7 +265,9 @@ export interface Ticket {
   executionOrder?: number;
   isLocked?: boolean;
   assigneeId?: string | null;
+  assigneeIds?: string[];
   assignee?: User | null;
+  assignees?: User[];
   reporterId?: string | null;
   reporter?: User | null;
   createdAt: string;

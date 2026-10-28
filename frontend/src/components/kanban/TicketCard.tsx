@@ -137,6 +137,15 @@ export function TicketCard({
     });
   }
 
+  // Multi-assignee support
+  const cardAssignees =
+    ticket.assignees && ticket.assignees.length > 0
+      ? ticket.assignees
+      : ticket.assignee
+      ? [ticket.assignee]
+      : [];
+  const cardAssigneeIds = cardAssignees.map((a) => a.id);
+
   // Copy ticket link handler
   const handleCopyLink = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -371,28 +380,30 @@ export function TicketCard({
                             onAssign(ticket, null);
                           }}
                           className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-slate-100 ${
-                            !ticket.assigneeId ? 'font-bold text-primary' : 'text-slate-600'
+                            cardAssignees.length === 0 ? 'font-bold text-primary' : 'text-slate-600'
                           }`}
                         >
                           <span>Unassigned</span>
-                          {!ticket.assigneeId && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                          {cardAssignees.length === 0 && <CheckCircle2 className="h-3 w-3 text-primary" />}
                         </button>
-                        {members.map((m) => (
-                          <button
-                            key={m.userId}
-                            type="button"
-                            onClick={() => {
-                              setMenuOpen(false);
-                              onAssign(ticket, m.userId);
-                            }}
-                            className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-slate-100 ${
-                              ticket.assigneeId === m.userId ? 'font-bold text-primary' : 'text-slate-600'
-                            }`}
-                          >
-                            <span className="truncate">{m.user.username || m.user.email}</span>
-                            {ticket.assigneeId === m.userId && <CheckCircle2 className="h-3 w-3 text-primary" />}
-                          </button>
-                        ))}
+                        {members.map((m) => {
+                          const isAssigned = cardAssigneeIds.includes(m.userId);
+                          return (
+                            <button
+                              key={m.userId}
+                              type="button"
+                              onClick={() => {
+                                onAssign(ticket, m.userId);
+                              }}
+                              className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-slate-100 ${
+                                isAssigned ? 'font-bold text-primary bg-primary/5' : 'text-slate-600'
+                              }`}
+                            >
+                              <span className="truncate">{m.user.username || m.user.email}</span>
+                              {isAssigned && <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -505,19 +516,32 @@ export function TicketCard({
       <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
         {/* Assignee Avatar */}
         <div className="flex items-center gap-1.5">
-          {ticket.assignee ? (
+          {cardAssignees.length > 0 ? (
             <div
               className="flex items-center gap-1.5"
-              title={ticket.assignee.username || ticket.assignee.email}
+              title={cardAssignees.map((a) => a.username || a.email).join(', ')}
             >
-              <Avatar
-                name={ticket.assignee.username}
-                email={ticket.assignee.email}
-                avatarUrl={ticket.assignee.avatarUrl}
-                size="xs"
-              />
+              <div className="flex items-center -space-x-1.5">
+                {cardAssignees.slice(0, 3).map((u, i) => (
+                  <div key={u.id || i} className="relative ring-1.5 ring-white rounded-full">
+                    <Avatar
+                      name={u.username}
+                      email={u.email}
+                      avatarUrl={u.avatarUrl}
+                      size="xs"
+                    />
+                  </div>
+                ))}
+                {cardAssignees.length > 3 && (
+                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 ring-1.5 ring-white text-[9px] font-bold text-slate-600">
+                    +{cardAssignees.length - 3}
+                  </span>
+                )}
+              </div>
               <span className="text-[11px] text-slate-600 font-medium truncate max-w-[110px]">
-                {ticket.assignee.username || ticket.assignee.email}
+                {cardAssignees.length === 1
+                  ? cardAssignees[0].username || cardAssignees[0].email
+                  : `${cardAssignees.length} assignees`}
               </span>
             </div>
           ) : (

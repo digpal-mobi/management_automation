@@ -18,7 +18,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
-import { PlusCircle } from 'lucide-react';
+import { Avatar } from '@/components/ui/Avatar';
+import { PlusCircle, User, UserPlus, Check, ChevronDown, X } from 'lucide-react';
 
 const createTicketFormSchema = z.object({
   title: z.string().min(1, 'Ticket title is required').max(200),
@@ -55,6 +56,21 @@ export function CreateTicketModal({
 }: CreateTicketModalProps) {
   const { fetchWithAuth } = useAuth();
   const [submitting, setSubmitting] = useState(false);
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([]);
+  const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
+  const assigneeDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close assignee dropdown on click outside
+  React.useEffect(() => {
+    if (!isAssigneeOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target as Node)) {
+        setIsAssigneeOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAssigneeOpen]);
 
   // Compute default columnId
   const defaultColId = initialColumnId || columns[0]?.id || '';
@@ -93,8 +109,21 @@ export function CreateTicketModal({
         columnId: initialColumnId || columns[0]?.id || '',
         assigneeId: '',
       });
+      setSelectedAssigneeIds([]);
+      setIsAssigneeOpen(false);
     }
   }, [isOpen, initialStatus, initialColumnId, columns, reset]);
+
+  const handleToggleAssignee = (userId: string) => {
+    setSelectedAssigneeIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleRemoveAssignee = (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedAssigneeIds((prev) => prev.filter((id) => id !== userId));
+  };
 
   // When column changes, synchronize status with column category if possible
   const handleColumnChange = (colId: string) => {
@@ -114,7 +143,8 @@ export function CreateTicketModal({
         body: JSON.stringify({
           ...values,
           columnId: values.columnId || null,
-          assigneeId: values.assigneeId || null,
+          assigneeIds: selectedAssigneeIds,
+          assigneeId: selectedAssigneeIds[0] || null,
         }),
       });
 
@@ -126,6 +156,7 @@ export function CreateTicketModal({
       toast.success('Ticket created successfully');
       onTicketCreated(data.ticket);
       reset();
+      setSelectedAssigneeIds([]);
       onClose();
     } catch (err: any) {
       toast.error(err.message || 'Error creating ticket');
@@ -200,14 +231,98 @@ export function CreateTicketModal({
               </Select>
             )}
 
-            <Select label="Assignee" {...register('assigneeId')}>
-              <option value="">Unassigned</option>
-              {members.map((m) => (
-                <option key={m.user.id} value={m.user.id}>
-                  {m.user.username} ({m.role})
-                </option>
-              ))}
-            </Select>
+            <div ref={assigneeDropdownRef} className="relative">
+              <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                Assignees {selectedAssigneeIds.length > 0 && `(${selectedAssigneeIds.length})`}
+              </label>
+
+              {/* Multi-assignee trigger box */}
+              <div
+                onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
+                className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 shadow-2xs transition-colors flex flex-wrap gap-1.5 items-center justify-between cursor-pointer hover:border-slate-300"
+              >
+                <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-0">
+                  {selectedAssigneeIds.length === 0 ? (
+                    <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" />
+                      Unassigned
+                    </span>
+                  ) : (
+                    members
+                      .filter((m) => selectedAssigneeIds.includes(m.user.id))
+                      .map((m) => (
+                        <span
+                          key={m.user.id}
+                          className="inline-flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700"
+                        >
+                          <Avatar
+                            name={m.user.username}
+                            email={m.user.email}
+                            avatarUrl={m.user.avatarUrl}
+                            size="xs"
+                          />
+                          <span className="max-w-[100px] truncate">{m.user.username || m.user.email}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveAssignee(m.user.id, e)}
+                            className="text-slate-400 hover:text-slate-600 rounded p-0.5"
+                            title={`Remove ${m.user.username}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))
+                  )}
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none shrink-0 ml-1" />
+              </div>
+
+              {/* Dropdown Popover */}
+              {isAssigneeOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Select Assignees
+                  </div>
+                  {members.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-slate-400">No members in project</div>
+                  ) : (
+                    members.map((m) => {
+                      const isSelected = selectedAssigneeIds.includes(m.user.id);
+                      return (
+                        <button
+                          key={m.user.id}
+                          type="button"
+                          onClick={() => handleToggleAssignee(m.user.id)}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors ${
+                            isSelected ? 'bg-primary/10 text-primary font-medium' : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate min-w-0">
+                            <Avatar
+                              name={m.user.username}
+                              email={m.user.email}
+                              avatarUrl={m.user.avatarUrl}
+                              size="xs"
+                            />
+                            <div className="truncate">
+                              <p className="truncate font-medium">{m.user.username || m.user.email}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{m.role}</p>
+                            </div>
+                          </div>
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ml-2 transition-colors ${
+                              isSelected ? 'bg-primary border-primary text-white' : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Form Actions */}

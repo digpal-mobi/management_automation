@@ -51,6 +51,16 @@ export class BoardColumnController {
         return res.status(404).json({ success: false, error: 'Project not found' });
       }
 
+      const ticketInclude = {
+        assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+        assignees: {
+          include: {
+            user: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          },
+        },
+        _count: { select: { comments: true } },
+      };
+
       let board = await prisma.board.findFirst({
         where: { projectId },
         include: {
@@ -59,10 +69,7 @@ export class BoardColumnController {
             include: {
               tickets: {
                 orderBy: [{ executionOrder: 'asc' }, { createdAt: 'desc' }],
-                include: {
-                  assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                  _count: { select: { comments: true } },
-                },
+                include: ticketInclude,
               },
             },
           },
@@ -78,10 +85,7 @@ export class BoardColumnController {
               include: {
                 tickets: {
                   orderBy: [{ executionOrder: 'asc' }, { createdAt: 'desc' }],
-                  include: {
-                    assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                    _count: { select: { comments: true } },
-                  },
+                  include: ticketInclude,
                 },
               },
             },
@@ -120,10 +124,7 @@ export class BoardColumnController {
               include: {
                 tickets: {
                   orderBy: [{ executionOrder: 'asc' }, { createdAt: 'desc' }],
-                  include: {
-                    assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                    _count: { select: { comments: true } },
-                  },
+                  include: ticketInclude,
                 },
               },
             },
@@ -137,10 +138,7 @@ export class BoardColumnController {
           projectId,
           OR: [{ columnId: null }, { column: { boardId: { not: board!.id } } }],
         },
-        include: {
-          assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-          _count: { select: { comments: true } },
-        },
+        include: ticketInclude,
       });
 
       if (unassignedTickets.length > 0 && board && board.columns.length > 0) {
@@ -166,8 +164,14 @@ export class BoardColumnController {
         wipLimit: col.wipLimit ?? 0,
         createdAt: col.createdAt,
         updatedAt: col.updatedAt,
-        tickets: col.tickets.map((t) => ({
+        tickets: col.tickets.map((t: any) => ({
           ...t,
+          assignees:
+            t.assignees && t.assignees.length > 0
+              ? t.assignees.map((a: any) => a.user || a)
+              : t.assignee
+              ? [t.assignee]
+              : [],
           status: t.status === 'TODO' ? 'To Do' : t.status === 'IN_PROGRESS' ? 'In Progress' : 'Done',
           commentsCount: t._count?.comments || 0,
         })),

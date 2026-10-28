@@ -19,6 +19,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Sliders,
+  Settings,
+  Palette,
   Check,
   X,
   ArrowDown,
@@ -38,6 +40,7 @@ interface ColumnProps {
   onAddTicketClick: (column: BoardColumn) => void;
   onRenameColumn?: (column: BoardColumn, newName: string) => void;
   onEditColumn?: (column: BoardColumn) => void;
+  onChangeColor?: (column: BoardColumn, color: string) => void;
   onConfigureWip?: (column: BoardColumn) => void;
   onDuplicateColumn?: (column: BoardColumn) => void;
   onDeleteColumn?: (column: BoardColumn) => void;
@@ -67,6 +70,7 @@ export function Column({
   onAddTicketClick,
   onRenameColumn,
   onEditColumn,
+  onChangeColor,
   onConfigureWip,
   onDuplicateColumn,
   onDeleteColumn,
@@ -151,11 +155,17 @@ export function Column({
       <div
         ref={setColNodeRef}
         style={colStyle}
-        className="w-12 min-w-12 max-w-12 h-[600px] flex flex-col items-center py-4 bg-slate-100/80 rounded-xl border border-slate-200/80 flex-shrink-0 shadow-sm transition-all select-none group"
+        {...colAttributes}
+        {...colListeners}
+        className="w-12 min-w-12 max-w-12 h-[600px] flex flex-col items-center py-4 bg-slate-100/80 rounded-xl border border-slate-200/80 flex-shrink-0 shadow-sm transition-all select-none group cursor-grab active:cursor-grabbing"
       >
         <button
           type="button"
-          onClick={() => onToggleCollapse && onToggleCollapse(column)}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleCollapse && onToggleCollapse(column);
+          }}
           className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors mb-4"
           title={`Expand ${column.name} column`}
         >
@@ -181,7 +191,10 @@ export function Column({
   return (
     <div
       ref={setColNodeRef}
-      style={colStyle}
+      style={{
+        ...colStyle,
+        borderTop: column.color ? `3px solid ${column.color}` : undefined,
+      }}
       className={`w-[316px] min-w-[316px] max-w-[320px] flex flex-col rounded-xl p-3 shadow-sm transition-all flex-shrink-0 select-none ${
         isColDragging
           ? 'opacity-40 border-2 border-primary bg-indigo-50/50'
@@ -191,32 +204,37 @@ export function Column({
       }`}
     >
       {/* Column Header */}
-      <div className="h-8 flex items-center justify-between mb-2 px-1 group">
+      <div
+        {...colAttributes}
+        {...colListeners}
+        className="h-8 flex items-center justify-between mb-2 px-1 group cursor-grab active:cursor-grabbing rounded-lg hover:bg-slate-200/50 transition-colors"
+        title="Drag header to reorder column"
+      >
         {/* Left: Drag Handle, Title, and Count */}
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {/* Column Drag Handle */}
-          <button
-            type="button"
-            {...colAttributes}
-            {...colListeners}
-            className="text-slate-400 opacity-40 group-hover:opacity-100 cursor-grab active:cursor-grabbing hover:text-slate-700 transition-opacity p-0.5 rounded"
-            title="Drag to reorder column"
+          <span
+            className="text-slate-400 opacity-60 group-hover:opacity-100 hover:text-slate-700 transition-opacity p-0.5 rounded flex-shrink-0"
             aria-label="Drag column"
           >
             <GripVertical className="h-4 w-4" />
-          </button>
+          </span>
 
           {/* Column Color indicator */}
           {column.color && (
             <span
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-2xs"
               style={{ backgroundColor: column.color }}
             />
           )}
 
           {/* Column Title: either inline edit or text */}
           {isEditingTitle ? (
-            <div className="flex items-center gap-1 flex-1">
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 flex-1"
+            >
               <input
                 type="text"
                 value={tempTitle}
@@ -245,8 +263,11 @@ export function Column({
             </div>
           ) : (
             <div
-              className="flex items-center gap-1.5 min-w-0 cursor-text"
-              onDoubleClick={() => canManageColumns && setIsEditingTitle(true)}
+              className="flex items-center gap-1.5 min-w-0"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                if (canManageColumns) setIsEditingTitle(true);
+              }}
               title={canManageColumns ? 'Double-click to rename' : undefined}
             >
               <h3
@@ -272,7 +293,11 @@ export function Column({
         </div>
 
         {/* Right Header Controls: WIP Badge, Add Button, Context Menu */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1 flex-shrink-0"
+        >
           {/* WIP Badge (only shown when a limit is configured) */}
           {wipLimit > 0 && (
             <span
@@ -346,6 +371,47 @@ export function Column({
                       <Edit2 className="h-3.5 w-3.5 text-slate-500" />
                       <span>Rename Column</span>
                     </button>
+
+                    {/* Column Settings */}
+                    {onEditColumn && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onEditColumn(column);
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                      >
+                        <Settings className="h-3.5 w-3.5 text-slate-500" />
+                        <span>Column Settings</span>
+                      </button>
+                    )}
+
+                    {/* Quick Color Palette */}
+                    {onChangeColor && (
+                      <div className="px-2.5 py-1.5 border-t border-slate-100 my-1">
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
+                          Column Color
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {['#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C', '#0D9488', '#526174'].map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() => {
+                                setMenuOpen(false);
+                                onChangeColor(column, color);
+                              }}
+                              className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                                column.color === color ? 'border-slate-800 ring-2 ring-primary/30 scale-105' : 'border-white shadow-2xs'
+                              }`}
+                              style={{ backgroundColor: color }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Move Left */}
                     <button

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -17,6 +17,7 @@ import {
 } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
 import {
   X,
   Trash2,
@@ -24,6 +25,7 @@ import {
   MessageSquare,
   Edit2,
   User,
+  UserPlus,
   Clock,
   Send,
   AlertTriangle,
@@ -98,12 +100,26 @@ export function TicketDetailModal({
   const [status, setStatus] = useState<TicketStatus>('To Do');
   const [priority, setPriority] = useState<TicketPriority>('Medium');
   const [type, setType] = useState<TicketType>('Task');
-  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
+  const assigneeDropdownRef = useRef<HTMLDivElement>(null);
   const [storyPoints, setStoryPoints] = useState<number | ''>('');
   const [acceptanceCriteria, setAcceptanceCriteria] = useState<ChecklistItem[]>([]);
   const [technicalNotes, setTechnicalNotes] = useState<string>('');
   const [prChecklist, setPrChecklist] = useState<ChecklistItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Close assignee dropdown on outside click
+  useEffect(() => {
+    if (!isAssigneeDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target as Node)) {
+        setIsAssigneeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAssigneeDropdownOpen]);
 
   // Delete Confirmation State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -141,16 +157,36 @@ export function TicketDetailModal({
       setStatus(ticket.status);
       setPriority(ticket.priority);
       setType(ticket.type);
-      setAssigneeId(ticket.assigneeId || '');
+      const initialAssigneeIds =
+        ticket.assignees && ticket.assignees.length > 0
+          ? ticket.assignees.map((u) => u.id)
+          : ticket.assigneeId
+          ? [ticket.assigneeId]
+          : [];
+      setAssigneeIds(initialAssigneeIds);
       setStoryPoints(ticket.storyPoints ?? '');
       setAcceptanceCriteria(parseChecklist(ticket.acceptanceCriteria));
       setTechnicalNotes(ticket.technicalNotes || '');
       setPrChecklist(parseChecklist(ticket.prChecklist));
       setShowDeleteConfirm(false);
+      setIsAssigneeDropdownOpen(false);
 
       fetchComments();
     }
   }, [ticket, fetchComments]);
+
+  const handleToggleAssignee = (userId: string) => {
+    if (!canAssign) return;
+    setAssigneeIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleRemoveAssignee = (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canAssign) return;
+    setAssigneeIds((prev) => prev.filter((id) => id !== userId));
+  };
 
   // Auto-refresh polling while any comment is PROCESSING or PENDING
   useEffect(() => {
@@ -212,7 +248,20 @@ export function TicketDetailModal({
       if (status !== ticket.status) updates.status = status;
       if (priority !== ticket.priority) updates.priority = priority;
       if (type !== ticket.type) updates.type = type;
-      if ((assigneeId || null) !== (ticket.assigneeId || null)) updates.assigneeId = assigneeId || null;
+      const ticketAssigneeIds =
+        ticket.assignees && ticket.assignees.length > 0
+          ? ticket.assignees.map((u) => u.id)
+          : ticket.assigneeId
+          ? [ticket.assigneeId]
+          : [];
+      const isAssigneesChanged =
+        assigneeIds.length !== ticketAssigneeIds.length ||
+        !assigneeIds.every((id) => ticketAssigneeIds.includes(id));
+
+      if (isAssigneesChanged) {
+        updates.assigneeIds = assigneeIds;
+        updates.assigneeId = assigneeIds[0] || null;
+      }
       const currentPts = storyPoints === '' ? null : Number(storyPoints);
       if (currentPts !== ticket.storyPoints) updates.storyPoints = currentPts;
       if ((technicalNotes?.trim() || null) !== (ticket.technicalNotes || null)) updates.technicalNotes = technicalNotes?.trim() || null;
@@ -700,27 +749,114 @@ export function TicketDetailModal({
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-                  Assignee
-                </label>
-                <div className="relative">
-                  <select
-                    value={assigneeId}
-                    disabled={!canAssign}
-                    onChange={(e) => setAssigneeId(e.target.value)}
-                    className="w-full h-9 pl-3 pr-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-2xs cursor-pointer hover:border-slate-300 transition-colors truncate disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50"
-                    title={!canAssign ? 'You do not have permission to assign tickets' : undefined}
-                  >
-                    <option value="">Unassigned</option>
-                    {members.map((m) => (
-                      <option key={m.user.id} value={m.user.id}>
-                        {m.user.username || m.user.email}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <div ref={assigneeDropdownRef} className="relative">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Assignees {assigneeIds.length > 0 && `(${assigneeIds.length})`}
+                  </label>
+                  {canAssign && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
+                      className="text-[11px] font-medium text-primary hover:text-primary-dark flex items-center gap-1 hover:underline"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                      <span>{assigneeIds.length === 0 ? 'Assign' : 'Add/Remove'}</span>
+                    </button>
+                  )}
                 </div>
+
+                {/* Selected Assignee Box */}
+                <div
+                  onClick={() => canAssign && setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
+                  className={`min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 shadow-2xs transition-colors flex flex-wrap gap-1.5 items-center justify-between ${
+                    canAssign ? 'cursor-pointer hover:border-slate-300' : 'cursor-not-allowed bg-slate-50 opacity-70'
+                  }`}
+                  title={!canAssign ? 'You do not have permission to assign tickets' : undefined}
+                >
+                  <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-0">
+                    {assigneeIds.length === 0 ? (
+                      <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
+                        Unassigned
+                      </span>
+                    ) : (
+                      members
+                        .filter((m) => assigneeIds.includes(m.user.id))
+                        .map((m) => (
+                          <span
+                            key={m.user.id}
+                            className="inline-flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700"
+                          >
+                            <Avatar
+                              name={m.user.username}
+                              email={m.user.email}
+                              avatarUrl={m.user.avatarUrl}
+                              size="xs"
+                            />
+                            <span className="max-w-[100px] truncate">{m.user.username || m.user.email}</span>
+                            {canAssign && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleRemoveAssignee(m.user.id, e)}
+                                className="text-slate-400 hover:text-slate-600 rounded p-0.5"
+                                title={`Remove ${m.user.username}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                          </span>
+                        ))
+                    )}
+                  </div>
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none shrink-0 ml-1" />
+                </div>
+
+                {/* Dropdown Popover */}
+                {isAssigneeDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                      Assign Members
+                    </div>
+                    {members.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-slate-400">No members in project</div>
+                    ) : (
+                      members.map((m) => {
+                        const isSelected = assigneeIds.includes(m.user.id);
+                        return (
+                          <button
+                            key={m.user.id}
+                            type="button"
+                            onClick={() => handleToggleAssignee(m.user.id)}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors ${
+                              isSelected ? 'bg-primary/10 text-primary font-medium' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate min-w-0">
+                              <Avatar
+                                name={m.user.username}
+                                email={m.user.email}
+                                avatarUrl={m.user.avatarUrl}
+                                size="xs"
+                              />
+                              <div className="truncate">
+                                <p className="truncate font-medium">{m.user.username || m.user.email}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{m.role}</p>
+                              </div>
+                            </div>
+                            <div
+                              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ml-2 transition-colors ${
+                                isSelected ? 'bg-primary border-primary text-white' : 'border-slate-300 bg-white'
+                              }`}
+                            >
+                              {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

@@ -17,6 +17,7 @@ const createTicketSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium'),
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']).default('Task'),
   assigneeId: z.string().optional().nullable(),
+  assigneeIds: z.array(z.string()).optional(),
   boardId: z.string().optional(),
   columnId: z.string().optional().nullable(),
 });
@@ -29,6 +30,7 @@ const updateTicketSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']).optional(),
   assigneeId: z.string().optional().nullable(),
+  assigneeIds: z.array(z.string()).optional(),
   storyPoints: z.number().int().optional().nullable(),
   executionOrder: z.number().int().optional().nullable(),
   acceptanceCriteria: z.any().optional().nullable(),
@@ -61,6 +63,21 @@ const updateCommentSchema = z.object({
   content: z.string().min(1).max(3000),
 });
 
+export function formatTicketResponse(ticket: any) {
+  if (!ticket) return ticket;
+  const assigneesList =
+    ticket.assignees && ticket.assignees.length > 0
+      ? ticket.assignees.map((a: any) => a.user || a)
+      : ticket.assignee
+      ? [ticket.assignee]
+      : [];
+
+  return {
+    ...ticket,
+    assignees: assigneesList,
+  };
+}
+
 export class ProjectTicketController {
   static async getTickets(req: Request, res: Response) {
     try {
@@ -76,6 +93,11 @@ export class ProjectTicketController {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
+          },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
@@ -89,7 +111,7 @@ export class ProjectTicketController {
         orderBy: { createdAt: 'desc' },
       });
 
-      return res.status(200).json({ success: true, tickets });
+      return res.status(200).json({ success: true, tickets: tickets.map(formatTicketResponse) });
     } catch (error: any) {
       console.error('[ProjectTicketController.getTickets] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to fetch tickets' });
@@ -119,11 +141,19 @@ export class ProjectTicketController {
         priority,
         type,
         assigneeId,
+        assigneeIds,
         boardId: requestedBoardId,
         columnId: requestedColumnId,
       } = parsed.data;
 
-      if (assigneeId) {
+      let targetAssigneeIds: string[] = [];
+      if (assigneeIds && Array.isArray(assigneeIds)) {
+        targetAssigneeIds = Array.from(new Set(assigneeIds.filter(Boolean)));
+      } else if (assigneeId) {
+        targetAssigneeIds = [assigneeId];
+      }
+
+      if (targetAssigneeIds.length > 0) {
         const assignAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_ASSIGN, projectId);
         if (!assignAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.assign permission' });
@@ -168,6 +198,8 @@ export class ProjectTicketController {
         else finalStatus = TicketStatus.TODO;
       }
 
+      const primaryAssigneeId = targetAssigneeIds.length > 0 ? targetAssigneeIds[0] : null;
+
       const ticket = await prisma.ticket.create({
         data: {
           projectId,
@@ -179,11 +211,22 @@ export class ProjectTicketController {
           priority: priority.toUpperCase() as TicketPriority,
           type: type.toUpperCase() as TicketType,
           reporterId: auth.user.id,
-          assigneeId: assigneeId || null,
+          assigneeId: primaryAssigneeId,
+          assignees:
+            targetAssigneeIds.length > 0
+              ? {
+                  create: targetAssigneeIds.map((userId) => ({ userId })),
+                }
+              : undefined,
         },
         include: {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
+          },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
           },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
@@ -194,13 +237,15 @@ export class ProjectTicketController {
         },
       });
 
+      const formattedTicket = formatTicketResponse(ticket);
+
       syncTicketEmbedding(ticket.id).catch((err) => {
         console.warn(`[Ticket Creation] Async embedding sync failed for ${ticket.id}:`, err.message);
       });
 
-      socketService.emitToProject(projectId, 'ticket:created', ticket);
+      socketService.emitToProject(projectId, 'ticket:created', formattedTicket);
 
-      return res.status(201).json({ success: true, ticket });
+      return res.status(201).json({ success: true, ticket: formattedTicket });
     } catch (error: any) {
       console.error('[ProjectTicketController.createTicket] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to create ticket' });
@@ -234,6 +279,11 @@ export class ProjectTicketController {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
+          },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
@@ -243,7 +293,7 @@ export class ProjectTicketController {
         },
       });
 
-      return res.status(200).json({ success: true, tickets: fullTickets, query });
+      return res.status(200).json({ success: true, tickets: fullTickets.map(formatTicketResponse), query });
     } catch (error: any) {
       console.error('[ProjectTicketController.searchTickets] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Semantic search failed' });
@@ -263,6 +313,11 @@ export class ProjectTicketController {
         include: {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
+          },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
           },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
@@ -285,7 +340,7 @@ export class ProjectTicketController {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
 
-      return res.status(200).json({ success: true, ticket });
+      return res.status(200).json({ success: true, ticket: formatTicketResponse(ticket) });
     } catch (error: any) {
       console.error('[ProjectTicketController.getTicketById] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to fetch ticket' });
@@ -319,6 +374,7 @@ export class ProjectTicketController {
         priority,
         type,
         assigneeId,
+        assigneeIds,
         storyPoints,
         executionOrder,
         acceptanceCriteria,
@@ -354,9 +410,28 @@ export class ProjectTicketController {
       }
 
       // 2. Assignment change check
-      const normalizedAssignee = assigneeId === '' || assigneeId === undefined ? null : assigneeId;
-      const existingAssignee = existingTicket.assigneeId || null;
-      const hasAssigneeChanged = assigneeId !== undefined && normalizedAssignee !== existingAssignee;
+      let targetAssigneeIds: string[] | undefined = undefined;
+      if (assigneeIds !== undefined) {
+        targetAssigneeIds = Array.from(new Set(assigneeIds.filter(Boolean)));
+      } else if (assigneeId !== undefined) {
+        targetAssigneeIds = assigneeId ? [assigneeId] : [];
+      }
+
+      let hasAssigneeChanged = false;
+      if (targetAssigneeIds !== undefined) {
+        const currentAssignees = await prisma.ticketAssignee.findMany({
+          where: { ticketId },
+          select: { userId: true },
+        });
+        const currentIds = currentAssignees.map((a) => a.userId).sort();
+        const newIds = [...targetAssigneeIds].sort();
+        if (
+          currentIds.length !== newIds.length ||
+          !currentIds.every((id, idx) => id === newIds[idx])
+        ) {
+          hasAssigneeChanged = true;
+        }
+      }
 
       if (hasAssigneeChanged) {
         const assignAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_ASSIGN, projectId);
@@ -394,9 +469,20 @@ export class ProjectTicketController {
         }
       }
 
-      // If nothing changed, return existing ticket directly
+      // If nothing changed, return existing ticket with full relations
       if (!hasStatusChanged && !hasAssigneeChanged && !hasGeneralUpdate) {
-        return res.status(200).json({ success: true, ticket: existingTicket });
+        const fullTicket = await prisma.ticket.findUnique({
+          where: { id: ticketId },
+          include: {
+            assignee: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            assignees: {
+              include: { user: { select: { id: true, username: true, email: true, avatarUrl: true } } },
+            },
+            reporter: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            column: { select: { id: true, name: true, category: true, position: true } },
+          },
+        });
+        return res.status(200).json({ success: true, ticket: formatTicketResponse(fullTicket) });
       }
 
       const updateData: any = {};
@@ -404,13 +490,16 @@ export class ProjectTicketController {
       if (description !== undefined) updateData.description = description ? description.trim() : null;
       if (priority !== undefined) updateData.priority = priority.toUpperCase() as TicketPriority;
       if (type !== undefined) updateData.type = type.toUpperCase() as TicketType;
-      if (assigneeId !== undefined) updateData.assigneeId = assigneeId || null;
       if (storyPoints !== undefined) updateData.storyPoints = storyPoints;
       if (executionOrder !== undefined) updateData.executionOrder = executionOrder ?? 0;
       if (acceptanceCriteria !== undefined) updateData.acceptanceCriteria = acceptanceCriteria;
       if (technicalNotes !== undefined) updateData.technicalNotes = technicalNotes ? technicalNotes.trim() : null;
       if (prChecklist !== undefined) updateData.prChecklist = prChecklist;
       if (sprint !== undefined) updateData.sprint = sprint ? sprint.trim() : null;
+
+      if (targetAssigneeIds !== undefined) {
+        updateData.assigneeId = targetAssigneeIds.length > 0 ? targetAssigneeIds[0] : null;
+      }
 
       // Synchronize columnId and status
       if (columnId !== undefined && columnId !== null) {
@@ -437,12 +526,27 @@ export class ProjectTicketController {
         }
       }
 
+      if (targetAssigneeIds !== undefined) {
+        await prisma.ticketAssignee.deleteMany({ where: { ticketId } });
+        if (targetAssigneeIds.length > 0) {
+          await prisma.ticketAssignee.createMany({
+            data: targetAssigneeIds.map((userId) => ({ ticketId, userId })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
       const updated = await prisma.ticket.update({
         where: { id: ticketId },
         data: updateData,
         include: {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
+          },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
           },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
@@ -453,10 +557,11 @@ export class ProjectTicketController {
         },
       });
 
+      const formatted = formatTicketResponse(updated);
       syncTicketEmbedding(ticketId).catch(() => {});
-      socketService.emitToProject(projectId, 'ticket:updated', updated);
+      socketService.emitToProject(projectId, 'ticket:updated', formatted);
 
-      return res.status(200).json({ success: true, ticket: updated });
+      return res.status(200).json({ success: true, ticket: formatted });
     } catch (error: any) {
       console.error('[ProjectTicketController.updateTicket] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to update ticket' });

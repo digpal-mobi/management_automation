@@ -15,6 +15,7 @@
     "test:pipeline": "node scripts/verify-pipeline.js",
     "test:ai-discussion": "node scripts/test-ai-ticket-discussion.js",
     "test:roles-board": "node scripts/test-roles-and-dynamic-board.js",
+    "test:multi-assignee": "node scripts/test-multi-assignee.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "seed": "tsx prisma/seed.ts"

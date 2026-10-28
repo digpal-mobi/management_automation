@@ -17,6 +17,7 @@ import {
   SortableContext,
   horizontalListSortingStrategy,
   sortableKeyboardCoordinates,
+  arrayMove,
 } from '@dnd-kit/sortable';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -61,6 +62,7 @@ import {
   Clock,
   Radio,
   Wifi,
+  GripVertical,
 } from 'lucide-react';
 import { boardApi, ticketsApi } from '@/lib/api';
 import { socketClient } from '@/lib/socket';
@@ -156,6 +158,13 @@ export function Board({
   const [newColWip, setNewColWip] = useState<string>('0');
   const [newColColor, setNewColColor] = useState<string>('#526174');
   const [isAddingCol, setIsAddingCol] = useState(false);
+
+  // Fast inline column creation state
+  const [isAddingColumnInline, setIsAddingColumnInline] = useState(false);
+  const [inlineColTitle, setInlineColTitle] = useState('');
+  const [inlineColColor, setInlineColColor] = useState<string>('#003049');
+  const [isSubmittingInlineCol, setIsSubmittingInlineCol] = useState(false);
+  const inlineColInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditColumnOpen, setIsEditColumnOpen] = useState(false);
   const [editingCol, setEditingCol] = useState<BoardColumn | null>(null);
@@ -358,8 +367,11 @@ export function Board({
       }
 
       // Assignee
-      if (filters.assigneeId !== 'ALL' && ticket.assigneeId !== filters.assigneeId) {
-        return false;
+      if (filters.assigneeId !== 'ALL') {
+        const hasAssignee =
+          ticket.assigneeId === filters.assigneeId ||
+          ticket.assignees?.some((a) => a.id === filters.assigneeId);
+        if (!hasAssignee) return false;
       }
 
       // Sprint
@@ -372,7 +384,8 @@ export function Board({
         const isAssigned =
           ticket.assigneeId === user.id ||
           ticket.assignee?.email === user.email ||
-          ticket.assignee?.username === user.username;
+          ticket.assignee?.username === user.username ||
+          ticket.assignees?.some((a) => a.id === user.id || a.email === user.email || a.username === user.username);
         if (!isAssigned) return false;
       }
 
@@ -452,27 +465,47 @@ export function Board({
     }
   };
 
+  // Helper to resolve column ID from over.id (whether hovering a column or a ticket inside it)
+  const resolveTargetColumnId = (overId: string): string | null => {
+    if (columns.some((c) => c.id === overId)) return overId;
+    const overTicket = tickets.find((t) => t.id === overId);
+    if (overTicket && overTicket.columnId && columns.some((c) => c.id === overTicket.columnId)) {
+      return overTicket.columnId;
+    }
+    return null;
+  };
+
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
 
     const activeType = active.data.current?.type;
-    if (activeType === 'Column') return; // Column sorting handled in onDragEnd
-
     const activeId = active.id as string;
     const overId = over.id as string;
 
+    // CASE 1: Dragging a Column over another column -> real-time reorder animation
+    if (activeType === 'Column') {
+      const targetColId = resolveTargetColumnId(overId);
+      if (targetColId && activeId !== targetColId) {
+        setColumns((items) => {
+          const oldIndex = items.findIndex((c) => c.id === activeId);
+          const newIndex = items.findIndex((c) => c.id === targetColId);
+          if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+            return arrayMove(items, oldIndex, newIndex);
+          }
+          return items;
+        });
+      }
+      return;
+    }
+
+    // CASE 2: Dragging a Ticket
     const activeTicket = tickets.find((t) => t.id === activeId);
     if (!activeTicket) return;
 
     // Determine target column
-    let targetCol = columns.find((c) => c.id === overId);
-    if (!targetCol) {
-      const overTicket = tickets.find((t) => t.id === overId);
-      if (overTicket && overTicket.columnId) {
-        targetCol = columns.find((c) => c.id === overTicket.columnId);
-      }
-    }
+    const targetColId = resolveTargetColumnId(overId);
+    const targetCol = targetColId ? columns.find((c) => c.id === targetColId) : undefined;
 
     if (targetCol && activeTicket.columnId !== targetCol.id) {
       const targetCategory = targetCol.category;
@@ -498,32 +531,30 @@ export function Board({
     if (activeType === 'Column') {
       const activeId = active.id as string;
       const overId = over.id as string;
+      const targetColId = resolveTargetColumnId(overId);
 
-      if (activeId !== overId) {
+      let finalCols = [...columns];
+      if (targetColId && activeId !== targetColId) {
         const oldIndex = columns.findIndex((c) => c.id === activeId);
-        const newIndex = columns.findIndex((c) => c.id === overId);
-
-        if (oldIndex !== -1 && newIndex !== -1) {
-          const reordered = [...columns];
-          const [moved] = reordered.splice(oldIndex, 1);
-          reordered.splice(newIndex, 0, moved);
-
-          // Update positions
-          const updated = reordered.map((col, idx) => ({ ...col, position: idx }));
-          setColumns(updated);
-
-          setSyncStatus('syncing');
-          try {
-            const columnOrders = updated.map((c) => ({ id: c.id, position: c.position }));
-            await boardApi.reorderColumns(projectId, updated.map((c) => c.id));
-            setSyncStatus('saved');
-          } catch (err: any) {
-            console.error('Failed to reorder columns:', err);
-            toast.error('Failed to save column reordering');
-            setSyncStatus('error');
-            fetchBoardData(); // Revert
-          }
+        const newIndex = columns.findIndex((c) => c.id === targetColId);
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          finalCols = arrayMove(columns, oldIndex, newIndex);
         }
+      }
+
+      // Re-index position strictly
+      const updated = finalCols.map((col, idx) => ({ ...col, position: idx }));
+      setColumns(updated);
+
+      setSyncStatus('syncing');
+      try {
+        await boardApi.reorderColumns(projectId, updated.map((c) => c.id));
+        setSyncStatus('saved');
+      } catch (err: any) {
+        console.error('Failed to reorder columns:', err);
+        toast.error('Failed to save column reordering');
+        setSyncStatus('error');
+        fetchBoardData(); // Revert
       }
       return;
     }
@@ -535,13 +566,8 @@ export function Board({
     const currentTicket = tickets.find((t) => t.id === activeId);
     if (!currentTicket) return;
 
-    let targetCol = columns.find((c) => c.id === overId);
-    if (!targetCol) {
-      const overTicket = tickets.find((t) => t.id === overId);
-      if (overTicket && overTicket.columnId) {
-        targetCol = columns.find((c) => c.id === overTicket.columnId);
-      }
-    }
+    const targetColId = resolveTargetColumnId(overId);
+    const targetCol = targetColId ? columns.find((c) => c.id === targetColId) : undefined;
 
     if (!targetCol) return;
 
@@ -705,14 +731,33 @@ export function Board({
   };
 
   const handleAssignTicket = async (ticket: Ticket, userId: string | null) => {
-    const assignedMember = members.find((m) => m.userId === userId);
+    let newAssigneeIds: string[] = [];
+    if (userId !== null) {
+      const currentIds =
+        ticket.assignees && ticket.assignees.length > 0
+          ? ticket.assignees.map((a) => a.id)
+          : ticket.assigneeId
+          ? [ticket.assigneeId]
+          : [];
+      if (currentIds.includes(userId)) {
+        newAssigneeIds = currentIds.filter((id) => id !== userId);
+      } else {
+        newAssigneeIds = [...currentIds, userId];
+      }
+    }
+
+    const newAssignees = members
+      .filter((m) => newAssigneeIds.includes(m.user.id))
+      .map((m) => m.user);
+
     setTickets((prev) =>
       prev.map((t) =>
         t.id === ticket.id
           ? {
               ...t,
-              assigneeId: userId,
-              assignee: assignedMember ? (assignedMember.user as any) : null,
+              assigneeId: newAssigneeIds[0] || null,
+              assignee: newAssignees[0] || null,
+              assignees: newAssignees,
             }
           : t
       )
@@ -720,9 +765,10 @@ export function Board({
 
     try {
       await ticketsApi.update(projectId, ticket.id, {
-        assigneeId: userId,
+        assigneeIds: newAssigneeIds,
+        assigneeId: newAssigneeIds[0] || null,
       });
-      toast.success(userId ? 'Ticket assigned' : 'Ticket unassigned');
+      toast.success(userId ? 'Assignment updated' : 'Ticket unassigned');
     } catch (err: any) {
       toast.error('Failed to update assignment');
       fetchBoardData();
@@ -731,6 +777,13 @@ export function Board({
 
   const handleDuplicateTicket = async (ticket: Ticket) => {
     try {
+      const duplicateAssigneeIds =
+        ticket.assignees && ticket.assignees.length > 0
+          ? ticket.assignees.map((a) => a.id)
+          : ticket.assigneeId
+          ? [ticket.assigneeId]
+          : [];
+
       const res = await ticketsApi.create(projectId, {
         title: `${ticket.title} (Copy)`,
         description: ticket.description,
@@ -738,7 +791,8 @@ export function Board({
         type: ticket.type,
         status: ticket.status,
         columnId: ticket.columnId,
-        assigneeId: ticket.assigneeId,
+        assigneeIds: duplicateAssigneeIds,
+        assigneeId: duplicateAssigneeIds[0] || null,
         storyPoints: ticket.storyPoints,
       });
 
@@ -806,6 +860,55 @@ export function Board({
       toast.error(err.message || 'Failed to create column');
     } finally {
       setIsAddingCol(false);
+    }
+  };
+
+  // Fast Inline Column Creation: just type the name and it is created immediately
+  const handleInlineAddColumnSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const title = inlineColTitle.trim();
+    if (!title) return;
+
+    try {
+      setIsSubmittingInlineCol(true);
+      const colorPalette = ['#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C', '#0D9488', '#526174'];
+      const chosenColor = inlineColColor || colorPalette[columns.length % colorPalette.length];
+
+      const res = await boardApi.createColumn(projectId, {
+        name: title,
+        category: 'To Do',
+        color: chosenColor,
+        wipLimit: 0,
+      });
+
+      if (res.success && res.column) {
+        toast.success(`Column "${res.column.name}" created`);
+        setColumns((prev) => [...prev, res.column]);
+        setInlineColTitle('');
+        const nextColor = colorPalette[(columns.length + 1) % colorPalette.length];
+        setInlineColColor(nextColor);
+        setTimeout(() => inlineColInputRef.current?.focus(), 50);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create column');
+    } finally {
+      setIsSubmittingInlineCol(false);
+    }
+  };
+
+  // Column Actions: Change Color
+  const handleChangeColumnColor = async (col: BoardColumn, color: string) => {
+    // Optimistic update
+    setColumns((prev) =>
+      prev.map((c) => (c.id === col.id ? { ...c, color } : c))
+    );
+
+    try {
+      await boardApi.updateColumn(projectId, col.id, { color });
+      toast.success(`Color updated for "${col.name}"`);
+    } catch (err: any) {
+      toast.error('Failed to update column color');
+      fetchBoardData();
     }
   };
 
@@ -1151,6 +1254,7 @@ export function Board({
                   onAddTicketClick={handleOpenCreateTicket}
                   onRenameColumn={handleRenameColumnInline}
                   onEditColumn={handleOpenEditColumn}
+                  onChangeColor={handleChangeColumnColor}
                   onConfigureWip={handleOpenConfigureWip}
                   onDuplicateColumn={handleDuplicateColumn}
                   onDeleteColumn={handleOpenDeleteColumn}
@@ -1167,17 +1271,92 @@ export function Board({
               ))}
             </SortableContext>
 
-            {/* + Add Custom Column CTA Button at the end of columns row (Stitch Column 6) */}
+            {/* Fast Inline Add Column Creator at the end of columns row */}
             {canManageCols && (
-              <div className="w-[280px] flex-shrink-0 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setIsAddColumnOpen(true)}
-                  className="w-full h-12 rounded-xl bg-slate-100 hover:bg-slate-200/90 text-slate-600 hover:text-slate-900 font-medium text-xs flex items-center justify-center gap-2 shadow-sm transition-all border border-slate-200/80 group"
-                >
-                  <Plus className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
-                  <span>Add column</span>
-                </button>
+              <div className="w-[316px] min-w-[316px] max-w-[320px] flex-shrink-0 pt-0.5">
+                {isAddingColumnInline ? (
+                  <div className="bg-slate-100/95 border border-slate-300/80 rounded-xl p-3 shadow-md transition-all animate-in fade-in zoom-in-95 duration-150">
+                    <form onSubmit={handleInlineAddColumnSubmit} className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                          New Column
+                        </span>
+                        {/* Quick Color Selector */}
+                        <div className="flex items-center gap-1">
+                          {['#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C', '#526174'].map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => setInlineColColor(c)}
+                              className={`w-3.5 h-3.5 rounded-full transition-transform ${
+                                inlineColColor === c ? 'scale-125 ring-2 ring-primary/40 ring-offset-1' : 'opacity-70 hover:opacity-100'
+                              }`}
+                              style={{ backgroundColor: c }}
+                              title={c}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <input
+                        ref={inlineColInputRef}
+                        type="text"
+                        placeholder="Enter column name..."
+                        value={inlineColTitle}
+                        autoFocus
+                        disabled={isSubmittingInlineCol}
+                        onChange={(e) => setInlineColTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setIsAddingColumnInline(false);
+                            setInlineColTitle('');
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-xs font-semibold text-slate-900 bg-white border border-slate-300 rounded-lg shadow-2xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="submit"
+                            size="sm"
+                            variant="primary"
+                            disabled={!inlineColTitle.trim() || isSubmittingInlineCol}
+                            isLoading={isSubmittingInlineCol}
+                            className="text-xs h-7 px-3 shadow-2xs"
+                          >
+                            Add column
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setIsAddingColumnInline(false);
+                              setInlineColTitle('');
+                            }}
+                            className="text-xs h-7 px-2 text-slate-500 hover:text-slate-800"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium">↵ to save</span>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingColumnInline(true);
+                      setTimeout(() => inlineColInputRef.current?.focus(), 50);
+                    }}
+                    className="w-full h-12 rounded-xl bg-slate-100/90 hover:bg-slate-200/90 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all border border-dashed border-slate-300 hover:border-slate-400 group"
+                  >
+                    <Plus className="h-4 w-4 text-slate-400 group-hover:text-primary group-hover:scale-110 transition-transform" />
+                    <span>Add column</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1189,11 +1368,33 @@ export function Board({
                 <TicketCard ticket={activeDragItem.item as Ticket} isOverlay />
               </div>
             ) : activeDragItem?.type === 'Column' ? (
-              <div className="w-[316px] pointer-events-none opacity-90 shadow-2xl scale-[1.02]">
-                <div className="p-3 bg-white rounded-xl border-2 border-primary shadow-xl">
-                  <h3 className="font-bold text-xs uppercase text-primary">
-                    {(activeDragItem.item as BoardColumn).name}
-                  </h3>
+              <div
+                className="w-[316px] pointer-events-none rounded-xl p-3 bg-white/95 backdrop-blur-md shadow-2xl border-2 border-primary rotate-1 scale-[1.02] flex flex-col gap-2"
+                style={{
+                  borderTop: (activeDragItem.item as BoardColumn).color
+                    ? `4px solid ${(activeDragItem.item as BoardColumn).color}`
+                    : '4px solid #4F46E5',
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="h-4 w-4 text-primary" />
+                    {(activeDragItem.item as BoardColumn).color && (
+                      <span
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: (activeDragItem.item as BoardColumn).color || undefined }}
+                      />
+                    )}
+                    <h3 className="font-bold text-xs uppercase tracking-wide text-slate-800">
+                      {(activeDragItem.item as BoardColumn).name}
+                    </h3>
+                  </div>
+                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-mono text-[11px] font-bold flex items-center justify-center">
+                    {columnTicketsMap[(activeDragItem.item as BoardColumn).id]?.length ?? 0}
+                  </span>
+                </div>
+                <div className="h-24 rounded-lg bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-[11px] text-slate-400 font-medium">
+                  Moving column...
                 </div>
               </div>
             ) : null}
