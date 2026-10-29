@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { assertRateLimit } from '../lib/rateLimit.js';
 import {
   hashPassword,
   comparePassword,
@@ -28,6 +29,9 @@ const loginSchema = z.object({
 export class AuthController {
   static async register(req: Request, res: Response) {
     try {
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      assertRateLimit(`register:${clientIp}`, 20, 60_000);
+
       const parsed = registerSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({
@@ -120,7 +124,7 @@ export class AuthController {
       });
     } catch (error: any) {
       console.error('[AuthController.register] Error:', error);
-      return res.status(500).json({
+      return res.status(error.status || 500).json({
         success: false,
         error: error.message || 'Registration failed',
       });
@@ -129,6 +133,9 @@ export class AuthController {
 
   static async login(req: Request, res: Response) {
     try {
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      assertRateLimit(`login:${clientIp}`, 30, 60_000);
+
       const parsed = loginSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({
@@ -146,18 +153,10 @@ export class AuthController {
         },
       });
 
-      if (!user) {
+      if (!user || !(await comparePassword(password, user.passwordHash))) {
         return res.status(401).json({
           success: false,
-          error: 'Invalid credentials. User not found.',
-        });
-      }
-
-      const isValidPassword = await comparePassword(password, user.passwordHash);
-      if (!isValidPassword) {
-        return res.status(401).json({
-          success: false,
-          error: 'Invalid credentials. Incorrect password.',
+          error: 'Invalid credentials. Please check your login and password.',
         });
       }
 
@@ -296,7 +295,7 @@ export class AuthController {
       });
     } catch (error: any) {
       console.error('[AuthController.refresh] Error:', error);
-      return res.status(500).json({
+      return res.status(error.status || 500).json({
         success: false,
         error: error.message || 'Token refresh failed',
       });

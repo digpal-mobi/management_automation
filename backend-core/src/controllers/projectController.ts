@@ -189,6 +189,14 @@ export class ProjectController {
           owner: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
+          members: {
+            where: { userId: authUser.id },
+            select: { role: true },
+          },
+          userRoles: {
+            where: { userId: authUser.id },
+            include: { role: true },
+          },
           tickets: {
             select: {
               id: true,
@@ -218,8 +226,20 @@ export class ProjectController {
           const totalPoints = p.tickets.reduce((acc: number, t) => acc + (t.storyPoints || 0), 0);
           const completionRate = totalTickets > 0 ? Math.round((doneTickets / totalTickets) * 100) : 0;
 
-          const userRole =
-            (await getProjectRole(p.id, authUser.id)) || (p.ownerId === authUser.id ? 'owner' : null);
+          let userRole: string | null = null;
+          if (authUser.role === 'admin' || p.ownerId === authUser.id) {
+            userRole = 'owner';
+          } else if (p.members && p.members.length > 0) {
+            userRole = p.members[0].role.toLowerCase();
+          } else if (p.userRoles && p.userRoles.length > 0) {
+            const rKey = p.userRoles[0].role.key;
+            if (rKey === 'system_admin' || rKey === 'project_manager') userRole = 'owner';
+            else if (rKey === 'developer') userRole = 'developer';
+            else if (rKey === 'qa' || rKey === 'viewer') userRole = 'editor';
+          }
+          if (!userRole) {
+            userRole = (await getProjectRole(p.id, authUser.id)) || (p.ownerId === authUser.id ? 'owner' : null);
+          }
           if (!userRole) return null;
 
           return {
@@ -347,98 +367,6 @@ export class ProjectController {
     }
   }
 
-  static async getProjectBoard(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-
-      const project = await prisma.project.findUnique({
-        where: { id },
-        select: { id: true, name: true, description: true, techStack: true },
-      });
-
-      if (!project) {
-        return res.status(404).json({ success: false, error: 'Project not found' });
-      }
-
-      let board = await prisma.board.findFirst({
-        where: { projectId: id },
-        include: {
-          columns: {
-            orderBy: { position: 'asc' },
-            include: {
-              tickets: {
-                orderBy: { createdAt: 'desc' },
-                include: {
-                  assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                  assignees: {
-                    include: {
-                      user: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                    },
-                  },
-                  _count: { select: { comments: true } },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      // If board doesn't exist, create default
-      if (!board) {
-        board = await prisma.board.create({
-          data: {
-            projectId: id,
-            name: `${project.name} Board`,
-          },
-          include: {
-            columns: {
-              include: {
-                tickets: {
-                  include: {
-                    assignee: true,
-                    assignees: {
-                      include: {
-                        user: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                      },
-                    },
-                    _count: { select: { comments: true } },
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        // Ensure default columns
-        const defaultColConfigs = [
-          { name: 'To Do', category: TicketStatus.TODO, position: 0, color: '#526174' },
-          { name: 'In Progress', category: TicketStatus.IN_PROGRESS, position: 1, color: '#003049' },
-          { name: 'Done', category: TicketStatus.DONE, position: 2, color: '#15803D' },
-        ];
-        for (const conf of defaultColConfigs) {
-          await prisma.boardColumn.create({
-            data: {
-              boardId: board.id,
-              name: conf.name,
-              category: conf.category,
-              position: conf.position,
-              color: conf.color,
-              isDefault: true,
-            },
-          });
-        }
-      }
-
-      return res.status(200).json({
-        success: true,
-        project,
-        board,
-      });
-    } catch (error: any) {
-      console.error('[ProjectController.getProjectBoard] Error:', error);
-      return res.status(500).json({ success: false, error: error.message });
-    }
-  }
 
   static async getProjectAnalytics(req: Request, res: Response) {
     try {

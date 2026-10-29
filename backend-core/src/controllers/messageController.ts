@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { AiService } from '../services/aiService.js';
 import { socketService } from '../services/socketService.js';
 import { requireProjectAccess } from '../lib/projectAccess.js';
+import { authenticateRequest } from '../lib/auth.js';
 
 export class MessageController {
   static async getTicketMessages(req: Request, res: Response) {
@@ -53,14 +54,18 @@ export class MessageController {
       const role = await requireProjectAccess(req, res, ticket.projectId);
       if (!role) return;
 
+      const authUser = await authenticateRequest(req);
       const isAi = senderType === 'AI';
+      const authorUserId = authUser ? authUser.id : (senderId || null);
+      const authorUsername = authUser ? authUser.username : (senderName || (isAi ? 'TaskPulse AI' : 'Team Member'));
+
       const comment = await prisma.comment.create({
         data: {
           ticketId,
           content,
           isAi,
-          userId: senderId || null,
-          authorName: senderName || (isAi ? 'TaskPulse AI' : 'Team Member'),
+          userId: authorUserId,
+          authorName: authorUsername,
         },
         include: {
           user: { select: { id: true, username: true, avatarUrl: true } },
@@ -102,18 +107,22 @@ export class MessageController {
       const role = await requireProjectAccess(req, res, ticket.projectId);
       if (!role) return;
 
+      const authUser = await authenticateRequest(req);
+      const authorUserId = authUser ? authUser.id : (senderId || null);
+      const authorUsername = authUser ? authUser.username : (senderName || 'Developer');
+
       const userMsg = await prisma.comment.create({
         data: {
           ticketId,
           content: message,
           isAi: false,
-          userId: senderId || null,
-          authorName: senderName || 'Developer',
+          userId: authorUserId,
+          authorName: authorUsername,
         },
       });
       socketService.emitToTicket(ticketId, 'message:created', userMsg);
 
-      const history = ticket.comments.reverse().map((m) => ({
+      const history = ticket.comments.slice().reverse().map((m) => ({
         senderType: m.isAi ? 'ai' : 'user',
         content: m.content,
       }));

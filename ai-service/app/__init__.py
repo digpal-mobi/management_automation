@@ -21,6 +21,11 @@ def create_app():
     except Exception as e:
         logging.warning(f"Could not initialize DB on startup (will retry on requests): {e}")
 
+    @app.route("/health", methods=["GET"])
+    def root_health():
+        from app.routes import health_check
+        return health_check()
+
     app.register_blueprint(ai_bp, url_prefix="/ai")
 
     return app

@@ -6,6 +6,7 @@ from app.embeddings.embedder import get_embedding
 from app.services.ingestion import ingest_project_context
 from app.services.ticket_generator import generate_project_tickets
 from app.services.rag_chat import answer_ticket_question
+from app.services.ticket_discussion import analyze_and_respond_to_ticket_comment
 
 logger = logging.getLogger(__name__)
 ai_bp = Blueprint("ai", __name__)
@@ -71,8 +72,6 @@ def generate_tickets():
     except Exception as e:
         logger.exception("Error in /ai/generate-tickets")
         return jsonify({"error": str(e)}), 500
-
-from app.services.ticket_discussion import analyze_and_respond_to_ticket_comment
 
 @ai_bp.route("/ticket-discussion", methods=["POST"])
 def ticket_discussion():

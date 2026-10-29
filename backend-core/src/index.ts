@@ -35,8 +35,10 @@ app.use(
       // allow requests with no origin (like mobile apps, curl, postman)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
-      } else {
+      } else if (process.env.NODE_ENV !== 'production') {
         callback(null, true); // Permissive for local dev
+      } else {
+        callback(new Error('Origin not allowed by CORS'));
       }
     },
     credentials: true,
