@@ -1,8 +1,8 @@
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseDocumentBuffer } from '../src/lib/documents.js';
+import { parseDocumentBuffer, processDocumentRecord } from '../src/lib/documents.js';
 import { ProjectSynthesisService } from '../src/lib/projectSynthesis.js';
 import { prisma } from '../src/lib/prisma.js';
 import { PERMISSIONS } from '../src/authorization/permissions.js';
@@ -155,8 +155,93 @@ describe('Complete PRD & Sprint Plan Ingestion, Synthesis & Ticket Pipeline', ()
   });
 
   // Integration Tests using the live Database Project
-  describe('Database Synthesis & Backlog Generation (Project 3bcf8275-6f58-4572-9dcc-379548d616f3)', () => {
-    const projectId = '3bcf8275-6f58-4572-9dcc-379548d616f3';
+  describe('Database Synthesis & Backlog Generation', () => {
+    let projectId = '';
+    let createdProject = false;
+
+    before(async () => {
+      let project = await prisma.project.findFirst({
+        where: {
+          tickets: {
+            some: {
+              sourceCandidateId: { startsWith: 'ECOM-' },
+            },
+          },
+        },
+      });
+
+      if (!project) {
+        let user = await prisma.user.findFirst();
+        if (!user) {
+          user = await prisma.user.create({
+            data: {
+              email: `ingest_test_${Date.now()}@example.com`,
+              username: `ingest_user_${Date.now()}`,
+              passwordHash: 'dummy',
+            },
+          });
+        }
+
+        project = await prisma.project.create({
+          data: {
+            name: `Ecommerce Test Ingestion ${Date.now()}`,
+            slug: `ecommerce-ingest-${Date.now()}`,
+            description: 'Single-store modern commerce architecture test',
+            techStack: 'Next.js 14, Node.js, Express, PostgreSQL',
+            ownerId: user.id,
+            boards: {
+              create: {
+                name: 'Main Board',
+                columns: {
+                  create: [
+                    { name: 'To Do', category: 'TODO', position: 0 },
+                    { name: 'In Progress', category: 'IN_PROGRESS', position: 1 },
+                    { name: 'Done', category: 'DONE', position: 2 },
+                  ],
+                },
+              },
+            },
+          },
+        });
+        createdProject = true;
+
+        const prdBuffer = fs.readFileSync(PRD_PATH);
+        const prdDoc = await prisma.projectDocument.create({
+          data: {
+            projectId: project.id,
+            filename: 'Ecommerce_Website_PRD.pdf',
+            fileSize: prdBuffer.length,
+            fileFormat: 'pdf',
+            mimeType: 'application/pdf',
+            status: 'PENDING',
+          },
+        });
+        await processDocumentRecord(prdDoc.id, prdBuffer);
+
+        const xlsxBuffer = fs.readFileSync(SPRINT_PLAN_PATH);
+        const xlsxDoc = await prisma.projectDocument.create({
+          data: {
+            projectId: project.id,
+            filename: 'Ecommerce_Sprint_Plan.xlsx',
+            fileSize: xlsxBuffer.length,
+            fileFormat: 'xlsx',
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            status: 'PENDING',
+          },
+        });
+        await processDocumentRecord(xlsxDoc.id, xlsxBuffer);
+
+        await ProjectSynthesisService.synthesizeProject(project.id);
+      }
+
+      projectId = project.id;
+    });
+
+    after(async () => {
+      if (createdProject && projectId) {
+        await prisma.project.delete({ where: { id: projectId } });
+      }
+    });
 
     // Test 9: Schema-valid Project Brief
     it('9. should synthesize a complete, schema-valid Project Brief with all 11 sprints and domain modules', async () => {

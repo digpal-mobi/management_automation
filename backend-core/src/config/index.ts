@@ -3,6 +3,10 @@ import path from 'path';
 
 dotenv.config();
 
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/pm_ai_db?schema=public';
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   databaseUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/pm_ai_db?schema=public',

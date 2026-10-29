@@ -8,7 +8,7 @@ raw_db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost
 clean_db_url = raw_db_url.split("?")[0] if "?" in raw_db_url else raw_db_url
 
 class Config:
-    PORT = int(os.getenv("AI_SERVICE_PORT", "5001"))
+    PORT = int(os.getenv("PORT", os.getenv("AI_SERVICE_PORT", "5001")))
     DATABASE_URL = clean_db_url
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
     

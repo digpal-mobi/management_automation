@@ -7,10 +7,9 @@ async function runTest() {
   console.log('🧪 Verifying Clean Database & Project PRD Ingestion -> AI Tickets');
   console.log('=================================================================');
 
-  // Step 1: Clean slate - ensure 0 projects in DB
-  await prisma.project.deleteMany();
-  const initialProjectCount = await prisma.project.count();
-  console.log(`[Step 1] Initial project count in DB: ${initialProjectCount}`);
+  // Step 1: Clean up any previous test project with the same name
+  await prisma.project.deleteMany({ where: { name: 'Autonomous Supply Chain Tracker' } });
+  console.log(`[Step 1] Initialized clean test project state`);
 
   // Step 2: Ensure test user exists & obtain token
   let user = await prisma.user.findFirst({ where: { email: 'admin@taskpulse.ai' } });
