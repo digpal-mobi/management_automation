@@ -10,6 +10,7 @@ const createColumnSchema = z.object({
   description: z.string().max(255).optional(),
   category: z.enum(['TODO', 'IN_PROGRESS', 'DONE', 'To Do', 'In Progress', 'Done']).default('TODO'),
   color: z.string().optional(),
+  wipLimit: z.number().int().min(0).optional().nullable(),
 });
 
 const updateColumnSchema = z.object({
@@ -17,6 +18,7 @@ const updateColumnSchema = z.object({
   description: z.string().max(255).optional().nullable(),
   category: z.enum(['TODO', 'IN_PROGRESS', 'DONE', 'To Do', 'In Progress', 'Done']).optional(),
   color: z.string().optional().nullable(),
+  wipLimit: z.number().int().min(0).optional().nullable(),
 });
 
 const reorderSchema = z.object({
@@ -25,7 +27,10 @@ const reorderSchema = z.object({
       id: z.string(),
       position: z.number().int().min(0),
     })
-  ).min(1, 'columnOrders array cannot be empty'),
+  ).optional(),
+  columnIds: z.array(z.string()).optional(),
+}).refine((data) => (data.columnOrders && data.columnOrders.length > 0) || (data.columnIds && data.columnIds.length > 0), {
+  message: 'Either non-empty columnOrders or columnIds array must be provided',
 });
 
 export class BoardColumnController {
@@ -46,6 +51,16 @@ export class BoardColumnController {
         return res.status(404).json({ success: false, error: 'Project not found' });
       }
 
+      const ticketInclude = {
+        assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+        assignees: {
+          include: {
+            user: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          },
+        },
+        _count: { select: { comments: true } },
+      };
+
       let board = await prisma.board.findFirst({
         where: { projectId },
         include: {
@@ -53,11 +68,8 @@ export class BoardColumnController {
             orderBy: { position: 'asc' },
             include: {
               tickets: {
-                orderBy: { createdAt: 'desc' },
-                include: {
-                  assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                  _count: { select: { comments: true } },
-                },
+                orderBy: [{ executionOrder: 'asc' }, { createdAt: 'desc' }],
+                include: ticketInclude,
               },
             },
           },
@@ -72,10 +84,8 @@ export class BoardColumnController {
               orderBy: { position: 'asc' },
               include: {
                 tickets: {
-                  include: {
-                    assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                    _count: { select: { comments: true } },
-                  },
+                  orderBy: [{ executionOrder: 'asc' }, { createdAt: 'desc' }],
+                  include: ticketInclude,
                 },
               },
             },
@@ -85,9 +95,11 @@ export class BoardColumnController {
 
       if (!board.columns || board.columns.length === 0) {
         const defaultDefs = [
-          { name: 'To Do', category: TicketStatus.TODO, position: 0, isDefault: true, color: '#526174' },
-          { name: 'In Progress', category: TicketStatus.IN_PROGRESS, position: 1, isDefault: true, color: '#003049' },
-          { name: 'Done', category: TicketStatus.DONE, position: 2, isDefault: true, color: '#15803D' },
+          { name: 'Backlog', category: TicketStatus.TODO, position: 0, isDefault: true, color: '#526174', wipLimit: 0 },
+          { name: 'To Do', category: TicketStatus.TODO, position: 1, isDefault: true, color: '#003049', wipLimit: 5 },
+          { name: 'In Progress', category: TicketStatus.IN_PROGRESS, position: 2, isDefault: true, color: '#C1121F', wipLimit: 3 },
+          { name: 'In Review', category: TicketStatus.IN_PROGRESS, position: 3, isDefault: false, color: '#669BBC', wipLimit: 4 },
+          { name: 'Done', category: TicketStatus.DONE, position: 4, isDefault: true, color: '#15803D', wipLimit: 0 },
         ];
 
         for (const def of defaultDefs) {
@@ -99,6 +111,7 @@ export class BoardColumnController {
               position: def.position,
               isDefault: def.isDefault,
               color: def.color,
+              wipLimit: def.wipLimit,
             },
           });
         }
@@ -110,10 +123,8 @@ export class BoardColumnController {
               orderBy: { position: 'asc' },
               include: {
                 tickets: {
-                  include: {
-                    assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-                    _count: { select: { comments: true } },
-                  },
+                  orderBy: [{ executionOrder: 'asc' }, { createdAt: 'desc' }],
+                  include: ticketInclude,
                 },
               },
             },
@@ -127,10 +138,7 @@ export class BoardColumnController {
           projectId,
           OR: [{ columnId: null }, { column: { boardId: { not: board!.id } } }],
         },
-        include: {
-          assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
-          _count: { select: { comments: true } },
-        },
+        include: ticketInclude,
       });
 
       if (unassignedTickets.length > 0 && board && board.columns.length > 0) {
@@ -153,10 +161,17 @@ export class BoardColumnController {
         category: col.category === 'TODO' ? 'To Do' : col.category === 'IN_PROGRESS' ? 'In Progress' : 'Done',
         isDefault: col.isDefault,
         color: col.color,
+        wipLimit: col.wipLimit ?? 0,
         createdAt: col.createdAt,
         updatedAt: col.updatedAt,
-        tickets: col.tickets.map((t) => ({
+        tickets: col.tickets.map((t: any) => ({
           ...t,
+          assignees:
+            t.assignees && t.assignees.length > 0
+              ? t.assignees.map((a: any) => a.user || a)
+              : t.assignee
+              ? [t.assignee]
+              : [],
           status: t.status === 'TODO' ? 'To Do' : t.status === 'IN_PROGRESS' ? 'In Progress' : 'Done',
           commentsCount: t._count?.comments || 0,
         })),
@@ -198,7 +213,7 @@ export class BoardColumnController {
         });
       }
 
-      const { name, description, category, color } = parsed.data;
+      const { name, description, category, color, wipLimit } = parsed.data;
 
       let board = await prisma.board.findFirst({ where: { projectId } });
       if (!board) {
@@ -242,6 +257,7 @@ export class BoardColumnController {
           position: nextPosition,
           isDefault: false,
           color: color || '#526174',
+          wipLimit: wipLimit !== undefined ? (wipLimit ?? 0) : 0,
         },
       });
 
@@ -256,6 +272,7 @@ export class BoardColumnController {
           category: column.category === 'TODO' ? 'To Do' : column.category === 'IN_PROGRESS' ? 'In Progress' : 'Done',
           isDefault: column.isDefault,
           color: column.color,
+          wipLimit: column.wipLimit ?? 0,
           tickets: [],
         },
       });
@@ -281,7 +298,10 @@ export class BoardColumnController {
         });
       }
 
-      const { columnOrders } = parsed.data;
+      const columnOrders = parsed.data.columnOrders || (parsed.data.columnIds?.map((id, idx) => ({ id, position: idx })) ?? []);
+      if (!columnOrders || columnOrders.length === 0) {
+        return res.status(400).json({ success: false, error: 'No column ordering data provided' });
+      }
 
       const board = await prisma.board.findFirst({ where: { projectId } });
       if (!board) {
@@ -305,7 +325,11 @@ export class BoardColumnController {
       return res.status(200).json({
         success: true,
         message: 'Columns reordered successfully',
-        columns: updatedColumns,
+        columns: updatedColumns.map((col) => ({
+          ...col,
+          category: col.category === 'TODO' ? 'To Do' : col.category === 'IN_PROGRESS' ? 'In Progress' : 'Done',
+          wipLimit: col.wipLimit ?? 0,
+        })),
       });
     } catch (error: any) {
       console.error('[BoardColumnController.reorderColumns] Error:', error);
@@ -338,7 +362,7 @@ export class BoardColumnController {
         return res.status(404).json({ success: false, error: 'Column not found on this project' });
       }
 
-      const { name, description, category, color } = parsed.data;
+      const { name, description, category, color, wipLimit } = parsed.data;
 
       if (name && name.trim().toLowerCase() !== existingCol.name.toLowerCase()) {
         const dup = await prisma.boardColumn.findFirst({
@@ -374,6 +398,7 @@ export class BoardColumnController {
           description: description !== undefined ? description : undefined,
           category: dbCat,
           color: color !== undefined ? color : undefined,
+          wipLimit: wipLimit !== undefined ? (wipLimit ?? 0) : undefined,
         },
       });
 
@@ -382,10 +407,82 @@ export class BoardColumnController {
         column: {
           ...updated,
           category: updated.category === 'TODO' ? 'To Do' : updated.category === 'IN_PROGRESS' ? 'In Progress' : 'Done',
+          wipLimit: updated.wipLimit ?? 0,
         },
       });
     } catch (error: any) {
       console.error('[BoardColumnController.updateColumn] Error:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  static async duplicateColumn(req: Request, res: Response) {
+    try {
+      const { id: projectId, columnId } = req.params;
+      const auth = await AuthorizationService.authorize(req, PERMISSIONS.BOARD_MANAGE_COLUMNS, projectId);
+      if (!auth.authorized) {
+        return res.status(auth.status || 403).json({ success: false, error: auth.reason });
+      }
+
+      const column = await prisma.boardColumn.findUnique({
+        where: { id: columnId },
+        include: { board: true },
+      });
+
+      if (!column || column.board.projectId !== projectId) {
+        return res.status(404).json({ success: false, error: 'Column not found on this project' });
+      }
+
+      const maxPosCol = await prisma.boardColumn.findFirst({
+        where: { boardId: column.boardId },
+        orderBy: { position: 'desc' },
+        select: { position: true },
+      });
+      const nextPosition = (maxPosCol?.position ?? -1) + 1;
+
+      let newName = `${column.name} (Copy)`;
+      let counter = 1;
+      while (
+        await prisma.boardColumn.findFirst({
+          where: {
+            boardId: column.boardId,
+            name: { equals: newName, mode: 'insensitive' },
+          },
+        })
+      ) {
+        counter++;
+        newName = `${column.name} (Copy ${counter})`;
+      }
+
+      const duplicated = await prisma.boardColumn.create({
+        data: {
+          boardId: column.boardId,
+          name: newName,
+          description: column.description,
+          category: column.category,
+          position: nextPosition,
+          isDefault: false,
+          color: column.color,
+          wipLimit: column.wipLimit ?? 0,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        column: {
+          ...duplicated,
+          category:
+            duplicated.category === 'TODO'
+              ? 'To Do'
+              : duplicated.category === 'IN_PROGRESS'
+              ? 'In Progress'
+              : 'Done',
+          wipLimit: duplicated.wipLimit ?? 0,
+          tickets: [],
+        },
+      });
+    } catch (error: any) {
+      console.error('[BoardColumnController.duplicateColumn] Error:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
   }

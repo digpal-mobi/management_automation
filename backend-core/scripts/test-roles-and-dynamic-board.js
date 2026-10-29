@@ -7,7 +7,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.API_URL || 'http://localhost:3001';
 
 async function runTests() {
   console.log('===============================================================');
@@ -160,6 +160,7 @@ async function runTests() {
     const testProject = await prisma.project.create({
       data: {
         name: `Dynamic Board Test Project - ${Date.now()}`,
+        slug: `dynamic-board-test-${Date.now()}`,
         description: 'Automated verification of dynamic columns and ticket associations',
         ownerId: ownerUser.id,
         boards: {

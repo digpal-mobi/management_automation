@@ -36,6 +36,7 @@ async function run() {
     const project = await prisma.project.create({
       data: {
         name: projectName,
+        slug: `pipeline-test-${Date.now()}`,
         description: 'End-to-end verification of Knowledge, Roadmap, and Scoped Ticket Generation',
         ownerId: user.id,
         techStack: 'Next.js, Node.js, PostgreSQL, Tailwind CSS',

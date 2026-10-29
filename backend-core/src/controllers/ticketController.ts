@@ -19,6 +19,7 @@ export class TicketController {
         priority,
         storyPoints,
         assigneeId,
+        assigneeIds,
       } = req.body;
 
       if (!projectId || !title) {
@@ -56,6 +57,15 @@ export class TicketController {
       if (priority === 'LOW' || priority === 'Low') prio = TicketPriority.LOW;
       if (priority === 'CRITICAL' || priority === 'Critical') prio = TicketPriority.CRITICAL;
 
+      let targetAssigneeIds: string[] = [];
+      if (assigneeIds && Array.isArray(assigneeIds)) {
+        targetAssigneeIds = Array.from(new Set(assigneeIds.filter(Boolean)));
+      } else if (assigneeId) {
+        targetAssigneeIds = [assigneeId];
+      }
+
+      const primaryAssigneeId = targetAssigneeIds.length > 0 ? targetAssigneeIds[0] : null;
+
       const ticket = await prisma.ticket.create({
         data: {
           projectId,
@@ -68,17 +78,38 @@ export class TicketController {
           prChecklist: prChecklist || null,
           priority: prio,
           storyPoints: storyPoints ? parseInt(storyPoints, 10) : null,
-          assigneeId: assigneeId || null,
+          assigneeId: primaryAssigneeId,
+          assignees:
+            targetAssigneeIds.length > 0
+              ? {
+                  create: targetAssigneeIds.map((userId) => ({ userId })),
+                }
+              : undefined,
         },
         include: {
           assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, avatarUrl: true, email: true } },
+            },
+          },
           column: { select: { id: true, name: true, category: true } },
         },
       });
 
-      socketService.emitToProject(projectId, 'ticket:created', ticket);
+      const formatted = {
+        ...ticket,
+        assignees:
+          ticket.assignees && ticket.assignees.length > 0
+            ? ticket.assignees.map((a: any) => a.user || a)
+            : ticket.assignee
+            ? [ticket.assignee]
+            : [],
+      };
 
-      return res.status(201).json({ success: true, ticket });
+      socketService.emitToProject(projectId, 'ticket:created', formatted);
+
+      return res.status(201).json({ success: true, ticket: formatted });
     } catch (error: any) {
       console.error('[TicketController.createTicket] Error:', error);
       return res.status(500).json({ success: false, error: error.message });
@@ -92,6 +123,11 @@ export class TicketController {
         where: { id },
         include: {
           assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, avatarUrl: true, email: true } },
+            },
+          },
           column: { select: { id: true, name: true, position: true, category: true } },
           project: { select: { id: true, name: true, description: true, techStack: true } },
           _count: { select: { comments: true } },
@@ -105,7 +141,17 @@ export class TicketController {
       const role = await requireProjectAccess(req, res, ticket.projectId);
       if (!role) return;
 
-      return res.status(200).json({ success: true, ticket });
+      const formatted = {
+        ...ticket,
+        assignees:
+          ticket.assignees && ticket.assignees.length > 0
+            ? ticket.assignees.map((a: any) => a.user || a)
+            : ticket.assignee
+            ? [ticket.assignee]
+            : [],
+      };
+
+      return res.status(200).json({ success: true, ticket: formatted });
     } catch (error: any) {
       console.error('[TicketController.getTicketById] Error:', error);
       return res.status(500).json({ success: false, error: error.message });
@@ -126,6 +172,7 @@ export class TicketController {
         priority,
         storyPoints,
         assigneeId,
+        assigneeIds,
       } = req.body;
 
       const existing = await prisma.ticket.findUnique({ where: { id } });
@@ -154,7 +201,6 @@ export class TicketController {
       if (acceptanceCriteria !== undefined) updateData.acceptanceCriteria = acceptanceCriteria;
       if (technicalNotes !== undefined) updateData.technicalNotes = technicalNotes;
       if (prChecklist !== undefined) updateData.prChecklist = prChecklist;
-      if (assigneeId !== undefined) updateData.assigneeId = assigneeId;
       if (storyPoints !== undefined) updateData.storyPoints = parseInt(storyPoints, 10);
       if (priority !== undefined) {
         if (priority === 'HIGH' || priority === 'High') updateData.priority = TicketPriority.HIGH;
@@ -163,20 +209,53 @@ export class TicketController {
         else updateData.priority = TicketPriority.MEDIUM;
       }
 
+      let targetAssigneeIds: string[] | undefined = undefined;
+      if (assigneeIds !== undefined) {
+        targetAssigneeIds = Array.from(new Set(assigneeIds.filter(Boolean)));
+      } else if (assigneeId !== undefined) {
+        targetAssigneeIds = assigneeId ? [assigneeId] : [];
+      }
+
+      if (targetAssigneeIds !== undefined) {
+        updateData.assigneeId = targetAssigneeIds.length > 0 ? targetAssigneeIds[0] : null;
+        await prisma.ticketAssignee.deleteMany({ where: { ticketId: id } });
+        if (targetAssigneeIds.length > 0) {
+          await prisma.ticketAssignee.createMany({
+            data: targetAssigneeIds.map((userId) => ({ ticketId: id, userId })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
       const updated = await prisma.ticket.update({
         where: { id },
         data: updateData,
         include: {
           assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, avatarUrl: true, email: true } },
+            },
+          },
           column: { select: { id: true, name: true, category: true } },
         },
       });
 
-      // Real-time broadcast
-      socketService.emitToProject(updated.projectId, 'ticket:updated', updated);
-      socketService.emitToTicket(updated.id, 'ticket:updated', updated);
+      const formatted = {
+        ...updated,
+        assignees:
+          updated.assignees && updated.assignees.length > 0
+            ? updated.assignees.map((a: any) => a.user || a)
+            : updated.assignee
+            ? [updated.assignee]
+            : [],
+      };
 
-      return res.status(200).json({ success: true, ticket: updated });
+      // Real-time broadcast
+      socketService.emitToProject(updated.projectId, 'ticket:updated', formatted);
+      socketService.emitToTicket(updated.id, 'ticket:updated', formatted);
+
+      return res.status(200).json({ success: true, ticket: formatted });
     } catch (error: any) {
       console.error('[TicketController.updateTicket] Error:', error);
       return res.status(500).json({ success: false, error: error.message });

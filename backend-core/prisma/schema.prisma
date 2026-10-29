@@ -81,11 +81,12 @@ model User {
 
   ownedProjects   Project[]        @relation("ProjectOwner")
   projectMembers  ProjectMember[]
-  assignedTickets Ticket[]         @relation("TicketAssignee")
-  reportedTickets Ticket[]         @relation("TicketReporter")
-  comments        Comment[]
-  refreshTokens   RefreshToken[]
-  userRoles       UserRole[]
+  assignedTickets   Ticket[]            @relation("TicketAssignee")
+  ticketAssignments TicketAssignee[]
+  reportedTickets   Ticket[]            @relation("TicketReporter")
+  comments          Comment[]
+  refreshTokens     RefreshToken[]
+  userRoles         UserRole[]
   invitationsSent     ProjectInvitation[] @relation("InvitationInviter")
   invitationsReceived ProjectInvitation[] @relation("InvitationRecipient")
   notifications       Notification[]
@@ -277,6 +278,7 @@ model Ticket {
   isLocked             Boolean            @default(false) @map("is_locked")
   assigneeId           String?            @map("assignee_id")
   assignee             User?              @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assignees            TicketAssignee[]
   reporterId           String?            @map("reporter_id")
   reporter             User?              @relation("TicketReporter", fields: [reporterId], references: [id], onDelete: SetNull)
   createdAt            DateTime           @default(now()) @map("created_at")
@@ -295,6 +297,20 @@ model Ticket {
   @@index([sprint])
   @@index([status])
   @@map("tickets")
+}
+
+model TicketAssignee {
+  id         String   @id @default(uuid())
+  ticketId   String   @map("ticket_id")
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  @@unique([ticketId, userId])
+  @@index([ticketId])
+  @@index([userId])
+  @@map("ticket_assignees")
 }
 
 model Comment {
@@ -352,6 +368,7 @@ model BoardColumn {
   category    TicketStatus @default(TODO)
   isDefault   Boolean      @default(false) @map("is_default")
   color       String?
+  wipLimit    Int?         @default(0) @map("wip_limit")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 

@@ -208,6 +208,7 @@ async function runTestSuite() {
     const projectA = await prisma.project.create({
       data: {
         name: `Test Project A - ${Date.now()}`,
+        slug: `test-project-a-${Date.now()}`,
         description: 'Test project for discussion assistant',
         ownerId: userA.id,
         techStack: 'Next.js 14, Node.js, Express, PostgreSQL, Prisma',
@@ -462,6 +463,7 @@ async function runTestSuite() {
     const projectB = await prisma.project.create({
       data: {
         name: `Isolated Project B - ${Date.now()}`,
+        slug: `isolated-project-b-${Date.now()}`,
         description: 'Separate isolated project',
         ownerId: userA.id,
         techStack: 'Python, FastAPI, Redis',

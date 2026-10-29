@@ -12,6 +12,10 @@
     "test:slug": "tsx --test tests/slug_and_routing.test.ts",
     "test:invitations": "tsx --test tests/invitations_and_notifications.test.ts",
     "test:all": "tsx --test tests/ingestion_and_generation.test.ts tests/sprint_planning.test.ts tests/slug_and_routing.test.ts tests/invitations_and_notifications.test.ts",
+    "test:pipeline": "node scripts/verify-pipeline.js",
+    "test:ai-discussion": "node scripts/test-ai-ticket-discussion.js",
+    "test:roles-board": "node scripts/test-roles-and-dynamic-board.js",
+    "test:multi-assignee": "node scripts/test-multi-assignee.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "seed": "tsx prisma/seed.ts"

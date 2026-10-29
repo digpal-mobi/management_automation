@@ -370,6 +370,11 @@ export class ProjectController {
                 orderBy: { createdAt: 'desc' },
                 include: {
                   assignee: { select: { id: true, username: true, avatarUrl: true, email: true } },
+                  assignees: {
+                    include: {
+                      user: { select: { id: true, username: true, avatarUrl: true, email: true } },
+                    },
+                  },
                   _count: { select: { comments: true } },
                 },
               },
@@ -391,6 +396,11 @@ export class ProjectController {
                 tickets: {
                   include: {
                     assignee: true,
+                    assignees: {
+                      include: {
+                        user: { select: { id: true, username: true, avatarUrl: true, email: true } },
+                      },
+                    },
                     _count: { select: { comments: true } },
                   },
                 },

@@ -18,22 +18,33 @@ import {
   TicketDependency,
 } from '@/types';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  data?: any;
+  constructor(message: string, status: number, data?: any) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  // If endpoint is relative, let browser fetch handle it via Next.js routes
-  const response = await fetch(endpoint, {
+  // If endpoint is relative and running server-side, resolve with backend URL
+  let url = endpoint;
+  if (endpoint.startsWith('/') && typeof window === 'undefined') {
+    const backendBase =
+      process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    url = `${backendBase}${endpoint}`;
+  }
+
+  const isFormData = typeof FormData !== 'undefined' && options?.body instanceof FormData;
+
+  const response = await fetch(url, {
     ...options,
     credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...options?.headers,
     },
     cache: 'no-store',
@@ -44,7 +55,8 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   if (!response.ok || data.success === false) {
     throw new ApiError(
       data.error || `API request failed with status ${response.status}`,
-      response.status
+      response.status,
+      data
     );
   }
 
@@ -115,6 +127,16 @@ export const ticketsApi = {
   async delete(projectId: string, ticketId: string): Promise<{ success: boolean; message: string }> {
     return request(`/api/projects/${projectId}/tickets/${ticketId}`, {
       method: 'DELETE',
+    });
+  },
+
+  async reorderTickets(
+    projectId: string,
+    ticketOrders: Array<{ id: string; columnId?: string; status?: string; executionOrder: number }>
+  ): Promise<{ success: boolean; message: string }> {
+    return request(`/api/projects/${projectId}/tickets/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ ticketOrders }),
     });
   },
 
@@ -269,11 +291,20 @@ export const boardApi = {
 
   async createColumn(
     projectId: string,
-    payload: { name: string; description?: string | null; category?: string; color?: string | null }
+    payload: { name: string; description?: string | null; category?: string; color?: string | null; wipLimit?: number | null }
   ): Promise<{ success: boolean; column: BoardColumn }> {
     return request(`/api/projects/${projectId}/board/columns`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  async duplicateColumn(
+    projectId: string,
+    columnId: string
+  ): Promise<{ success: boolean; column: BoardColumn }> {
+    return request(`/api/projects/${projectId}/board/columns/${columnId}/duplicate`, {
+      method: 'POST',
     });
   },
 

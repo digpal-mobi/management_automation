@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { socketClient } from '@/lib/socket';
 import { useAuth } from '@/context/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   Ticket,
   Comment,
@@ -16,6 +17,7 @@ import {
 } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Avatar } from '@/components/ui/Avatar';
 import {
   X,
   Trash2,
@@ -23,6 +25,7 @@ import {
   MessageSquare,
   Edit2,
   User,
+  UserPlus,
   Clock,
   Send,
   AlertTriangle,
@@ -83,6 +86,13 @@ export function TicketDetailModal({
   onTicketDeleted,
 }: TicketDetailModalProps) {
   const { user, fetchWithAuth } = useAuth();
+  const { can } = usePermissions(projectId);
+
+  const canUpdate = can('ticket.update');
+  const canChangeStatus = can('ticket.change_status');
+  const canAssign = can('ticket.assign');
+  const canDelete = can('ticket.delete');
+  const canEditAny = canUpdate || canChangeStatus || canAssign;
 
   // Form State
   const [title, setTitle] = useState('');
@@ -90,12 +100,26 @@ export function TicketDetailModal({
   const [status, setStatus] = useState<TicketStatus>('To Do');
   const [priority, setPriority] = useState<TicketPriority>('Medium');
   const [type, setType] = useState<TicketType>('Task');
-  const [assigneeId, setAssigneeId] = useState<string>('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
+  const assigneeDropdownRef = useRef<HTMLDivElement>(null);
   const [storyPoints, setStoryPoints] = useState<number | ''>('');
   const [acceptanceCriteria, setAcceptanceCriteria] = useState<ChecklistItem[]>([]);
   const [technicalNotes, setTechnicalNotes] = useState<string>('');
   const [prChecklist, setPrChecklist] = useState<ChecklistItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Close assignee dropdown on outside click
+  useEffect(() => {
+    if (!isAssigneeDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target as Node)) {
+        setIsAssigneeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAssigneeDropdownOpen]);
 
   // Delete Confirmation State
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -133,16 +157,36 @@ export function TicketDetailModal({
       setStatus(ticket.status);
       setPriority(ticket.priority);
       setType(ticket.type);
-      setAssigneeId(ticket.assigneeId || '');
+      const initialAssigneeIds =
+        ticket.assignees && ticket.assignees.length > 0
+          ? ticket.assignees.map((u) => u.id)
+          : ticket.assigneeId
+          ? [ticket.assigneeId]
+          : [];
+      setAssigneeIds(initialAssigneeIds);
       setStoryPoints(ticket.storyPoints ?? '');
       setAcceptanceCriteria(parseChecklist(ticket.acceptanceCriteria));
       setTechnicalNotes(ticket.technicalNotes || '');
       setPrChecklist(parseChecklist(ticket.prChecklist));
       setShowDeleteConfirm(false);
+      setIsAssigneeDropdownOpen(false);
 
       fetchComments();
     }
   }, [ticket, fetchComments]);
+
+  const handleToggleAssignee = (userId: string) => {
+    if (!canAssign) return;
+    setAssigneeIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleRemoveAssignee = (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canAssign) return;
+    setAssigneeIds((prev) => prev.filter((id) => id !== userId));
+  };
 
   // Auto-refresh polling while any comment is PROCESSING or PENDING
   useEffect(() => {
@@ -196,23 +240,46 @@ export function TicketDetailModal({
   const handleSave = async () => {
     try {
       setIsSaving(true);
+
+      // Compute dirty fields so we only send what was modified
+      const updates: any = {};
+      if (title.trim() && title.trim() !== ticket.title) updates.title = title.trim();
+      if ((description?.trim() || null) !== (ticket.description || null)) updates.description = description?.trim() || null;
+      if (status !== ticket.status) updates.status = status;
+      if (priority !== ticket.priority) updates.priority = priority;
+      if (type !== ticket.type) updates.type = type;
+      const ticketAssigneeIds =
+        ticket.assignees && ticket.assignees.length > 0
+          ? ticket.assignees.map((u) => u.id)
+          : ticket.assigneeId
+          ? [ticket.assigneeId]
+          : [];
+      const isAssigneesChanged =
+        assigneeIds.length !== ticketAssigneeIds.length ||
+        !assigneeIds.every((id) => ticketAssigneeIds.includes(id));
+
+      if (isAssigneesChanged) {
+        updates.assigneeIds = assigneeIds;
+        updates.assigneeId = assigneeIds[0] || null;
+      }
+      const currentPts = storyPoints === '' ? null : Number(storyPoints);
+      if (currentPts !== ticket.storyPoints) updates.storyPoints = currentPts;
+      if ((technicalNotes?.trim() || null) !== (ticket.technicalNotes || null)) updates.technicalNotes = technicalNotes?.trim() || null;
+      if (JSON.stringify(acceptanceCriteria) !== JSON.stringify(ticket.acceptanceCriteria || [])) updates.acceptanceCriteria = acceptanceCriteria;
+      if (JSON.stringify(prChecklist) !== JSON.stringify(ticket.prChecklist || [])) updates.prChecklist = prChecklist;
+
+      // If user clicked save without editing anything
+      if (Object.keys(updates).length === 0) {
+        toast.success('Ticket saved (no changes)');
+        return;
+      }
+
       const res = await fetchWithAuth(
         `/api/projects/${projectId}/tickets/${ticket.id}`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title,
-            description,
-            status,
-            priority,
-            type,
-            assigneeId: assigneeId || null,
-            storyPoints: storyPoints === '' ? null : Number(storyPoints),
-            acceptanceCriteria,
-            technicalNotes: technicalNotes || null,
-            prChecklist,
-          }),
+          body: JSON.stringify(updates),
         }
       );
 
@@ -335,7 +402,7 @@ export function TicketDetailModal({
       const res = await fetchWithAuth(
         `/api/projects/${projectId}/tickets/${ticket.id}/comments/${commentId}`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: editCommentText.trim() }),
         }
@@ -404,20 +471,24 @@ export function TicketDetailModal({
               variant="primary"
               size="sm"
               isLoading={isSaving}
+              disabled={isSaving || !canEditAny}
               onClick={handleSave}
-              className="gap-1.5"
+              className="gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!canEditAny ? 'You do not have permission to edit this ticket' : 'Save changes'}
             >
               <Save className="h-4 w-4" />
               Save
             </Button>
 
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] transition-colors"
-              title="Delete Ticket"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            {canDelete && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] transition-colors"
+                title="Delete Ticket"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
 
             <button
               onClick={onClose}
@@ -506,8 +577,9 @@ export function TicketDetailModal({
               <input
                 type="text"
                 value={title}
+                disabled={!canUpdate}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-sm font-semibold text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-sm font-semibold text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -519,9 +591,10 @@ export function TicketDetailModal({
               <textarea
                 rows={4}
                 value={description}
+                disabled={!canUpdate}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Detailed specifications, background, or requirements..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] leading-relaxed placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] custom-scrollbar"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] leading-relaxed placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] custom-scrollbar disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -536,11 +609,14 @@ export function TicketDetailModal({
                   {acceptanceCriteria.map((ac, idx) => (
                     <label
                       key={ac.id || idx}
-                      className="flex items-start gap-2.5 text-xs text-[#17212B] hover:text-[#003049] cursor-pointer select-none transition-colors"
+                      className={`flex items-start gap-2.5 text-xs text-[#17212B] transition-colors ${
+                        canUpdate ? 'hover:text-[#003049] cursor-pointer' : 'cursor-not-allowed opacity-80'
+                      } select-none`}
                     >
                       <input
                         type="checkbox"
                         checked={ac.completed}
+                        disabled={!canUpdate}
                         onChange={() => {
                           setAcceptanceCriteria((prev) =>
                             prev.map((item, i) =>
@@ -548,7 +624,7 @@ export function TicketDetailModal({
                             )
                           );
                         }}
-                        className="mt-0.5 rounded border-[#CBD5E1] accent-[#003049]"
+                        className="mt-0.5 rounded border-[#CBD5E1] accent-[#003049] disabled:cursor-not-allowed"
                       />
                       <span className={ac.completed ? 'line-through text-[#94A3B8]' : ''}>
                         {ac.text}
@@ -583,11 +659,14 @@ export function TicketDetailModal({
                   {prChecklist.map((item, idx) => (
                     <label
                       key={item.id || idx}
-                      className="flex items-start gap-2.5 text-xs text-[#17212B] hover:text-[#003049] cursor-pointer select-none transition-colors"
+                      className={`flex items-start gap-2.5 text-xs text-[#17212B] transition-colors ${
+                        canUpdate ? 'hover:text-[#003049] cursor-pointer' : 'cursor-not-allowed opacity-80'
+                      } select-none`}
                     >
                       <input
                         type="checkbox"
                         checked={item.completed}
+                        disabled={!canUpdate}
                         onChange={() => {
                           setPrChecklist((prev) =>
                             prev.map((it, i) =>
@@ -595,7 +674,7 @@ export function TicketDetailModal({
                             )
                           );
                         }}
-                        className="mt-0.5 rounded border-[#CBD5E1] accent-[#003049]"
+                        className="mt-0.5 rounded border-[#CBD5E1] accent-[#003049] disabled:cursor-not-allowed"
                       />
                       <span className={item.completed ? 'line-through text-[#94A3B8]' : ''}>
                         {item.text}
@@ -607,70 +686,177 @@ export function TicketDetailModal({
             )}
 
             {/* Workflow Attributes Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 my-5 pt-4 border-t border-slate-100">
               <div>
-                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
                   Status
                 </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as TicketStatus)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
-                >
-                  <option value="To Do">To Do</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Done">Done</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={status}
+                    disabled={!canChangeStatus}
+                    onChange={(e) => setStatus(e.target.value as TicketStatus)}
+                    className="w-full h-9 pl-3 pr-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-2xs cursor-pointer hover:border-slate-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    title={!canChangeStatus ? 'You do not have permission to change status' : undefined}
+                  >
+                    <option value="To Do">To Do</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Done">Done</option>
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
                   Priority
                 </label>
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={priority}
+                    disabled={!canUpdate}
+                    onChange={(e) => setPriority(e.target.value as TicketPriority)}
+                    className="w-full h-9 pl-3 pr-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-2xs cursor-pointer hover:border-slate-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    title={!canUpdate ? 'You do not have permission to edit priority' : undefined}
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
                   Type
                 </label>
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value as TicketType)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
-                >
-                  <option value="Feature">Feature</option>
-                  <option value="Bug">Bug</option>
-                  <option value="Task">Task</option>
-                  <option value="Improvement">Improvement</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={type}
+                    disabled={!canUpdate}
+                    onChange={(e) => setType(e.target.value as TicketType)}
+                    className="w-full h-9 pl-3 pr-8 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-2xs cursor-pointer hover:border-slate-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    title={!canUpdate ? 'You do not have permission to edit type' : undefined}
+                  >
+                    <option value="Feature">Feature</option>
+                    <option value="Bug">Bug</option>
+                    <option value="Task">Task</option>
+                    <option value="Improvement">Improvement</option>
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                </div>
               </div>
 
-              <div>
-                <label className="text-[11px] font-semibold text-[#526174] block mb-1">
-                  Assignee
-                </label>
-                <select
-                  value={assigneeId}
-                  onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
+              <div ref={assigneeDropdownRef} className="relative">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Assignees {assigneeIds.length > 0 && `(${assigneeIds.length})`}
+                  </label>
+                  {canAssign && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
+                      className="text-[11px] font-medium text-primary hover:text-primary-dark flex items-center gap-1 hover:underline"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                      <span>{assigneeIds.length === 0 ? 'Assign' : 'Add/Remove'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Selected Assignee Box */}
+                <div
+                  onClick={() => canAssign && setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
+                  className={`min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 shadow-2xs transition-colors flex flex-wrap gap-1.5 items-center justify-between ${
+                    canAssign ? 'cursor-pointer hover:border-slate-300' : 'cursor-not-allowed bg-slate-50 opacity-70'
+                  }`}
+                  title={!canAssign ? 'You do not have permission to assign tickets' : undefined}
                 >
-                  <option value="">Unassigned</option>
-                  {members.map((m) => (
-                    <option key={m.user.id} value={m.user.id}>
-                      {m.user.username}
-                    </option>
-                  ))}
-                </select>
+                  <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-0">
+                    {assigneeIds.length === 0 ? (
+                      <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
+                        Unassigned
+                      </span>
+                    ) : (
+                      members
+                        .filter((m) => assigneeIds.includes(m.user.id))
+                        .map((m) => (
+                          <span
+                            key={m.user.id}
+                            className="inline-flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700"
+                          >
+                            <Avatar
+                              name={m.user.username}
+                              email={m.user.email}
+                              avatarUrl={m.user.avatarUrl}
+                              size="xs"
+                            />
+                            <span className="max-w-[100px] truncate">{m.user.username || m.user.email}</span>
+                            {canAssign && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleRemoveAssignee(m.user.id, e)}
+                                className="text-slate-400 hover:text-slate-600 rounded p-0.5"
+                                title={`Remove ${m.user.username}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                          </span>
+                        ))
+                    )}
+                  </div>
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400 pointer-events-none shrink-0 ml-1" />
+                </div>
+
+                {/* Dropdown Popover */}
+                {isAssigneeDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg z-30 p-1.5 max-h-56 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                      Assign Members
+                    </div>
+                    {members.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-slate-400">No members in project</div>
+                    ) : (
+                      members.map((m) => {
+                        const isSelected = assigneeIds.includes(m.user.id);
+                        return (
+                          <button
+                            key={m.user.id}
+                            type="button"
+                            onClick={() => handleToggleAssignee(m.user.id)}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition-colors ${
+                              isSelected ? 'bg-primary/10 text-primary font-medium' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate min-w-0">
+                              <Avatar
+                                name={m.user.username}
+                                email={m.user.email}
+                                avatarUrl={m.user.avatarUrl}
+                                size="xs"
+                              />
+                              <div className="truncate">
+                                <p className="truncate font-medium">{m.user.username || m.user.email}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{m.role}</p>
+                              </div>
+                            </div>
+                            <div
+                              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ml-2 transition-colors ${
+                                isSelected ? 'bg-primary border-primary text-white' : 'border-slate-300 bg-white'
+                              }`}
+                            >
+                              {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -741,16 +927,16 @@ export function TicketDetailModal({
                         {/* AI Header */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-[#003049] text-white flex items-center justify-center font-bold">
-                              <Bot className="h-3 w-3" />
+                            <div className="w-5 h-5 rounded-full bg-[#003049] text-white flex items-center justify-center font-bold shadow-xs">
+                              <Sparkles className="h-3 w-3 text-[#FDF0D5]" />
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-[#003049]">AI Ticket Assistant</span>
-                              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-[#EFF5F9] text-[#003049] border border-[#669BBC]/30 uppercase tracking-wider">
-                                AI
+                              <span className="font-semibold text-slate-900 text-xs">TaskPulse Tech Lead</span>
+                              <span className="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-[#EFF5F9] text-[#003049] border border-[#669BBC]/30">
+                                Staff Lead
                               </span>
                             </div>
-                            <span className="text-[10px] text-[#526174]">
+                            <span className="text-[10px] text-slate-400">
                               {new Date(comment.createdAt).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit',
@@ -758,18 +944,17 @@ export function TicketDetailModal({
                             </span>
                           </div>
 
-                          {comment.aiMetadata?.provider && (
-                            <span className="text-[10px] text-[#526174] hidden sm:inline-block font-mono">
-                              {comment.aiMetadata.provider}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium hidden sm:flex">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>Context-Grounded Guidance</span>
+                          </div>
                         </div>
 
                         {/* Processing State */}
                         {isProcessing && (
                           <div className="py-2.5 px-3 rounded-lg bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center gap-2.5 text-[#003049]">
                             <Loader2 className="h-3.5 w-3.5 animate-spin text-[#003049]" />
-                            <span className="font-medium text-xs">AI is analyzing context and preparing response...</span>
+                            <span className="font-medium text-xs">Analyzing ticket context and architectural notes...</span>
                           </div>
                         )}
 
@@ -779,7 +964,7 @@ export function TicketDetailModal({
                             <div className="flex items-start gap-2 text-[#C1121F]">
                               <AlertTriangle className="h-4 w-4 shrink-0 text-[#C1121F] mt-0.5" />
                               <div className="space-y-1">
-                                <p className="font-medium text-[#780000]">Response generation could not be completed.</p>
+                                <p className="font-medium text-[#780000]">Guidance generation could not be completed.</p>
                                 <p className="text-[11px] text-[#C1121F]/80">
                                   {comment.aiMetadata?.error || 'Temporary timeout or service limitation.'}
                                 </p>
@@ -803,25 +988,72 @@ export function TicketDetailModal({
                         {/* Completed Content */}
                         {!isProcessing && !isFailed && (
                           <div className="space-y-3 pt-0.5">
-                            <div className="text-[#17212B] leading-relaxed text-xs space-y-2">
+                            <div className="text-slate-800 leading-relaxed text-xs space-y-2">
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                  h3: ({ node, ...props }) => <h3 className="text-xs font-bold text-[#003049] mt-2 mb-1" {...props} />,
-                                  h4: ({ node, ...props }) => <h4 className="text-[11px] font-semibold text-[#669BBC] mt-2 mb-1" {...props} />,
-                                  p: ({ node, ...props }) => <p className="text-[#17212B] mb-1.5 last:mb-0 leading-relaxed" {...props} />,
-                                  ul: ({ node, ...props }) => <ul className="list-disc pl-4 space-y-0.5 my-1" {...props} />,
-                                  ol: ({ node, ...props }) => <ol className="list-decimal pl-4 space-y-0.5 my-1" {...props} />,
-                                  li: ({ node, ...props }) => <li className="text-[#17212B]" {...props} />,
+                                  h1: ({ node, ...props }) => (
+                                    <h1 className="text-sm font-bold text-slate-900 mt-3 mb-1.5" {...props} />
+                                  ),
+                                  h2: ({ node, ...props }) => (
+                                    <h2 className="text-xs font-bold text-slate-900 mt-3 mb-1.5 pb-1 border-b border-slate-100" {...props} />
+                                  ),
+                                  h3: ({ node, ...props }) => (
+                                    <h3 className="text-xs font-semibold text-slate-900 mt-2.5 mb-1" {...props} />
+                                  ),
+                                  h4: ({ node, ...props }) => (
+                                    <h4 className="text-[11px] font-semibold text-[#003049] mt-2 mb-1" {...props} />
+                                  ),
+                                  p: ({ node, ...props }) => (
+                                    <p className="text-slate-800 text-xs mb-2 last:mb-0 leading-relaxed" {...props} />
+                                  ),
+                                  ul: ({ node, ...props }) => (
+                                    <ul className="list-disc pl-4 space-y-1 my-1.5 text-xs text-slate-800" {...props} />
+                                  ),
+                                  ol: ({ node, ...props }) => (
+                                    <ol className="list-decimal pl-4 space-y-1 my-1.5 text-xs text-slate-800" {...props} />
+                                  ),
+                                  li: ({ node, ...props }) => (
+                                    <li className="text-slate-800 leading-relaxed" {...props} />
+                                  ),
+                                  strong: ({ node, ...props }) => (
+                                    <strong className="font-semibold text-slate-900" {...props} />
+                                  ),
+                                  hr: ({ node, ...props }) => (
+                                    <hr className="my-2.5 border-slate-200" {...props} />
+                                  ),
+                                  blockquote: ({ node, ...props }) => (
+                                    <blockquote className="border-l-2 border-[#003049] pl-3 py-1 my-2 bg-slate-50/80 rounded-r text-slate-700 italic text-xs" {...props} />
+                                  ),
+                                  table: ({ node, ...props }) => (
+                                    <div className="overflow-x-auto my-2.5 rounded-lg border border-slate-200 shadow-xs">
+                                      <table className="w-full border-collapse text-left text-xs" {...props} />
+                                    </div>
+                                  ),
+                                  thead: ({ node, ...props }) => (
+                                    <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-700 font-semibold" {...props} />
+                                  ),
+                                  tbody: ({ node, ...props }) => (
+                                    <tbody className="divide-y divide-slate-100 bg-white" {...props} />
+                                  ),
+                                  tr: ({ node, ...props }) => (
+                                    <tr className="hover:bg-slate-50/60 transition-colors" {...props} />
+                                  ),
+                                  th: ({ node, ...props }) => (
+                                    <th className="px-3 py-2 font-semibold text-slate-800 text-xs" {...props} />
+                                  ),
+                                  td: ({ node, ...props }) => (
+                                    <td className="px-3 py-2 text-slate-700 align-top leading-relaxed text-xs" {...props} />
+                                  ),
                                   code: ({ node, className, children, ...props }: any) => {
                                     const isInline = !className;
                                     return isInline ? (
-                                      <code className="px-1 py-0.5 rounded bg-[#F1F4F7] text-[#003049] font-mono text-[11px]" {...props}>
+                                      <code className="px-1.5 py-0.5 rounded bg-slate-100 text-[#003049] font-mono text-[11px] font-medium border border-slate-200/60" {...props}>
                                         {children}
                                       </code>
                                     ) : (
                                       <div className="relative group my-2">
-                                        <pre className="p-2.5 rounded-lg bg-[#17212B] text-white overflow-x-auto font-mono text-[11px]">
+                                        <pre className="p-3 rounded-lg bg-[#0F172A] text-slate-100 overflow-x-auto font-mono text-[11px] leading-relaxed border border-slate-800 shadow-sm">
                                           <code>{children}</code>
                                         </pre>
                                       </div>

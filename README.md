@@ -105,6 +105,11 @@ An enterprise-grade, full-stack AI-powered Project Management and Ticket Generat
 
 ### Quick Start (Local Development)
 
+#### Service Boundaries & Ownership
+- **`backend-core/` (Port 3001)**: The sole authority for database access, migrations, seeding, authentication, authorization, and business APIs. Owns `backend-core/prisma/schema.prisma`.
+- **`frontend/` (Port 3000)**: Pure client presentation layer built with Next.js 14. Requires only `NEXT_PUBLIC_API_URL` pointing to `backend-core`. Frontend developers do not need database credentials or Prisma generation.
+- **`ai-service/` (Port 5001)**: Independent microservice handling semantic vector embeddings (`pgvector`) and LLM orchestration.
+
 1. **Configure Environment Variables** (optional, fallback engine works out of the box):
    Edit `.env` in the root directory:
    ```env
@@ -131,6 +136,16 @@ An enterprise-grade, full-stack AI-powered Project Management and Ticket Generat
 
 3. **Open the Application**:
    Navigate to [http://localhost:3000](http://localhost:3000) to access the dashboard and Kanban board.
+
+4. **Running Database Tasks (Backend Only)**:
+   All database operations are managed from `backend-core/`:
+   ```bash
+   cd backend-core
+   npm run prisma:generate   # Generate Prisma client for backend
+   npm run prisma:push       # Push schema changes to PostgreSQL
+   npm run seed              # Seed default roles and permissions
+   npm run test:all          # Run comprehensive backend test suite
+   ```
 
 ---
 

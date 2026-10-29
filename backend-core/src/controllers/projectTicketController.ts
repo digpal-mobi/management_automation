@@ -17,6 +17,7 @@ const createTicketSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']).default('Medium'),
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']).default('Task'),
   assigneeId: z.string().optional().nullable(),
+  assigneeIds: z.array(z.string()).optional(),
   boardId: z.string().optional(),
   columnId: z.string().optional().nullable(),
 });
@@ -29,8 +30,30 @@ const updateTicketSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']).optional(),
   assigneeId: z.string().optional().nullable(),
+  assigneeIds: z.array(z.string()).optional(),
   storyPoints: z.number().int().optional().nullable(),
+  executionOrder: z.number().int().optional().nullable(),
+  acceptanceCriteria: z.any().optional().nullable(),
+  technicalNotes: z.string().optional().nullable(),
+  prChecklist: z.any().optional().nullable(),
+  sprint: z.string().optional().nullable(),
 });
+
+const ticketOrderItemSchema = z.object({
+  id: z.string(),
+  columnId: z.string().optional(),
+  status: z.enum(['To Do', 'In Progress', 'Done', 'TODO', 'IN_PROGRESS', 'DONE']).optional(),
+  executionOrder: z.number().int().min(0),
+});
+
+const reorderTicketsSchema = z.union([
+  z.object({
+    ticketOrders: z.array(ticketOrderItemSchema).min(1, 'ticketOrders cannot be empty'),
+  }),
+  z.object({
+    updates: z.array(ticketOrderItemSchema).min(1, 'updates cannot be empty'),
+  }),
+]);
 
 const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty').max(3000),
@@ -39,6 +62,21 @@ const createCommentSchema = z.object({
 const updateCommentSchema = z.object({
   content: z.string().min(1).max(3000),
 });
+
+export function formatTicketResponse(ticket: any) {
+  if (!ticket) return ticket;
+  const assigneesList =
+    ticket.assignees && ticket.assignees.length > 0
+      ? ticket.assignees.map((a: any) => a.user || a)
+      : ticket.assignee
+      ? [ticket.assignee]
+      : [];
+
+  return {
+    ...ticket,
+    assignees: assigneesList,
+  };
+}
 
 export class ProjectTicketController {
   static async getTickets(req: Request, res: Response) {
@@ -55,6 +93,11 @@ export class ProjectTicketController {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
+          },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
@@ -68,7 +111,7 @@ export class ProjectTicketController {
         orderBy: { createdAt: 'desc' },
       });
 
-      return res.status(200).json({ success: true, tickets });
+      return res.status(200).json({ success: true, tickets: tickets.map(formatTicketResponse) });
     } catch (error: any) {
       console.error('[ProjectTicketController.getTickets] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to fetch tickets' });
@@ -98,11 +141,19 @@ export class ProjectTicketController {
         priority,
         type,
         assigneeId,
+        assigneeIds,
         boardId: requestedBoardId,
         columnId: requestedColumnId,
       } = parsed.data;
 
-      if (assigneeId) {
+      let targetAssigneeIds: string[] = [];
+      if (assigneeIds && Array.isArray(assigneeIds)) {
+        targetAssigneeIds = Array.from(new Set(assigneeIds.filter(Boolean)));
+      } else if (assigneeId) {
+        targetAssigneeIds = [assigneeId];
+      }
+
+      if (targetAssigneeIds.length > 0) {
         const assignAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_ASSIGN, projectId);
         if (!assignAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.assign permission' });
@@ -147,6 +198,8 @@ export class ProjectTicketController {
         else finalStatus = TicketStatus.TODO;
       }
 
+      const primaryAssigneeId = targetAssigneeIds.length > 0 ? targetAssigneeIds[0] : null;
+
       const ticket = await prisma.ticket.create({
         data: {
           projectId,
@@ -158,11 +211,22 @@ export class ProjectTicketController {
           priority: priority.toUpperCase() as TicketPriority,
           type: type.toUpperCase() as TicketType,
           reporterId: auth.user.id,
-          assigneeId: assigneeId || null,
+          assigneeId: primaryAssigneeId,
+          assignees:
+            targetAssigneeIds.length > 0
+              ? {
+                  create: targetAssigneeIds.map((userId) => ({ userId })),
+                }
+              : undefined,
         },
         include: {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
+          },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
           },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
@@ -173,13 +237,15 @@ export class ProjectTicketController {
         },
       });
 
+      const formattedTicket = formatTicketResponse(ticket);
+
       syncTicketEmbedding(ticket.id).catch((err) => {
         console.warn(`[Ticket Creation] Async embedding sync failed for ${ticket.id}:`, err.message);
       });
 
-      socketService.emitToProject(projectId, 'ticket:created', ticket);
+      socketService.emitToProject(projectId, 'ticket:created', formattedTicket);
 
-      return res.status(201).json({ success: true, ticket });
+      return res.status(201).json({ success: true, ticket: formattedTicket });
     } catch (error: any) {
       console.error('[ProjectTicketController.createTicket] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to create ticket' });
@@ -213,6 +279,11 @@ export class ProjectTicketController {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
+          },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
           },
@@ -222,7 +293,7 @@ export class ProjectTicketController {
         },
       });
 
-      return res.status(200).json({ success: true, tickets: fullTickets, query });
+      return res.status(200).json({ success: true, tickets: fullTickets.map(formatTicketResponse), query });
     } catch (error: any) {
       console.error('[ProjectTicketController.searchTickets] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Semantic search failed' });
@@ -242,6 +313,11 @@ export class ProjectTicketController {
         include: {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
+          },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
           },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
@@ -264,7 +340,7 @@ export class ProjectTicketController {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
 
-      return res.status(200).json({ success: true, ticket });
+      return res.status(200).json({ success: true, ticket: formatTicketResponse(ticket) });
     } catch (error: any) {
       console.error('[ProjectTicketController.getTicketById] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to fetch ticket' });
@@ -290,30 +366,123 @@ export class ProjectTicketController {
         });
       }
 
-      const { title, description, status, columnId, priority, type, assigneeId, storyPoints } = parsed.data;
+      const {
+        title,
+        description,
+        status,
+        columnId,
+        priority,
+        type,
+        assigneeId,
+        assigneeIds,
+        storyPoints,
+        executionOrder,
+        acceptanceCriteria,
+        technicalNotes,
+        prChecklist,
+        sprint,
+      } = parsed.data;
 
-      // Status change check
-      if (status !== undefined || columnId !== undefined) {
+      // 1. Status / Column / Order change check
+      let hasStatusChanged = false;
+      let targetDbStatus: TicketStatus | undefined = undefined;
+      if (status !== undefined) {
+        if (status === 'In Progress' || status === 'IN_PROGRESS') targetDbStatus = TicketStatus.IN_PROGRESS;
+        else if (status === 'Done' || status === 'DONE') targetDbStatus = TicketStatus.DONE;
+        else targetDbStatus = TicketStatus.TODO;
+
+        if (targetDbStatus !== existingTicket.status) {
+          hasStatusChanged = true;
+        }
+      }
+      if (columnId !== undefined && columnId !== existingTicket.columnId) {
+        hasStatusChanged = true;
+      }
+      if (executionOrder !== undefined && executionOrder !== existingTicket.executionOrder) {
+        hasStatusChanged = true;
+      }
+
+      if (hasStatusChanged) {
         const statusAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_CHANGE_STATUS, projectId);
         if (!statusAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.change_status permission' });
         }
       }
 
-      // Assignment change check
-      if (assigneeId !== undefined && assigneeId !== existingTicket.assigneeId) {
+      // 2. Assignment change check
+      let targetAssigneeIds: string[] | undefined = undefined;
+      if (assigneeIds !== undefined) {
+        targetAssigneeIds = Array.from(new Set(assigneeIds.filter(Boolean)));
+      } else if (assigneeId !== undefined) {
+        targetAssigneeIds = assigneeId ? [assigneeId] : [];
+      }
+
+      let hasAssigneeChanged = false;
+      if (targetAssigneeIds !== undefined) {
+        const currentAssignees = await prisma.ticketAssignee.findMany({
+          where: { ticketId },
+          select: { userId: true },
+        });
+        const currentIds = currentAssignees.map((a) => a.userId).sort();
+        const newIds = [...targetAssigneeIds].sort();
+        if (
+          currentIds.length !== newIds.length ||
+          !currentIds.every((id, idx) => id === newIds[idx])
+        ) {
+          hasAssigneeChanged = true;
+        }
+      }
+
+      if (hasAssigneeChanged) {
         const assignAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_ASSIGN, projectId);
         if (!assignAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.assign permission' });
         }
       }
 
-      // General update check
-      if (title !== undefined || description !== undefined || priority !== undefined || type !== undefined || storyPoints !== undefined) {
+      // 3. General update check
+      const hasTitleChanged = title !== undefined && title.trim() !== existingTicket.title;
+      const hasDescriptionChanged = description !== undefined && (description ? description.trim() : null) !== (existingTicket.description || null);
+      const hasPriorityChanged = priority !== undefined && priority.toUpperCase() !== existingTicket.priority;
+      const hasTypeChanged = type !== undefined && type.toUpperCase() !== existingTicket.type;
+      const hasStoryPointsChanged = storyPoints !== undefined && storyPoints !== existingTicket.storyPoints;
+      const hasTechnicalNotesChanged = technicalNotes !== undefined && (technicalNotes ? technicalNotes.trim() : null) !== (existingTicket.technicalNotes || null);
+      const hasSprintChanged = sprint !== undefined && (sprint ? sprint.trim() : null) !== (existingTicket.sprint || null);
+      const hasAcChanged = acceptanceCriteria !== undefined && JSON.stringify(acceptanceCriteria) !== JSON.stringify(existingTicket.acceptanceCriteria);
+      const hasPrChanged = prChecklist !== undefined && JSON.stringify(prChecklist) !== JSON.stringify(existingTicket.prChecklist);
+
+      const hasGeneralUpdate =
+        hasTitleChanged ||
+        hasDescriptionChanged ||
+        hasPriorityChanged ||
+        hasTypeChanged ||
+        hasStoryPointsChanged ||
+        hasTechnicalNotesChanged ||
+        hasSprintChanged ||
+        hasAcChanged ||
+        hasPrChanged;
+
+      if (hasGeneralUpdate) {
         const updateAuth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_UPDATE, projectId);
         if (!updateAuth.authorized) {
           return res.status(403).json({ success: false, error: 'Forbidden: Missing ticket.update permission' });
         }
+      }
+
+      // If nothing changed, return existing ticket with full relations
+      if (!hasStatusChanged && !hasAssigneeChanged && !hasGeneralUpdate) {
+        const fullTicket = await prisma.ticket.findUnique({
+          where: { id: ticketId },
+          include: {
+            assignee: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            assignees: {
+              include: { user: { select: { id: true, username: true, email: true, avatarUrl: true } } },
+            },
+            reporter: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            column: { select: { id: true, name: true, category: true, position: true } },
+          },
+        });
+        return res.status(200).json({ success: true, ticket: formatTicketResponse(fullTicket) });
       }
 
       const updateData: any = {};
@@ -321,8 +490,16 @@ export class ProjectTicketController {
       if (description !== undefined) updateData.description = description ? description.trim() : null;
       if (priority !== undefined) updateData.priority = priority.toUpperCase() as TicketPriority;
       if (type !== undefined) updateData.type = type.toUpperCase() as TicketType;
-      if (assigneeId !== undefined) updateData.assigneeId = assigneeId || null;
       if (storyPoints !== undefined) updateData.storyPoints = storyPoints;
+      if (executionOrder !== undefined) updateData.executionOrder = executionOrder ?? 0;
+      if (acceptanceCriteria !== undefined) updateData.acceptanceCriteria = acceptanceCriteria;
+      if (technicalNotes !== undefined) updateData.technicalNotes = technicalNotes ? technicalNotes.trim() : null;
+      if (prChecklist !== undefined) updateData.prChecklist = prChecklist;
+      if (sprint !== undefined) updateData.sprint = sprint ? sprint.trim() : null;
+
+      if (targetAssigneeIds !== undefined) {
+        updateData.assigneeId = targetAssigneeIds.length > 0 ? targetAssigneeIds[0] : null;
+      }
 
       // Synchronize columnId and status
       if (columnId !== undefined && columnId !== null) {
@@ -349,12 +526,27 @@ export class ProjectTicketController {
         }
       }
 
+      if (targetAssigneeIds !== undefined) {
+        await prisma.ticketAssignee.deleteMany({ where: { ticketId } });
+        if (targetAssigneeIds.length > 0) {
+          await prisma.ticketAssignee.createMany({
+            data: targetAssigneeIds.map((userId) => ({ ticketId, userId })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
       const updated = await prisma.ticket.update({
         where: { id: ticketId },
         data: updateData,
         include: {
           assignee: {
             select: { id: true, username: true, email: true, avatarUrl: true },
+          },
+          assignees: {
+            include: {
+              user: { select: { id: true, username: true, email: true, avatarUrl: true } },
+            },
           },
           reporter: {
             select: { id: true, username: true, email: true, avatarUrl: true },
@@ -365,13 +557,58 @@ export class ProjectTicketController {
         },
       });
 
+      const formatted = formatTicketResponse(updated);
       syncTicketEmbedding(ticketId).catch(() => {});
-      socketService.emitToProject(projectId, 'ticket:updated', updated);
+      socketService.emitToProject(projectId, 'ticket:updated', formatted);
 
-      return res.status(200).json({ success: true, ticket: updated });
+      return res.status(200).json({ success: true, ticket: formatted });
     } catch (error: any) {
       console.error('[ProjectTicketController.updateTicket] Error:', error);
       return res.status(500).json({ success: false, error: error.message || 'Failed to update ticket' });
+    }
+  }
+
+  static async reorderTickets(req: Request, res: Response) {
+    try {
+      const { id: projectId } = req.params;
+      const auth = await AuthorizationService.authorize(req, PERMISSIONS.TICKET_CHANGE_STATUS, projectId);
+      if (!auth.authorized) {
+        return res.status(auth.status || 403).json({ success: false, error: auth.reason });
+      }
+
+      const parsed = reorderTicketsSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          error: (parsed.error as any).issues?.[0]?.message || parsed.error.message,
+        });
+      }
+
+      const ticketOrders = 'ticketOrders' in parsed.data ? parsed.data.ticketOrders : parsed.data.updates;
+
+      await prisma.$transaction(
+        ticketOrders.map((item) => {
+          const data: any = { executionOrder: item.executionOrder };
+          if (item.columnId) data.columnId = item.columnId;
+          if (item.status) {
+            let dbStatus: TicketStatus = TicketStatus.TODO;
+            if (item.status === 'In Progress' || item.status === 'IN_PROGRESS') dbStatus = TicketStatus.IN_PROGRESS;
+            else if (item.status === 'Done' || item.status === 'DONE') dbStatus = TicketStatus.DONE;
+            data.status = dbStatus;
+          }
+          return prisma.ticket.update({
+            where: { id: item.id },
+            data,
+          });
+        })
+      );
+
+      socketService.emitToProject(projectId, 'tickets:reordered', { ticketOrders });
+
+      return res.status(200).json({ success: true, message: 'Tickets reordered successfully' });
+    } catch (error: any) {
+      console.error('[ProjectTicketController.reorderTickets] Error:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Failed to reorder tickets' });
     }
   }
 
