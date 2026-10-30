@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-raw_db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pm_ai_db")
+raw_db_url = os.getenv("DATABASE_URL") or os.getenv("AI_DATABASE_URL")
 # Strip Prisma specific query parameters like ?schema=public
 clean_db_url = raw_db_url.split("?")[0] if "?" in raw_db_url else raw_db_url
 

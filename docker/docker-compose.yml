@@ -1,76 +1,64 @@
-version: '3.8'
 
 services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: taskpulse-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pm_ai_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d pm_ai_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
+  # ==========================================
+  # AI SERVICE
+  # ==========================================
   ai-service:
     build:
       context: ../ai-service
       dockerfile: ../docker/Dockerfile.ai
+
+    image: taskpulse-ai-service:latest
     container_name: taskpulse-ai-service
-    restart: always
+    restart: unless-stopped
+
     environment:
       PORT: 5001
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pm_ai_db
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      DATABASE_URL: ${AI_DATABASE_URL}
+
+      GROQ_API_KEY: ${GROQ_API_KEY}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       GROQ_FALLBACK_MODEL: ${GROQ_FALLBACK_MODEL:-openai/gpt-oss-20b}
       GROQ_PROMPT_GUARD_MODEL: ${GROQ_PROMPT_GUARD_MODEL:-meta-llama/llama-prompt-guard-2-86m}
       GROQ_SAFEGUARD_MODEL: ${GROQ_SAFEGUARD_MODEL:-openai/gpt-oss-safeguard-20b}
-    ports:
-      - "5001:5001"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
+    expose:
+      - "5001"
+
+    networks:
+      - taskpulse-network
+
+  # ==========================================
+  # BACKEND CORE
+  # ==========================================
   backend-core:
     build:
       context: ../backend-core
       dockerfile: ../docker/Dockerfile.backend
+
+    image: taskpulse-backend-core:latest
     container_name: taskpulse-backend-core
-    restart: always
+    restart: unless-stopped
+
     environment:
+      NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/pm_ai_db?schema=public
+
+      DATABASE_URL: ${BACKEND_DATABASE_URL}
+
       AI_SERVICE_URL: http://ai-service:5001
-      FRONTEND_URL: http://localhost:3000
+
+      FRONTEND_URL: ${FRONTEND_URL}
+
     ports:
       - "3001:3001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      ai-service:
-        condition: service_started
 
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: ../docker/Dockerfile.frontend
-    container_name: taskpulse-frontend
-    restart: always
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      NEXT_PUBLIC_SOCKET_URL: http://localhost:3001
-    ports:
-      - "3000:3000"
     depends_on:
-      - backend-core
+      - ai-service
 
-volumes:
-  pgdata:
+    networks:
+      - taskpulse-network
+
+networks:
+  taskpulse-network:
+    driver: bridge
