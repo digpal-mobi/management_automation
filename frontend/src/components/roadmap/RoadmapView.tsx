@@ -1311,45 +1311,45 @@ export function RoadmapView({
           }
         }}
       >
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl w-full">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
-              <TicketIcon className="h-4 w-4 text-[#003049]" />
+              <TicketIcon className="h-4 w-4 text-[#003049] shrink-0" />
               <span>Generate Tickets for Feature</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="break-words">
               Generate granular, developer-ready tickets scoped specifically to{" "}
               <strong>&ldquo;{generatingForFeature?.name}&rdquo;</strong>.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 pt-2">
-            <div className="p-4 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 space-y-1">
+          <div className="space-y-4 pt-2 min-w-0 w-full overflow-hidden flex flex-col">
+            <div className="p-4 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 space-y-1 shrink-0 min-w-0">
               <span className="text-xs font-semibold text-[#003049] block">
                 Feature Scope:
               </span>
-              <p className="text-[11px] text-[#526174] leading-relaxed">
+              <p className="text-[11px] text-[#526174] leading-relaxed break-words">
                 {generatingForFeature?.description}
               </p>
             </div>
 
             {generatedTickets ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-[#17212B]">
-                  <span>Generated Tickets ({generatedTickets.length}):</span>
-                  <span className="text-[11px] text-[#526174]">
+              <div className="space-y-3 min-w-0 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#17212B] shrink-0 gap-2">
+                  <span className="truncate">Generated Tickets ({generatedTickets.length}):</span>
+                  <span className="text-[11px] text-[#526174] shrink-0">
                     Added to project backlog
                   </span>
                 </div>
 
-                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1 min-w-0">
                   {generatedTickets.map((t) => (
                     <div
                       key={t.id}
-                      className="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1 shadow-xs"
+                      className="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1 shadow-xs min-w-0 overflow-hidden"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-[#17212B] truncate">
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <span className="text-xs font-semibold text-[#17212B] truncate min-w-0 flex-1">
                           {t.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -1361,7 +1361,7 @@ export function RoadmapView({
                           />
                         </div>
                       </div>
-                      <p className="text-[11px] text-[#526174] line-clamp-2">
+                      <p className="text-[11px] text-[#526174] line-clamp-2 break-words">
                         {t.description}
                       </p>
                     </div>
@@ -1369,14 +1369,14 @@ export function RoadmapView({
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-[#526174] leading-relaxed">
+              <p className="text-xs text-[#526174] leading-relaxed break-words">
                 Click below to generate implementation tickets with acceptance
                 criteria, technical notes, and complexity estimates. Tickets
                 will enter the project backlog for your review.
               </p>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0] w-full shrink-0">
               <Button
                 type="button"
                 variant="outline"

@@ -1,9 +1,3 @@
-/**
- * Comprehensive Automated Test Suite:
- * 1. Centralized Roles & Permissions Management (RBAC)
- * 2. Dynamic Project Boards & Custom Columns
- */
-
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 

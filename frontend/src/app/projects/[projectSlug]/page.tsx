@@ -83,37 +83,6 @@ export default async function ProjectOverviewPage({ params }: ProjectOverviewPag
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Server-Rendered Page Header */}
-      <PageHeader
-        backLink={{ label: 'All Projects', href: '/' }}
-        breadcrumbs={[
-          { label: 'Projects', href: '/' },
-          { label: project.name },
-          { label: 'Overview' },
-        ]}
-        icon={<FolderKanban className="h-6 w-6 text-[#003049]" />}
-        title={project.name}
-        description={project.description || 'Intelligent AI-assisted engineering workspace.'}
-        actions={
-          <div className="flex items-center gap-3">
-            <Link href={`/projects/${slug}/board`}>
-              <Button size="sm" className="gap-2">
-                <Kanban className="h-4 w-4" />
-                Open Kanban
-              </Button>
-            </Link>
-          </div>
-        }
-      />
-
-      {/* Project Tab Navigation */}
-      <ProjectNav
-        projectId={internalId}
-        projectSlug={slug}
-        memberCount={members.length}
-        ticketCount={totalTickets}
-      />
-
       {/* Project Metadata & Key Metrics Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">

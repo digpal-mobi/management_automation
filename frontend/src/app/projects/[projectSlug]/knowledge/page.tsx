@@ -1,14 +1,10 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { BookOpen } from 'lucide-react';
 import {
   getCanonicalProjectOrRedirect,
-  fetchServerMembers,
   fetchServerDocuments,
   fetchServerAnalysis,
 } from '@/lib/serverProject';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { ProjectNav } from '@/components/layout/ProjectNav';
 import { KnowledgeContainer } from '@/components/knowledge/KnowledgeContainer';
 
 interface ProjectKnowledgePageProps {
@@ -41,9 +37,8 @@ export default async function ProjectKnowledgePage({ params }: ProjectKnowledgeP
     'knowledge'
   );
 
-  // 2. Concurrently fetch members, documents, and analysis on the server
-  const [members, documents, analysis] = await Promise.all([
-    fetchServerMembers(internalId),
+  // 2. Concurrently fetch documents and analysis on the server (memoized via React cache())
+  const [documents, analysis] = await Promise.all([
     fetchServerDocuments(internalId),
     fetchServerAnalysis(internalId),
   ]);
@@ -51,29 +46,7 @@ export default async function ProjectKnowledgePage({ params }: ProjectKnowledgeP
   const slug = project.slug || project.id;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-200">
-      {/* Standardized Server-Rendered Page Header */}
-      <PageHeader
-        backLink={{ label: 'All Projects', href: '/' }}
-        breadcrumbs={[
-          { label: 'Projects', href: '/' },
-          { label: project.name, href: `/projects/${slug}` },
-          { label: 'Knowledge & Docs' },
-        ]}
-        icon={<BookOpen className="h-6 w-6 text-[#003049]" />}
-        title="Knowledge Base & Documentation"
-        description="Central repository for technical PRDs, architecture specifications, metadata, and autonomous requirements extraction."
-        actions={
-          <ProjectNav
-            projectId={internalId}
-            projectSlug={slug}
-            memberCount={members.length}
-            ticketCount={project.ticketCount}
-          />
-        }
-      />
-
-      {/* Client-Side Interactive Knowledge Container hydrated with initial SSR data */}
+    <div className="animate-in fade-in duration-200">
       <KnowledgeContainer
         projectId={internalId}
         projectSlug={slug}

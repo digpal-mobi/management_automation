@@ -20,7 +20,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize Socket.io
-socketService.init(server, config.frontendUrl);
+socketService.init(server, config.frontendUrl || 'http://localhost:3000');
 
 // Middleware
 const allowedOrigins = [
