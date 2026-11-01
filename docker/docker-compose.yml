@@ -49,6 +49,8 @@ services:
       AI_SERVICE_URL: http://ai-service:5001
 
       FRONTEND_URL: ${FRONTEND_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
 
     ports:
       - "3001:3001"

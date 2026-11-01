@@ -7,10 +7,20 @@ import { authenticateRequest } from '../lib/auth.js';
 import { getProjectRole } from '../lib/permissions.js';
 import { listAccessibleProjectIds } from '../lib/projectAccess.js';
 import { generateUniqueProjectSlug, generateBaseSlug, isUuid } from '../lib/slug.js';
+import { createProjectSchema, updateProjectSchema } from '../lib/validation.js';
 
 export class ProjectController {
   static async createProject(req: Request, res: Response) {
     try {
+      const parseResult = createProjectSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: parseResult.error.issues[0]?.message || 'Invalid project data',
+          validationErrors: parseResult.error.issues,
+        });
+      }
+
       const {
         name,
         description,
@@ -27,13 +37,6 @@ export class ProjectController {
         additionalNotes,
         createdById,
       } = req.body;
-
-      if (!name || !description) {
-        return res.status(400).json({
-          success: false,
-          error: 'Name and description are required.',
-        });
-      }
 
       // Find or assign user from auth session or payload
       const authUser = await authenticateRequest(req);
@@ -447,6 +450,15 @@ export class ProjectController {
   static async updateProject(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const parseResult = updateProjectSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: parseResult.error.issues[0]?.message || 'Invalid project update data',
+          validationErrors: parseResult.error.issues,
+        });
+      }
+
       const {
         name,
         slug: customSlug,

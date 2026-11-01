@@ -81,6 +81,8 @@ export default function LoginPage() {
             variant="primary"
             size="md"
             isLoading={submitting}
+            loadingText="Signing In..."
+            disabled={submitting}
             leftIcon={<LogIn className="h-4 w-4" />}
             className="w-full mt-2"
           >

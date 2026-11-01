@@ -22,7 +22,11 @@ import { Avatar } from '@/components/ui/Avatar';
 import { PlusCircle, User, UserPlus, Check, ChevronDown, X } from 'lucide-react';
 
 const createTicketFormSchema = z.object({
-  title: z.string().min(1, 'Ticket title is required').max(200),
+  title: z
+    .string()
+    .trim()
+    .min(2, 'Ticket title must be at least 2 characters')
+    .max(250, 'Ticket title cannot exceed 250 characters'),
   description: z.string().optional(),
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
@@ -239,7 +243,7 @@ export function CreateTicketModal({
               {/* Multi-assignee trigger box */}
               <div
                 onClick={() => setIsAssigneeOpen(!isAssigneeOpen)}
-                className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 shadow-2xs transition-colors flex flex-wrap gap-1.5 items-center justify-between cursor-pointer hover:border-slate-300"
+                className="min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 shadow-2xs transition-colors flex items-center justify-between gap-2 overflow-hidden cursor-pointer hover:border-slate-300"
               >
                 <div className="flex flex-wrap gap-1.5 items-center flex-1 min-w-0">
                   {selectedAssigneeIds.length === 0 ? (
@@ -253,7 +257,7 @@ export function CreateTicketModal({
                       .map((m) => (
                         <span
                           key={m.user.id}
-                          className="inline-flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700"
+                          className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700 max-w-full"
                         >
                           <Avatar
                             name={m.user.username}
@@ -261,11 +265,11 @@ export function CreateTicketModal({
                             avatarUrl={m.user.avatarUrl}
                             size="xs"
                           />
-                          <span className="max-w-[100px] truncate">{m.user.username || m.user.email}</span>
+                          <span className="max-w-[120px] truncate">{m.user.username || m.user.email}</span>
                           <button
                             type="button"
                             onClick={(e) => handleRemoveAssignee(m.user.id, e)}
-                            className="text-slate-400 hover:text-slate-600 rounded p-0.5"
+                            className="text-slate-400 hover:text-slate-600 rounded p-0.5 shrink-0"
                             title={`Remove ${m.user.username}`}
                           >
                             <X className="h-3 w-3" />
@@ -335,6 +339,8 @@ export function CreateTicketModal({
               variant="primary"
               size="sm"
               isLoading={submitting}
+              loadingText="Creating..."
+              disabled={submitting}
               leftIcon={<PlusCircle className="h-4 w-4" />}
             >
               Create Ticket

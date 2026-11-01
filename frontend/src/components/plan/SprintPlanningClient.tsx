@@ -243,28 +243,7 @@ export function SprintPlanningClient({
   const isApproved = plan?.isApproved || plan?.status === 'APPROVED';
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Page Header */}
-      <PageHeader
-        backLink={{ label: 'All Projects', href: '/' }}
-        breadcrumbs={[
-          { label: 'Projects', href: '/' },
-          { label: project.name, href: `/projects/${projectSlug}` },
-          { label: 'Sprint Planning Brain' },
-        ]}
-        icon={<CalendarClock className="h-6 w-6 text-[#003049]" />}
-        title="AI Sprint Planning Brain"
-        description="Dependency-aware ticket sequencing, capacity optimization, and sprint delivery schedule."
-        actions={
-          <ProjectNav
-            projectId={projectId}
-            projectSlug={projectSlug}
-            memberCount={members.length}
-            ticketCount={project.ticketCount}
-          />
-        }
-      />
-
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Main Action Bar & Status Banner */}
       <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-wrap">
@@ -313,10 +292,12 @@ export function SprintPlanningClient({
             size="sm"
             onClick={handleGeneratePlan}
             disabled={isPlanning}
+            isLoading={isPlanning}
+            loadingText="Planning with AI..."
             className="flex items-center gap-1.5 border-[#003049] text-[#003049] hover:bg-[#F1F4F7]"
           >
             <Sparkles className="h-3.5 w-3.5 text-[#003049]" />
-            <span>{isPlanning ? 'Planning...' : 'Re-Plan Sprints with AI'}</span>
+            <span>Re-Plan Sprints with AI</span>
           </Button>
 
           {!isApproved && (
@@ -324,10 +305,12 @@ export function SprintPlanningClient({
               size="sm"
               onClick={handleApprovePlan}
               disabled={isApproving || !plan}
+              isLoading={isApproving}
+              loadingText="Approving..."
               className="bg-[#003049] hover:bg-[#002236] text-white flex items-center gap-1.5 shadow-sm"
             >
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-              <span>{isApproving ? 'Approving...' : 'Approve & Apply Plan'}</span>
+              <span>Approve & Apply Plan</span>
             </Button>
           )}
         </div>
@@ -793,13 +776,23 @@ export function SprintPlanningClient({
               </label>
               <input
                 type="number"
-                min={10}
-                max={60}
+                min={5}
+                max={200}
                 value={capacityInput}
-                onChange={(e) => setCapacityInput(parseInt(e.target.value) || 28)}
-                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#003049]"
+                onChange={(e) => setCapacityInput(parseInt(e.target.value) || 0)}
+                className={`w-full px-3 py-2 border rounded-xl text-xs focus:outline-none ${
+                  capacityInput < 5 || capacityInput > 200
+                    ? 'border-[#C1121F] focus:border-[#C1121F]'
+                    : 'border-[#E2E8F0] focus:border-[#003049]'
+                }`}
               />
-              <span className="text-[11px] text-[#94A3B8]">Standard agile 2-week iteration velocity.</span>
+              {capacityInput < 5 || capacityInput > 200 ? (
+                <span className="text-[11px] text-[#C1121F] font-medium block mt-1">
+                  Capacity must be between 5 and 200 story points.
+                </span>
+              ) : (
+                <span className="text-[11px] text-[#94A3B8]">Standard agile iteration capacity (5-200 pts).</span>
+              )}
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl border border-[#E2E8F0] bg-[#FAFBFD]">
@@ -837,6 +830,9 @@ export function SprintPlanningClient({
               <Button
                 size="sm"
                 onClick={handleGeneratePlan}
+                disabled={capacityInput < 5 || capacityInput > 200 || isPlanning}
+                isLoading={isPlanning}
+                loadingText="Running Engine..."
                 className="bg-[#003049] hover:bg-[#002236] text-white flex items-center gap-1.5"
               >
                 <Sparkles className="h-3.5 w-3.5" />

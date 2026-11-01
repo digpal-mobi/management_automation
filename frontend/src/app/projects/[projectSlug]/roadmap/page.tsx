@@ -1,13 +1,9 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { Compass } from 'lucide-react';
 import {
   getCanonicalProjectOrRedirect,
-  fetchServerMembers,
   fetchServerFeatures,
 } from '@/lib/serverProject';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { ProjectNav } from '@/components/layout/ProjectNav';
 import { RoadmapContainer } from '@/components/roadmap/RoadmapContainer';
 
 interface ProjectRoadmapPageProps {
@@ -40,38 +36,13 @@ export default async function ProjectRoadmapPage({ params }: ProjectRoadmapPageP
     'roadmap'
   );
 
-  // 2. Concurrently fetch features & members on the server
-  const [members, features] = await Promise.all([
-    fetchServerMembers(internalId),
-    fetchServerFeatures(internalId),
-  ]);
+  // 2. Concurrently fetch features on the server (memoized via React cache())
+  const features = await fetchServerFeatures(internalId);
 
   const slug = project.slug || project.id;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Server-Rendered Page Header */}
-      <PageHeader
-        backLink={{ label: 'All Projects', href: '/' }}
-        breadcrumbs={[
-          { label: 'Projects', href: '/' },
-          { label: project.name, href: `/projects/${slug}` },
-          { label: 'Roadmap & Modules' },
-        ]}
-        icon={<Compass className="h-6 w-6 text-[#003049]" />}
-        title="Product Roadmap & Capabilities"
-        description="Review, prioritize, and accept candidate features into modules. Select features to autonomously generate developer-ready backlog tickets."
-        actions={
-          <ProjectNav
-            projectId={internalId}
-            projectSlug={slug}
-            memberCount={members.length}
-            ticketCount={project.ticketCount}
-          />
-        }
-      />
-
-      {/* Client-Side Interactive Roadmap hydrated with SSR features */}
+    <div className="animate-in fade-in duration-200">
       <RoadmapContainer
         projectId={internalId}
         projectSlug={slug}

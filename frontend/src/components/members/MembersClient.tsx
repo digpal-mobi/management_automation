@@ -37,7 +37,11 @@ import {
 import Link from 'next/link';
 
 const inviteSchema = z.object({
-  identifier: z.string().min(1, 'Email or username is required'),
+  identifier: z
+    .string()
+    .trim()
+    .min(2, 'Email or username must be at least 2 characters')
+    .max(100, 'Identifier cannot exceed 100 characters'),
   role: z.enum(['manager', 'developer', 'editor']),
 });
 
@@ -134,7 +138,7 @@ export function MembersClient({
     }
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      if (initialProject && initialMembers.length > 0) {
+      if (initialProject) {
         void loadInvitations();
         return;
       }
@@ -318,39 +322,29 @@ export function MembersClient({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Standardized Page Header */}
-      <PageHeader
-        backLink={{ label: 'All Projects', href: '/' }}
-        breadcrumbs={[
-          { label: 'Projects', href: '/' },
-          { label: project.name, href: `/projects/${projectSlug}` },
-          { label: 'Team & Collaboration' },
-        ]}
-        icon={<Users className="h-6 w-6 text-[#003049]" />}
-        title="Team & Collaboration"
-        description="Manage workspace collaborators, assign project roles, and configure contributor permissions."
-        actions={
-          <div className="flex items-center gap-3">
-            <ProjectNav
-              projectId={projectId}
-              projectSlug={projectSlug}
-              memberCount={members.length}
-              ticketCount={project.ticketCount}
-            />
-            {isOwnerOrManager && (
-              <Button
-                variant="primary"
-                size="sm"
-                leftIcon={<UserPlus className="h-3.5 w-3.5" />}
-                onClick={() => setIsInviteOpen(true)}
-              >
-                Invite
-              </Button>
-            )}
-          </div>
-        }
-      />
+    <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Team Header Toolbar */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base font-bold text-[#17212B] flex items-center gap-2">
+            <Users className="h-5 w-5 text-[#003049]" />
+            <span>Team & Contributor Access</span>
+          </h2>
+          <p className="text-xs text-[#526174] mt-0.5">
+            Manage workspace collaborators, assign project roles, and configure contributor permissions.
+          </p>
+        </div>
+        {isOwnerOrManager && (
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<UserPlus className="h-3.5 w-3.5" />}
+            onClick={() => setIsInviteOpen(true)}
+          >
+            Invite Contributor
+          </Button>
+        )}
+      </div>
 
       {/* Permissions Legend */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -588,6 +582,8 @@ export function MembersClient({
                 variant="primary"
                 size="sm"
                 isLoading={isInviting}
+                loadingText="Sending..."
+                disabled={isInviting}
                 leftIcon={<UserPlus className="h-3.5 w-3.5" />}
               >
                 Send Invite

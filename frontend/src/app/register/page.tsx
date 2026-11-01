@@ -116,6 +116,8 @@ export default function RegisterPage() {
             variant="primary"
             size="md"
             isLoading={submitting}
+            loadingText="Creating Account..."
+            disabled={submitting}
             leftIcon={<UserPlus className="h-4 w-4" />}
             className="w-full mt-2"
           >

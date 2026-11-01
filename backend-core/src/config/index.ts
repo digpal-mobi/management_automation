@@ -13,7 +13,7 @@ export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   databaseUrl: dbUrl,
   aiServiceUrl: process.env.AI_SERVICE_URL || 'http://localhost:5001',
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  frontendUrl: process.env.FRONTEND_URL,
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || 'your-jwt-access-secret-key',
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'your-jwt-refresh-secret-key',
   groqApiKey: process.env.GROQ_API_KEY || '',
