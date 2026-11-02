@@ -313,11 +313,35 @@ export function TicketDetailModal({
   // Save changes
   const handleSave = async () => {
     try {
+      if (!title.trim()) {
+        toast.error('Ticket title cannot be empty.');
+        return;
+      }
+      if (title.trim().length < 2) {
+        toast.error('Ticket title must be at least 2 characters.');
+        return;
+      }
+      if (title.trim().length > 250) {
+        toast.error('Ticket title cannot exceed 250 characters.');
+        return;
+      }
+      if (storyPoints !== '') {
+        const num = Number(storyPoints);
+        if (Number.isNaN(num) || num < 0 || !Number.isInteger(num)) {
+          toast.error('Story points must be a non-negative whole number.');
+          return;
+        }
+        if (num > 100) {
+          toast.error('Story points cannot exceed 100.');
+          return;
+        }
+      }
+
       setIsSaving(true);
 
       // Compute dirty fields so we only send what was modified
       const updates: any = {};
-      if (title.trim() && title.trim() !== ticket.title) updates.title = title.trim();
+      if (title.trim() !== ticket.title) updates.title = title.trim();
       if ((description?.trim() || null) !== (ticket.description || null)) updates.description = description?.trim() || null;
       if (status !== ticket.status) updates.status = status;
       if (priority !== ticket.priority) updates.priority = priority;
@@ -592,6 +616,7 @@ export function TicketDetailModal({
               variant="primary"
               size="sm"
               isLoading={isSaving}
+              loadingText="Saving..."
               disabled={isSaving || !canEditAny}
               onClick={handleSave}
               className="gap-1.5 h-8 text-xs disabled:opacity-50 disabled:cursor-not-allowed"

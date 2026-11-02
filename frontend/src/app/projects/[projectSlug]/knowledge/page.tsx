@@ -1,9 +1,7 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { BookOpen } from 'lucide-react';
 import {
   getCanonicalProjectOrRedirect,
-  fetchServerMembers,
   fetchServerDocuments,
   fetchServerAnalysis,
 } from '@/lib/serverProject';
@@ -40,9 +38,8 @@ export default async function ProjectKnowledgePage({ params }: ProjectKnowledgeP
     'knowledge'
   );
 
-  // 2. Concurrently fetch members, documents, and analysis on the server
-  const [members, documents, analysis] = await Promise.all([
-    fetchServerMembers(internalId),
+  // 2. Concurrently fetch documents and analysis on the server (memoized via React cache())
+  const [documents, analysis] = await Promise.all([
     fetchServerDocuments(internalId),
     fetchServerAnalysis(internalId),
   ]);

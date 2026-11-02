@@ -20,6 +20,8 @@ import {
   Info,
 } from 'lucide-react';
 
+import { isValidDateString } from '@/lib/validation';
+
 interface ProjectInfoEditorProps {
   project: Project;
   onProjectUpdate: (updated: Project) => void;
@@ -34,6 +36,7 @@ export function ProjectInfoEditor({
   const { fetchWithAuth } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Form states
   const [name, setName] = useState(project.name);
@@ -59,12 +62,36 @@ export function ProjectInfoEditor({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !description.trim()) {
-      toast.error('Project name and short description are required.');
+    const errors: Record<string, string> = {};
+
+    if (!name.trim()) {
+      errors.name = 'Project name is required';
+    } else if (name.trim().length < 2) {
+      errors.name = 'Project name must be at least 2 characters';
+    } else if (name.trim().length > 100) {
+      errors.name = 'Project name cannot exceed 100 characters';
+    }
+
+    if (!description.trim()) {
+      errors.description = 'Short description is required';
+    } else if (description.trim().length < 3) {
+      errors.description = 'Description must be at least 3 characters';
+    } else if (description.trim().length > 2000) {
+      errors.description = 'Description cannot exceed 2000 characters';
+    }
+
+    if (targetReleaseDate.trim() && !isValidDateString(targetReleaseDate.trim())) {
+      errors.targetReleaseDate = 'Invalid date. Use YYYY-MM-DD (e.g. 2026-12-15) or quarterly format (e.g. Q4 2026).';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      toast.error('Please fix the validation errors before saving.');
       return;
     }
 
     try {
+      setFieldErrors({});
       setIsSaving(true);
       const res = await fetchWithAuth(`/api/projects/${project.id}`, {
         method: 'PUT',
@@ -109,6 +136,7 @@ export function ProjectInfoEditor({
     setKnownDependencies(project.knownDependencies || '');
     setTargetReleaseDate(project.targetReleaseDate || '');
     setAdditionalNotes(project.additionalNotes || '');
+    setFieldErrors({});
     setIsEditing(false);
   };
 
@@ -143,14 +171,22 @@ export function ProjectInfoEditor({
               label="Project Name *"
               required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }));
+              }}
+              error={fieldErrors.name}
             />
 
             <Input
               label="Target Release Date"
               placeholder="e.g. Q4 2026 or 2026-12-15"
               value={targetReleaseDate}
-              onChange={(e) => setTargetReleaseDate(e.target.value)}
+              onChange={(e) => {
+                setTargetReleaseDate(e.target.value);
+                if (fieldErrors.targetReleaseDate) setFieldErrors((prev) => ({ ...prev, targetReleaseDate: '' }));
+              }}
+              error={fieldErrors.targetReleaseDate}
             />
           </div>
 
@@ -159,7 +195,11 @@ export function ProjectInfoEditor({
             rows={2}
             required
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              if (fieldErrors.description) setFieldErrors((prev) => ({ ...prev, description: '' }));
+            }}
+            error={fieldErrors.description}
             placeholder="Brief project summary..."
           />
 
@@ -237,6 +277,8 @@ export function ProjectInfoEditor({
               variant="primary"
               size="sm"
               isLoading={isSaving}
+              loadingText="Saving Specifications..."
+              disabled={isSaving}
             >
               Save Specifications
             </Button>

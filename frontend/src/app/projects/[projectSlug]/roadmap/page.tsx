@@ -1,9 +1,7 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { Compass } from 'lucide-react';
 import {
   getCanonicalProjectOrRedirect,
-  fetchServerMembers,
   fetchServerFeatures,
 } from '@/lib/serverProject';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -39,11 +37,8 @@ export default async function ProjectRoadmapPage({ params }: ProjectRoadmapPageP
     'roadmap'
   );
 
-  // 2. Concurrently fetch features & members on the server
-  const [members, features] = await Promise.all([
-    fetchServerMembers(internalId),
-    fetchServerFeatures(internalId),
-  ]);
+  // 2. Concurrently fetch features on the server (memoized via React cache())
+  const features = await fetchServerFeatures(internalId);
 
   const slug = project.slug || project.id;
 

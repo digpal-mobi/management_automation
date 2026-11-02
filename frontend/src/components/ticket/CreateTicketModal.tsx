@@ -22,7 +22,11 @@ import { Avatar } from '@/components/ui/Avatar';
 import { PlusCircle, User, UserPlus, Check, ChevronDown, X } from 'lucide-react';
 
 const createTicketFormSchema = z.object({
-  title: z.string().min(1, 'Ticket title is required').max(200),
+  title: z
+    .string()
+    .trim()
+    .min(2, 'Ticket title must be at least 2 characters')
+    .max(250, 'Ticket title cannot exceed 250 characters'),
   description: z.string().optional(),
   type: z.enum(['Feature', 'Bug', 'Task', 'Improvement']),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
@@ -261,7 +265,7 @@ export function CreateTicketModal({
                             avatarUrl={m.user.avatarUrl}
                             size="xs"
                           />
-                          <span className="max-w-[100px] truncate">{m.user.username || m.user.email}</span>
+                          <span className="max-w-[120px] truncate">{m.user.username || m.user.email}</span>
                           <button
                             type="button"
                             onClick={(e) => handleRemoveAssignee(m.user.id, e)}
@@ -335,6 +339,8 @@ export function CreateTicketModal({
               variant="primary"
               size="sm"
               isLoading={submitting}
+              loadingText="Creating..."
+              disabled={submitting}
               leftIcon={<PlusCircle className="h-4 w-4" />}
             >
               Create Ticket

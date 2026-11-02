@@ -937,8 +937,8 @@ export function SprintPlanningClient({
               </label>
               <input
                 type="number"
-                min={10}
-                max={60}
+                min={5}
+                max={200}
                 value={capacityInput}
                 onChange={(e) =>
                   setCapacityInput(parseInt(e.target.value) || 28)

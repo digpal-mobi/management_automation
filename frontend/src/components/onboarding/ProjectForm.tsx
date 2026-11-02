@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import { isValidDateString } from '@/lib/validation';
+
 export function ProjectForm() {
   const router = useRouter();
   const { fetchWithAuth } = useAuth();
@@ -49,10 +51,11 @@ export function ProjectForm() {
   const [targetReleaseDate, setTargetReleaseDate] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
 
-  // Submission state
+  // Submission & Validation state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStep, setSubmitStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleFilesAdded = (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -83,12 +86,37 @@ export function ProjectForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !description.trim()) {
-      setError('Project name and short description are required.');
+    
+    // Application-wide field validation
+    const errors: Record<string, string> = {};
+    if (!name.trim()) {
+      errors.name = 'Project name is required';
+    } else if (name.trim().length < 2) {
+      errors.name = 'Project name must be at least 2 characters';
+    } else if (name.trim().length > 100) {
+      errors.name = 'Project name cannot exceed 100 characters';
+    }
+
+    if (!description.trim()) {
+      errors.description = 'Short description is required';
+    } else if (description.trim().length < 3) {
+      errors.description = 'Description must be at least 3 characters';
+    } else if (description.trim().length > 2000) {
+      errors.description = 'Description cannot exceed 2000 characters';
+    }
+
+    if (targetReleaseDate.trim() && !isValidDateString(targetReleaseDate.trim())) {
+      errors.targetReleaseDate = 'Invalid date format. Use YYYY-MM-DD (e.g. 2026-12-15) or quarterly format (e.g. Q4 2026).';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please correct the validation errors below.');
       return;
     }
 
     try {
+      setFieldErrors({});
       setError(null);
       setIsSubmitting(true);
       setSubmitStep('Creating project workspace...');
@@ -195,7 +223,11 @@ export function ProjectForm() {
               label="Project Name *"
               required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }));
+              }}
+              error={fieldErrors.name}
               placeholder="e.g. Distributed Payment Gateway or Developer Analytics"
             />
 
@@ -204,7 +236,11 @@ export function ProjectForm() {
               rows={3}
               required
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (fieldErrors.description) setFieldErrors((prev) => ({ ...prev, description: '' }));
+              }}
+              error={fieldErrors.description}
               placeholder="Brief summary of the application's core purpose and scope..."
             />
           </CardContent>
@@ -362,7 +398,11 @@ export function ProjectForm() {
                   <Input
                     label="Target Release Date"
                     value={targetReleaseDate}
-                    onChange={(e) => setTargetReleaseDate(e.target.value)}
+                    onChange={(e) => {
+                      setTargetReleaseDate(e.target.value);
+                      if (fieldErrors.targetReleaseDate) setFieldErrors((prev) => ({ ...prev, targetReleaseDate: '' }));
+                    }}
+                    error={fieldErrors.targetReleaseDate}
                     placeholder="e.g. Q4 2026 or 2026-11-30"
                   />
                 </div>
@@ -419,7 +459,8 @@ export function ProjectForm() {
               variant="primary"
               size="md"
               isLoading={isSubmitting}
-              disabled={isSubmitting || !name.trim() || !description.trim()}
+              loadingText="Creating Workspace..."
+              disabled={isSubmitting}
               rightIcon={<ArrowRight className="h-4 w-4" />}
             >
               {selectedFiles.length > 0 || prdText.trim()

@@ -36,7 +36,11 @@ import {
 import Link from 'next/link';
 
 const inviteSchema = z.object({
-  identifier: z.string().min(1, 'Email or username is required'),
+  identifier: z
+    .string()
+    .trim()
+    .min(2, 'Email or username must be at least 2 characters')
+    .max(100, 'Identifier cannot exceed 100 characters'),
   role: z.enum(['manager', 'developer', 'editor']),
 });
 
@@ -133,7 +137,7 @@ export function MembersClient({
     }
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      if (initialProject && initialMembers.length > 0) {
+      if (initialProject) {
         void loadInvitations();
         return;
       }
@@ -579,6 +583,8 @@ export function MembersClient({
                 variant="primary"
                 size="sm"
                 isLoading={isInviting}
+                loadingText="Sending..."
+                disabled={isInviting}
                 leftIcon={<UserPlus className="h-3.5 w-3.5" />}
               >
                 Send Invite

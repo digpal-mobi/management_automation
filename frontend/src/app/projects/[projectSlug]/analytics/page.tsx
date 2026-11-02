@@ -1,9 +1,7 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { BarChart3 } from 'lucide-react';
 import {
   getCanonicalProjectOrRedirect,
-  fetchServerMembers,
   fetchServerAnalytics,
 } from '@/lib/serverProject';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -39,13 +37,9 @@ export default async function ProjectAnalyticsPage({ params }: ProjectAnalyticsP
     'analytics'
   );
 
-  // 2. Fetch members and analytics concurrently on the server
-  const [members, analytics] = await Promise.all([
-    fetchServerMembers(internalId),
-    fetchServerAnalytics(internalId),
-  ]);
+  // 2. Fetch analytics on the server (memoized via React cache())
+  const analytics = await fetchServerAnalytics(internalId);
 
-  const slug = project.slug || project.id;
   const fallbackAnalytics = analytics || {
     totalTickets: 0,
     completedTickets: 0,

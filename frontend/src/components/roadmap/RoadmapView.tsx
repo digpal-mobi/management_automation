@@ -1311,13 +1311,13 @@ export function RoadmapView({
           }
         }}
       >
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl w-full">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <TicketIcon className="h-4 w-4 text-accent" />
               <span>Generate Tickets for Feature</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="break-words">
               Generate granular, developer-ready tickets scoped specifically to{" "}
               <strong>&ldquo;{generatingForFeature?.name}&rdquo;</strong>.
             </DialogDescription>
@@ -1342,7 +1342,7 @@ export function RoadmapView({
                   </span>
                 </div>
 
-                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1 min-w-0">
                   {generatedTickets.map((t) => (
                     <div
                       key={t.id}

@@ -3,10 +3,20 @@ import { prisma } from '../lib/prisma.js';
 import { socketService } from '../services/socketService.js';
 import { TicketPriority, TicketStatus } from '@prisma/client';
 import { requireProjectAccess } from '../lib/projectAccess.js';
+import { createTicketSchema, updateTicketSchema } from '../lib/validation.js';
 
 export class TicketController {
   static async createTicket(req: Request, res: Response) {
     try {
+      const parseResult = createTicketSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: parseResult.error.issues[0]?.message || 'Invalid ticket data',
+          validationErrors: parseResult.error.issues,
+        });
+      }
+
       const {
         projectId,
         boardId,
@@ -21,10 +31,6 @@ export class TicketController {
         assigneeId,
         assigneeIds,
       } = req.body;
-
-      if (!projectId || !title) {
-        return res.status(400).json({ success: false, error: 'projectId and title are required' });
-      }
 
       const role = await requireProjectAccess(req, res, projectId);
       if (!role) return;
@@ -161,6 +167,15 @@ export class TicketController {
   static async updateTicket(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const parseResult = updateTicketSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: parseResult.error.issues[0]?.message || 'Invalid ticket update data',
+          validationErrors: parseResult.error.issues,
+        });
+      }
+
       const {
         columnId,
         status,
