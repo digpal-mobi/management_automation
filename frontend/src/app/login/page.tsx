@@ -45,13 +45,13 @@ export default function LoginPage() {
       <Card className="w-full max-w-md p-6 sm:p-8 space-y-6 shadow-card">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EFF5F9] border border-[#669BBC]/30 mb-1 text-[#003049] shadow-sm">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-subtle border border-accent/30 mb-1 text-accent shadow-card">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-bold text-[#17212B] tracking-tight">
+          <h1 className="text-2xl font-bold text-tp tracking-tight">
             Sign In to TaskPulse
           </h1>
-          <p className="text-xs text-[#526174]">
+          <p className="text-xs text-ts">
             Enter your credentials to access your projects and tickets
           </p>
         </div>
@@ -89,11 +89,11 @@ export default function LoginPage() {
         </form>
 
         {/* Footer Link */}
-        <div className="pt-2 text-center text-xs text-[#526174]">
+        <div className="pt-2 text-center text-xs text-ts">
           Don&apos;t have an account?{' '}
           <Link
             href="/register"
-            className="font-semibold text-[#003049] hover:underline transition-colors"
+            className="font-semibold text-accent hover:underline transition-colors"
           >
             Create an account
           </Link>

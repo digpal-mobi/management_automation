@@ -42,7 +42,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <PageHeader
         backLink={{ label: 'Workspaces', href: '/' }}
-        icon={<UserRound className="h-6 w-6 text-[#003049]" />}
+        icon={<UserRound className="h-6 w-6 text-accent" />}
         title="Profile"
         description="Your account details for this workspace."
         actions={
@@ -62,33 +62,33 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4">
             <Avatar name={user.username} email={user.email} avatarUrl={user.avatarUrl} size="lg" />
             <div>
-              <p className="text-base font-bold text-[#17212B]">{user.username}</p>
-              <p className="text-xs text-[#526174]">{user.email}</p>
+              <p className="text-base font-bold text-tp">{user.username}</p>
+              <p className="text-xs text-ts">{user.email}</p>
             </div>
           </div>
 
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#526174]">Username</dt>
-              <dd className="mt-1 text-sm text-[#17212B]">{user.username}</dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-ts">Username</dt>
+              <dd className="mt-1 text-sm text-tp">{user.username}</dd>
             </div>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#526174]">Email</dt>
-              <dd className="mt-1 text-sm text-[#17212B]">{user.email}</dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-ts">Email</dt>
+              <dd className="mt-1 text-sm text-tp">{user.email}</dd>
             </div>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#526174]">Account role</dt>
-              <dd className="mt-1 text-sm capitalize text-[#17212B]">{user.role || 'user'}</dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wide text-ts">Account role</dt>
+              <dd className="mt-1 text-sm capitalize text-tp">{user.role || 'user'}</dd>
             </div>
             {memberSince && (
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#526174]">Member since</dt>
-                <dd className="mt-1 text-sm text-[#17212B]">{memberSince}</dd>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-ts">Member since</dt>
+                <dd className="mt-1 text-sm text-tp">{memberSince}</dd>
               </div>
             )}
           </dl>
 
-          <p className="text-xs leading-relaxed text-[#526174]">
+          <p className="text-xs leading-relaxed text-ts">
             Username and email are set when the account is created. Project roles are managed from each project team page.
           </p>
         </CardContent>

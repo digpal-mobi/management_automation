@@ -30,6 +30,7 @@ import { CreateTicketModal } from '../ticket/CreateTicketModal';
 import { TicketDetailModal } from '../ticket/TicketDetailModal';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { setFilters, clearFilters } from '@/store/boardSlice';
+import { setCurrentProject, setMembers } from '@/store/projectSlice';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -63,6 +64,7 @@ import {
   Radio,
   Wifi,
   GripVertical,
+  Star,
 } from 'lucide-react';
 import { boardApi, ticketsApi } from '@/lib/api';
 import { socketClient } from '@/lib/socket';
@@ -91,6 +93,16 @@ export function Board({
   const [boardTitle, setBoardTitle] = useState(project.name || 'Core Platform Delivery Pipeline');
   const [isEditingBoardTitle, setIsEditingBoardTitle] = useState(false);
   const [tempBoardTitle, setTempBoardTitle] = useState(boardTitle);
+
+  // Sync project & members to Redux for global header
+  useEffect(() => {
+    if (project) {
+      dispatch(setCurrentProject(project));
+    }
+    if (members && members.length > 0) {
+      dispatch(setMembers(members));
+    }
+  }, [project, members, dispatch]);
 
   // Layout View Mode (Kanban vs Compact layout)
   const [isCompact, setIsCompact] = useState(false);
@@ -162,7 +174,7 @@ export function Board({
   // Fast inline column creation state
   const [isAddingColumnInline, setIsAddingColumnInline] = useState(false);
   const [inlineColTitle, setInlineColTitle] = useState('');
-  const [inlineColColor, setInlineColColor] = useState<string>('#003049');
+  const [inlineColColor, setInlineColColor] = useState<string>('#88A9FF');
   const [isSubmittingInlineCol, setIsSubmittingInlineCol] = useState(false);
   const inlineColInputRef = useRef<HTMLInputElement>(null);
 
@@ -871,7 +883,7 @@ export function Board({
 
     try {
       setIsSubmittingInlineCol(true);
-      const colorPalette = ['#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C', '#0D9488', '#526174'];
+      const colorPalette = ['#88A9FF', '#5DBA9D', '#D8B36A', '#D98287', '#A2BBFF', '#95A3B5', '#687789', '#273342'];
       const chosenColor = inlineColColor || colorPalette[columns.length % colorPalette.length];
 
       const res = await boardApi.createColumn(projectId, {
@@ -1087,15 +1099,14 @@ export function Board({
   const canManageCols = can('board.manage_columns');
   const canCreateTickets = can('ticket.create');
 
+  const projectSlug = project?.slug || projectId;
+
   return (
-    <div className="w-full min-w-0 flex flex-col space-y-4">
-      {/* ============================================================== */}
-      {/* 1. CLEAN TOP CONTEXT & BOARD HEADER                            */}
-      {/* ============================================================== */}
-      <section className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
-          {/* Title with Inline Edit Affordance */}
-          <div className="flex items-center gap-2 group min-w-0">
+    <div className="w-full h-full min-h-0 min-w-0 flex flex-col bg-canvas text-tp overflow-hidden select-none">
+      {/* Board header + toolbar (reference Section B) */}
+      <section className="bg-canvas border-b border-border/70 px-5 pt-3.5 pb-2.5 shrink-0 flex flex-col gap-2.5">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             {isEditingBoardTitle ? (
               <div className="flex items-center gap-1.5">
                 <input
@@ -1110,12 +1121,12 @@ export function Board({
                       setIsEditingBoardTitle(false);
                     }
                   }}
-                  className="h-8 px-2.5 rounded-lg border border-primary text-base font-bold text-slate-900 focus:outline-none"
+                  className="h-8 px-2.5 rounded-lg border border-accent text-[22px] font-semibold text-tp bg-elevated focus:outline-none focus:ring-1 focus:ring-accent/30"
                 />
                 <button
                   type="button"
                   onClick={handleSaveBoardTitle}
-                  className="p-1 rounded bg-primary text-white hover:bg-primary-hover"
+                  className="p-1 rounded-md bg-accent text-canvas hover:bg-accent-hover"
                 >
                   <Check className="h-4 w-4" />
                 </button>
@@ -1125,7 +1136,7 @@ export function Board({
                     setTempBoardTitle(boardTitle);
                     setIsEditingBoardTitle(false);
                   }}
-                  className="p-1 rounded bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  className="p-1 rounded bg-elevated text-ts hover:bg-hover"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -1134,81 +1145,78 @@ export function Board({
               <h1
                 id="board-title-text"
                 onDoubleClick={() => setIsEditingBoardTitle(true)}
-                className="text-lg font-bold text-slate-900 tracking-tight cursor-text hover:text-primary transition-colors truncate"
+                className="text-[22px] font-semibold text-tp tracking-tight leading-none cursor-text truncate"
                 title="Double-click to rename board"
               >
                 {boardTitle}
               </h1>
             )}
 
-            {!isEditingBoardTitle && (
-              <button
-                id="board-title-edit-btn"
-                type="button"
-                onClick={() => setIsEditingBoardTitle(true)}
-                className="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 opacity-40 group-hover:opacity-100 transition-opacity"
-                title="Rename board"
-                aria-label="Rename board"
-              >
-                <Edit2 className="h-3 w-3" />
-              </button>
-            )}
+            <button
+              type="button"
+              className="text-accent hover:text-accent-hover transition-colors"
+              title="Starred board"
+              aria-label="Star board"
+            >
+              <Star className="h-[19px] w-[19px] fill-accent" />
+            </button>
 
-            {/* Subtle Sync Indicator */}
-            {syncStatus === 'syncing' ? (
-              <span className="flex items-center gap-1 text-[11px] text-amber-600 ml-1">
-                <Clock className="h-3 w-3 animate-spin" />
-                <span className="hidden sm:inline">Saving...</span>
-              </span>
-            ) : syncStatus === 'error' ? (
-              <span className="flex items-center gap-1 text-[11px] text-red-600 ml-1">
-                <AlertTriangle className="h-3 w-3" />
-                <span className="hidden sm:inline">Unsaved</span>
-              </span>
-            ) : null}
+            <span className="text-border">|</span>
+
+            <div className="text-xs text-ts font-normal flex items-center gap-1.5 truncate">
+              <span className="truncate max-w-[160px]">{project.name}</span>
+              <span>•</span>
+              <span className="hidden sm:inline">Kanban workspace</span>
+              {syncStatus === 'syncing' ? (
+                <span className="flex items-center gap-1 text-warning">
+                  <Clock className="h-3 w-3 animate-spin" />
+                  Saving…
+                </span>
+              ) : syncStatus === 'error' ? (
+                <span className="flex items-center gap-1 text-danger">
+                  <AlertTriangle className="h-3 w-3" />
+                  Unsaved
+                </span>
+              ) : null}
+            </div>
           </div>
 
-          {/* Action Buttons: Plan Sprints & Create Ticket */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Link href={`/projects/${project?.slug || projectId}/plan`}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1.5 text-xs border-slate-200 text-slate-700 hover:bg-slate-50"
-              >
-                <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-                <span>Plan Sprints</span>
-              </Button>
+            <Link
+              href={`/projects/${projectSlug}/analytics`}
+              className="h-8 px-3 rounded-lg bg-accent/10 border border-accent/30 hover:bg-accent/20 text-accent transition-all flex items-center gap-1.5 text-xs font-medium"
+            >
+              <Sparkles className="h-[15px] w-[15px]" />
+              <span>AI Insights</span>
             </Link>
 
             {canCreateTickets && (
-              <Button
+              <button
+                type="button"
                 onClick={() => handleOpenCreateTicket()}
-                variant="primary"
-                size="sm"
-                className="flex items-center gap-1.5 text-xs shadow-xs"
+                className="h-8 px-3.5 rounded-lg bg-accent hover:bg-accent-hover text-[#08152E] transition-colors flex items-center gap-1 text-xs font-semibold shadow-sm shadow-accent/20"
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span>New Ticket</span>
-              </Button>
+                <Plus className="h-[17px] w-[17px]" />
+                <span>New Task</span>
+              </button>
             )}
           </div>
         </div>
 
-        {/* Filter Control Bar */}
         <BoardFilters
           members={members}
           sprints={availableSprints}
           currentUserId={user?.id}
           searchInputRef={searchInputRef}
+          projectSlug={projectSlug}
+          onOpenPreferences={() => setIsPreferencesOpen(true)}
         />
       </section>
 
-      {/* Semantic Search Banner */}
       {filters.isSemantic && filters.search.trim() && (
-        <div className="px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between text-xs text-indigo-900 shadow-xs">
+        <div className="mx-4 mt-2 px-4 py-2.5 rounded-xl bg-accent-subtle border border-accent/30 flex items-center justify-between text-xs text-tp shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-indigo-600 animate-spin" />
+            <Sparkles className="h-4 w-4 text-accent animate-spin" />
             <span>
               pgvector semantic search results for: <strong>&ldquo;{filters.search}&rdquo;</strong>{' '}
               ({filteredTickets.length} found)
@@ -1217,17 +1225,18 @@ export function Board({
           <button
             type="button"
             onClick={() => dispatch(setFilters({ search: '', isSemantic: false }))}
-            className="text-indigo-700 hover:text-indigo-950 underline font-medium text-xs"
+            className="text-accent hover:text-accent-hover underline font-medium text-xs"
           >
             Clear Search
           </button>
         </div>
       )}
 
-      {/* ============================================================== */}
-      {/* 2. HORIZONTALLY SCROLLABLE KANBAN COLUMNS CONTAINER           */}
-      {/* ============================================================== */}
-      <section className="w-full overflow-x-auto custom-scrollbar pb-12 pt-1" ref={scrollContainerRef}>
+      {/* Full-width Kanban viewport */}
+      <main
+        className="flex-1 w-full min-h-0 p-4 overflow-x-auto overflow-y-hidden custom-scrollbar flex items-start gap-3.5"
+        ref={scrollContainerRef}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -1235,7 +1244,7 @@ export function Board({
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="inline-flex items-start gap-4 min-w-max pb-4">
+          <div className="inline-flex items-start gap-3.5 min-w-max h-full max-h-full">
             {/* Sortable Column List */}
             <SortableContext items={columns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
               {columns.map((col, index) => (
@@ -1273,23 +1282,23 @@ export function Board({
 
             {/* Fast Inline Add Column Creator at the end of columns row */}
             {canManageCols && (
-              <div className="w-[316px] min-w-[316px] max-w-[320px] flex-shrink-0 pt-0.5">
+              <div className="w-[290px] shrink-0 flex-shrink-0 pt-0.5">
                 {isAddingColumnInline ? (
-                  <div className="bg-slate-100/95 border border-slate-300/80 rounded-xl p-3 shadow-md transition-all animate-in fade-in zoom-in-95 duration-150">
+                  <div className="bg-elevated/95 border border-border/80 rounded-xl p-3 shadow-md transition-all animate-in fade-in zoom-in-95 duration-150">
                     <form onSubmit={handleInlineAddColumnSubmit} className="space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                        <span className="text-[11px] font-bold text-ts uppercase tracking-wider">
                           New Column
                         </span>
                         {/* Quick Color Selector */}
                         <div className="flex items-center gap-1">
-                          {['#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C', '#526174'].map((c) => (
+                          {['#88A9FF', '#5DBA9D', '#D8B36A', '#D98287', '#A2BBFF', '#95A3B5', '#687789'].map((c) => (
                             <button
                               key={c}
                               type="button"
                               onClick={() => setInlineColColor(c)}
                               className={`w-3.5 h-3.5 rounded-full transition-transform ${
-                                inlineColColor === c ? 'scale-125 ring-2 ring-primary/40 ring-offset-1' : 'opacity-70 hover:opacity-100'
+                                inlineColColor === c ? 'scale-125 ring-2 ring-accent/40 ring-offset-1 ring-offset-surface' : 'opacity-70 hover:opacity-100'
                               }`}
                               style={{ backgroundColor: c }}
                               title={c}
@@ -1312,7 +1321,7 @@ export function Board({
                             setInlineColTitle('');
                           }
                         }}
-                        className="w-full px-3 py-2 text-xs font-semibold text-slate-900 bg-white border border-slate-300 rounded-lg shadow-2xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        className="w-full px-3 py-2 text-xs font-semibold text-tp bg-elevated border border-border rounded-button shadow-2xs placeholder:text-tm focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent transition-all"
                       />
 
                       <div className="flex items-center justify-between pt-1">
@@ -1335,12 +1344,12 @@ export function Board({
                               setIsAddingColumnInline(false);
                               setInlineColTitle('');
                             }}
-                            className="text-xs h-7 px-2 text-slate-500 hover:text-slate-800"
+                            className="text-xs h-7 px-2 text-tm hover:text-tp"
                           >
                             Cancel
                           </Button>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-medium">↵ to save</span>
+                        <span className="text-[10px] text-tm font-medium">↵ to save</span>
                       </div>
                     </form>
                   </div>
@@ -1351,9 +1360,9 @@ export function Board({
                       setIsAddingColumnInline(true);
                       setTimeout(() => inlineColInputRef.current?.focus(), 50);
                     }}
-                    className="w-full h-12 rounded-xl bg-slate-100/90 hover:bg-slate-200/90 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all border border-dashed border-slate-300 hover:border-slate-400 group"
+                    className="w-full h-12 rounded-xl bg-elevated/90 hover:bg-hover/90 text-ts hover:text-tp font-semibold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all border border-dashed border-border hover:border-tm group"
                   >
-                    <Plus className="h-4 w-4 text-slate-400 group-hover:text-primary group-hover:scale-110 transition-transform" />
+                    <Plus className="h-4 w-4 text-tm group-hover:text-accent group-hover:scale-110 transition-transform" />
                     <span>Add column</span>
                   </button>
                 )}
@@ -1369,40 +1378,38 @@ export function Board({
               </div>
             ) : activeDragItem?.type === 'Column' ? (
               <div
-                className="w-[316px] pointer-events-none rounded-xl p-3 bg-white/95 backdrop-blur-md shadow-2xl border-2 border-primary rotate-1 scale-[1.02] flex flex-col gap-2"
+                className="w-[290px] pointer-events-none rounded-xl p-3 bg-navigation/95 backdrop-blur-md shadow-2xl border-2 border-accent rotate-1 scale-[1.02] flex flex-col gap-2"
                 style={{
                   borderTop: (activeDragItem.item as BoardColumn).color
                     ? `4px solid ${(activeDragItem.item as BoardColumn).color}`
-                    : '4px solid #4F46E5',
+                    : '4px solid var(--color-accent)',
                 }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <GripVertical className="h-4 w-4 text-primary" />
+                    <GripVertical className="h-4 w-4 text-accent" />
                     {(activeDragItem.item as BoardColumn).color && (
                       <span
                         className="w-2.5 h-2.5 rounded-full"
                         style={{ backgroundColor: (activeDragItem.item as BoardColumn).color || undefined }}
                       />
                     )}
-                    <h3 className="font-bold text-xs uppercase tracking-wide text-slate-800">
+                    <h3 className="font-bold text-xs uppercase tracking-wide text-tp">
                       {(activeDragItem.item as BoardColumn).name}
                     </h3>
                   </div>
-                  <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-mono text-[11px] font-bold flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-full bg-elevated text-ts font-mono text-[11px] font-bold flex items-center justify-center">
                     {columnTicketsMap[(activeDragItem.item as BoardColumn).id]?.length ?? 0}
                   </span>
                 </div>
-                <div className="h-24 rounded-lg bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-[11px] text-slate-400 font-medium">
+                <div className="h-24 rounded-lg bg-surface border border-dashed border-border flex items-center justify-center text-[11px] text-tm font-medium">
                   Moving column...
                 </div>
               </div>
             ) : null}
           </DragOverlay>
         </DndContext>
-      </section>
-
-
+      </main>
 
       {/* ============================================================== */}
       {/* 4. DIALOGS & MODALS                                            */}
@@ -1413,7 +1420,7 @@ export function Board({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Columns3 className="h-5 w-5 text-primary" />
+              <Columns3 className="h-5 w-5 text-accent" />
               <span>Add Custom Column</span>
             </DialogTitle>
             <DialogDescription>
@@ -1461,18 +1468,18 @@ export function Board({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+              <label className="block text-xs font-medium text-ts mb-1.5">
                 Column Indicator Color
               </label>
               <div className="flex items-center gap-2">
-                {['#526174', '#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C'].map(
+                {['#687789', '#88A9FF', '#5DBA9D', '#D8B36A', '#D98287', '#A2BBFF', '#95A3B5'].map(
                   (c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setNewColColor(c)}
                       className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                        newColColor === c ? 'scale-110 border-slate-900 ring-2 ring-primary/20' : 'border-white'
+                        newColColor === c ? 'scale-110 border-tp ring-2 ring-accent/30' : 'border-border'
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -1481,7 +1488,7 @@ export function Board({
               </div>
             </div>
 
-            <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-200">
+            <div className="pt-3 flex items-center justify-end gap-2 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1503,7 +1510,7 @@ export function Board({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Columns3 className="h-5 w-5 text-primary" />
+              <Columns3 className="h-5 w-5 text-accent" />
               <span>Edit Column: {editingCol?.name}</span>
             </DialogTitle>
             <DialogDescription>
@@ -1549,18 +1556,18 @@ export function Board({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
+              <label className="block text-xs font-medium text-ts mb-1.5">
                 Column Indicator Color
               </label>
               <div className="flex items-center gap-2">
-                {['#526174', '#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C'].map(
+                {['#687789', '#88A9FF', '#5DBA9D', '#D8B36A', '#D98287', '#A2BBFF', '#95A3B5'].map(
                   (c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setEditColColor(c)}
                       className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                        editColColor === c ? 'scale-110 border-slate-900 ring-2 ring-primary/20' : 'border-white'
+                        editColColor === c ? 'scale-110 border-tp ring-2 ring-accent/30' : 'border-border'
                       }`}
                       style={{ backgroundColor: c }}
                     />
@@ -1569,7 +1576,7 @@ export function Board({
               </div>
             </div>
 
-            <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-200">
+            <div className="pt-3 flex items-center justify-end gap-2 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1591,7 +1598,7 @@ export function Board({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sliders className="h-5 w-5 text-primary" />
+              <Sliders className="h-5 w-5 text-accent" />
               <span>Configure WIP Limit</span>
             </DialogTitle>
             <DialogDescription>
@@ -1609,12 +1616,12 @@ export function Board({
               onChange={(e) => setWipLimitInput(e.target.value)}
               required
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-tm">
               When tickets in this column exceed this limit, the column header displays an active WIP
               warning banner.
             </p>
 
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200">
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1635,8 +1642,8 @@ export function Board({
       <Dialog open={isDeleteColumnOpen} onOpenChange={setIsDeleteColumnOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+            <DialogTitle className="flex items-center gap-2 text-danger">
+              <AlertTriangle className="h-5 w-5 text-danger" />
               <span>Delete Column: {deletingCol?.name}</span>
             </DialogTitle>
             <DialogDescription>
@@ -1646,12 +1653,12 @@ export function Board({
 
           <div className="space-y-3.5 pt-2">
             {deletingCol && (columnTicketsMap[deletingCol.id]?.length || 0) > 0 ? (
-              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-slate-800 space-y-2.5">
-                <p className="font-semibold text-red-700">
+              <div className="p-3.5 rounded-card bg-danger-subtle border border-danger/30 text-xs text-tp space-y-2.5">
+                <p className="font-semibold text-danger">
                   ⚠️ This column currently contains {columnTicketsMap[deletingCol.id]?.length}{' '}
                   ticket(s).
                 </p>
-                <p className="text-slate-600">
+                <p className="text-ts">
                   To protect your data, choose a destination column to migrate these tickets to
                   before deletion:
                 </p>
@@ -1671,12 +1678,12 @@ export function Board({
                 </Select>
               </div>
             ) : (
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-ts">
                 This column contains no tickets and can be safely deleted.
               </p>
             )}
 
-            <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-200">
+            <div className="pt-3 flex items-center justify-end gap-2 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1704,7 +1711,7 @@ export function Board({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit2 className="h-5 w-5 text-primary" />
+              <Edit2 className="h-5 w-5 text-accent" />
               <span>Edit Ticket Title</span>
             </DialogTitle>
             <DialogDescription>Update the title for this card.</DialogDescription>
@@ -1719,7 +1726,7 @@ export function Board({
               maxLength={200}
             />
 
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200">
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1740,7 +1747,7 @@ export function Board({
       <Dialog open={isDeleteTicketOpen} onOpenChange={setIsDeleteTicketOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-danger">
               <Trash2 className="h-5 w-5" />
               <span>Delete Ticket</span>
             </DialogTitle>
@@ -1750,7 +1757,7 @@ export function Board({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-200">
+          <div className="pt-3 flex items-center justify-end gap-2 border-t border-border">
             <Button
               type="button"
               variant="outline"
@@ -1777,25 +1784,25 @@ export function Board({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sliders className="h-5 w-5 text-primary" />
+              <Sliders className="h-5 w-5 text-accent" />
               <span>Display Preferences</span>
             </DialogTitle>
             <DialogDescription>Configure Kanban board viewing options.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 pt-2 text-xs text-slate-700">
-            <label className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border cursor-pointer">
+          <div className="space-y-3 pt-2 text-xs text-ts">
+            <label className="flex items-center justify-between p-2 rounded-lg bg-surface border cursor-pointer">
               <span>Compact Card Layout</span>
               <input
                 type="checkbox"
                 checked={isCompact}
                 onChange={(e) => setIsCompact(e.target.checked)}
-                className="h-4 w-4 text-primary rounded"
+                className="h-4 w-4 text-accent rounded"
               />
             </label>
           </div>
 
-          <div className="pt-3 flex justify-end border-t border-slate-200">
+          <div className="pt-3 flex justify-end border-t border-border">
             <Button
               type="button"
               variant="primary"
@@ -1829,6 +1836,7 @@ export function Board({
           setSelectedTicket(null);
         }}
         projectId={projectId}
+        projectName={project.name}
         members={members}
         onTicketUpdated={handleTicketUpdated}
         onTicketDeleted={handleTicketDeleted}

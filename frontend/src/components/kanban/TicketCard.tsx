@@ -13,6 +13,7 @@ import {
   Lock,
   Zap,
   ArrowDown,
+  ArrowUp,
   Minus,
   MoreHorizontal,
   Edit2,
@@ -21,11 +22,9 @@ import {
   ExternalLink,
   GitPullRequest,
   CheckCircle2,
-  Calendar,
-  Layers,
   ChevronRight,
   MoveRight,
-  Tag,
+  AlertCircle,
 } from 'lucide-react';
 
 interface TicketCardProps {
@@ -46,6 +45,24 @@ interface TicketCardProps {
   onDuplicate?: (ticket: Ticket) => void;
   onDelete?: (ticket: Ticket) => void;
   isOverlay?: boolean;
+}
+
+function PriorityIndicator({ priority }: { priority: TicketPriority }) {
+  if (priority === 'Critical') {
+    return (
+      <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger-subtle text-danger font-semibold flex items-center gap-0.5 border border-danger/30">
+        <AlertCircle className="h-2.5 w-2.5" />
+        Urgent
+      </span>
+    );
+  }
+  if (priority === 'High') {
+    return <ArrowUp className="h-3.5 w-3.5 text-danger flex-shrink-0" aria-label="High priority" />;
+  }
+  if (priority === 'Medium') {
+    return <Minus className="h-3.5 w-3.5 text-ts flex-shrink-0" aria-label="Medium priority" />;
+  }
+  return <ArrowDown className="h-3.5 w-3.5 text-ts flex-shrink-0" aria-label="Low priority" />;
 }
 
 export function TicketCard({
@@ -93,7 +110,6 @@ export function TicketCard({
     transition,
   };
 
-  // Close context menu on click outside
   useEffect(() => {
     if (!menuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -112,32 +128,22 @@ export function TicketCard({
   const shortId = ticket.id.length > 8 ? `TIC-${ticket.id.slice(-4).toUpperCase()}` : ticket.id;
   const displayId = ticket.sourceCandidateId || shortId;
 
-  // Acceptance criteria count
-  const acList = (ticket.acceptanceCriteria as any[]) || [];
+  const acList = (ticket.acceptanceCriteria as Array<{ completed?: boolean }>) || [];
   const acTotal = acList.length;
   const acCompleted = acList.filter((item) => item.completed).length;
 
-  // PR checklist / subtask progress
-  const prList = (ticket.prChecklist as any[]) || [];
+  const prList = (ticket.prChecklist as Array<{ completed?: boolean }>) || [];
   const prTotal = prList.length;
   const prCompleted = prList.filter((item) => item.completed).length;
 
-  // Extract tags: look for module or hashtags in description/title
-  const tags: string[] = [];
+  const cardTags: { label: string; accent?: boolean }[] = [];
   if (ticket.module) {
-    tags.push(ticket.module.toLowerCase().startsWith('#') ? ticket.module.toLowerCase() : `#${ticket.module.toLowerCase()}`);
+    cardTags.push({ label: ticket.module });
   }
-  const textToScan = `${ticket.title} ${ticket.description || ''}`;
-  const hashtagMatches = textToScan.match(/#[a-zA-Z0-9_-]+/g);
-  if (hashtagMatches) {
-    hashtagMatches.slice(0, 3).forEach((tag) => {
-      if (!tags.includes(tag.toLowerCase())) {
-        tags.push(tag.toLowerCase());
-      }
-    });
+  if (ticket.type) {
+    cardTags.push({ label: ticket.type, accent: ticket.type === 'Feature' });
   }
 
-  // Multi-assignee support
   const cardAssignees =
     ticket.assignees && ticket.assignees.length > 0
       ? ticket.assignees
@@ -146,7 +152,6 @@ export function TicketCard({
       : [];
   const cardAssigneeIds = cardAssignees.map((a) => a.id);
 
-  // Copy ticket link handler
   const handleCopyLink = (e: React.MouseEvent) => {
     e.stopPropagation();
     setMenuOpen(false);
@@ -170,68 +175,49 @@ export function TicketCard({
           onClick();
         }
       }}
-      className={`group relative rounded-xl border bg-white shadow-sm transition-all duration-150 select-none cursor-grab active:cursor-grabbing ${
-        isCompact ? 'p-3' : 'p-3.5'
-      } ${
+      className={`group relative p-3 rounded-[10px] border shadow-sm transition-all duration-150 select-none cursor-grab active:cursor-grabbing ${
         isDragging
-          ? 'opacity-40 border-primary ring-2 ring-primary/20 scale-[0.98]'
+          ? 'opacity-40 border-accent ring-2 ring-accent/20 scale-[0.98] bg-elevated'
           : isOverlay
-          ? 'shadow-2xl border-primary ring-2 ring-primary/30 rotate-[-2deg] scale-[1.02] bg-white z-50'
-          : 'border-slate-200/80 hover:border-slate-300 hover:shadow-md'
+          ? 'shadow-2xl border-accent ring-2 ring-accent/30 rotate-[-2deg] scale-[1.02] bg-elevated z-50'
+          : isDone
+          ? 'bg-elevated/75 border-border/80 hover:border-accent/30 opacity-85'
+          : 'bg-elevated border-border hover:border-accent/40'
       }`}
     >
-      {/* Top Metadata Row */}
-      <div className="flex items-center justify-between gap-1.5 mb-2">
+      {/* Top row: ID, priority, badges, menu */}
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          {/* Priority Pill */}
-          {ticket.priority === 'Critical' ? (
-            <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px] uppercase flex items-center gap-1 tracking-wide shadow-2xs">
-              <Zap className="h-3 w-3 fill-red-600 text-red-600 flex-shrink-0" />
-              <span>URGENT</span>
-            </span>
-          ) : ticket.priority === 'High' ? (
-            <span className="px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-bold text-[10px] uppercase flex items-center gap-1 shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600 flex-shrink-0"></span>
-              <span>HIGH</span>
-            </span>
-          ) : ticket.priority === 'Medium' ? (
-            <span className="text-slate-400 group-hover:text-slate-600 flex items-center" title="Medium Priority">
-              <Minus className="h-3.5 w-3.5" />
-            </span>
-          ) : (
-            <span className="text-slate-400 group-hover:text-slate-600 flex items-center" title="Low Priority">
-              <ArrowDown className="h-3.5 w-3.5" />
-            </span>
+          {isDone && (
+            <CheckCircle2 className="h-[15px] w-[15px] text-success fill-success/20 flex-shrink-0" aria-hidden />
           )}
-
-          {/* Ticket Identifier */}
-          <span className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-tight">
+          <span
+            className={`font-mono text-[11px] text-ts flex-shrink-0 ${
+              isDone ? 'line-through' : ''
+            }`}
+          >
             {displayId}
           </span>
-
-          {/* Sprint Tag / Sprint Goal */}
+          {!isDone && <PriorityIndicator priority={ticket.priority} />}
           {ticket.sprint && (
-            <span className="px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/60 font-mono text-[10px] font-bold">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent-subtle text-accent border border-accent/30">
               {ticket.sprint}
             </span>
           )}
-
           {ticket.isLocked && (
-            <span title="Locked to sprint by PM" className="text-amber-600">
+            <span title="Locked to sprint by PM" className="text-warning">
               <Lock className="h-3 w-3 inline" />
             </span>
           )}
         </div>
 
-        {/* Right side: Points badge and 3-dot Context Menu */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {ticket.storyPoints != null && ticket.storyPoints > 0 && (
-            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-medium border border-slate-200/80">
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {ticket.storyPoints != null && ticket.storyPoints > 0 && !isCompact && (
+            <span className="hidden sm:inline px-1.5 py-0.5 rounded bg-canvas text-ts font-mono text-[10px] border border-border/60">
               {ticket.storyPoints} pt{ticket.storyPoints > 1 ? 's' : ''}
             </span>
           )}
 
-          {/* Card Context Menu Trigger */}
           <div className="relative" ref={menuRef}>
             <button
               type="button"
@@ -239,20 +225,20 @@ export function TicketCard({
                 e.stopPropagation();
                 setMenuOpen(!menuOpen);
               }}
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors opacity-70 group-hover:opacity-100"
+              className={`text-ts hover:text-tp transition-opacity ${
+                menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}
               title="Ticket actions"
               aria-label="Ticket actions"
             >
-              <MoreHorizontal className="h-3.5 w-3.5" />
+              <MoreHorizontal className="h-[15px] w-[15px]" />
             </button>
 
-            {/* Context Menu Dropdown */}
             {menuOpen && (
               <div
-                className="absolute right-0 top-7 w-48 rounded-xl bg-white border border-slate-200 shadow-dropdown p-1.5 z-50 text-xs text-slate-700 animate-in fade-in zoom-in-95 duration-100"
+                className="absolute right-0 top-7 w-48 rounded-xl bg-elevated border border-border shadow-dropdown p-1.5 z-50 text-xs text-ts animate-in fade-in zoom-in-95 duration-100"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Open details */}
                 <button
                   type="button"
                   onClick={() => {
@@ -260,13 +246,12 @@ export function TicketCard({
                     if (onEditDetails) onEditDetails(ticket);
                     else if (onClick) onClick();
                   }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium text-slate-800 transition-colors"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium text-tp transition-colors"
                 >
-                  <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                  <ExternalLink className="h-3.5 w-3.5 text-tm" />
                   <span>Open Ticket</span>
                 </button>
 
-                {/* Edit Title */}
                 {canEdit && onEditTitle && (
                   <button
                     type="button"
@@ -274,31 +259,30 @@ export function TicketCard({
                       setMenuOpen(false);
                       onEditTitle(ticket);
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium text-slate-800 transition-colors"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium text-tp transition-colors"
                   >
-                    <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                    <Edit2 className="h-3.5 w-3.5 text-tm" />
                     <span>Edit Title</span>
                   </button>
                 )}
 
-                <div className="my-1 border-t border-slate-100" />
+                <div className="my-1 border-t border-divider" />
 
-                {/* Change Status Submenu */}
                 {canChangeStatus && onChangeStatus && (
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setStatusSubmenu(!statusSubmenu)}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                     >
                       <span className="flex items-center gap-2">
-                        <MoveRight className="h-3.5 w-3.5 text-slate-500" />
+                        <MoveRight className="h-3.5 w-3.5 text-tm" />
                         <span>Move Status</span>
                       </span>
-                      <ChevronRight className="h-3 w-3 text-slate-400" />
+                      <ChevronRight className="h-3 w-3 text-tm" />
                     </button>
                     {statusSubmenu && (
-                      <div className="pl-3 py-1 space-y-0.5 border-l-2 border-primary/20 ml-2 my-1">
+                      <div className="pl-3 py-1 space-y-0.5 border-l-2 border-accent/20 ml-2 my-1">
                         {(['To Do', 'In Progress', 'Done'] as TicketStatus[]).map((st) => (
                           <button
                             key={st}
@@ -307,12 +291,12 @@ export function TicketCard({
                               setMenuOpen(false);
                               onChangeStatus(ticket, st);
                             }}
-                            className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-slate-100 ${
-                              ticket.status === st ? 'font-bold text-primary' : 'text-slate-600'
+                            className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-hover ${
+                              ticket.status === st ? 'font-bold text-accent' : 'text-ts'
                             }`}
                           >
                             <span>{st}</span>
-                            {ticket.status === st && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                            {ticket.status === st && <CheckCircle2 className="h-3 w-3 text-accent" />}
                           </button>
                         ))}
                       </div>
@@ -320,22 +304,21 @@ export function TicketCard({
                   </div>
                 )}
 
-                {/* Change Priority Submenu */}
                 {canEdit && onChangePriority && (
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setPrioritySubmenu(!prioritySubmenu)}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                     >
                       <span className="flex items-center gap-2">
-                        <Zap className="h-3.5 w-3.5 text-slate-500" />
+                        <Zap className="h-3.5 w-3.5 text-tm" />
                         <span>Priority</span>
                       </span>
-                      <ChevronRight className="h-3 w-3 text-slate-400" />
+                      <ChevronRight className="h-3 w-3 text-tm" />
                     </button>
                     {prioritySubmenu && (
-                      <div className="pl-3 py-1 space-y-0.5 border-l-2 border-primary/20 ml-2 my-1">
+                      <div className="pl-3 py-1 space-y-0.5 border-l-2 border-accent/20 ml-2 my-1">
                         {(['Critical', 'High', 'Medium', 'Low'] as TicketPriority[]).map((pr) => (
                           <button
                             key={pr}
@@ -344,12 +327,12 @@ export function TicketCard({
                               setMenuOpen(false);
                               onChangePriority(ticket, pr);
                             }}
-                            className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-slate-100 ${
-                              ticket.priority === pr ? 'font-bold text-primary' : 'text-slate-600'
+                            className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-hover ${
+                              ticket.priority === pr ? 'font-bold text-accent' : 'text-ts'
                             }`}
                           >
                             <span>{pr}</span>
-                            {ticket.priority === pr && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                            {ticket.priority === pr && <CheckCircle2 className="h-3 w-3 text-accent" />}
                           </button>
                         ))}
                       </div>
@@ -357,34 +340,33 @@ export function TicketCard({
                   </div>
                 )}
 
-                {/* Assign / Reassign Submenu */}
                 {canAssign && onAssign && (
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setAssignSubmenu(!assignSubmenu)}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                     >
                       <span className="flex items-center gap-2">
-                        <UserIcon className="h-3.5 w-3.5 text-slate-500" />
+                        <UserIcon className="h-3.5 w-3.5 text-tm" />
                         <span>Assignee</span>
                       </span>
-                      <ChevronRight className="h-3 w-3 text-slate-400" />
+                      <ChevronRight className="h-3 w-3 text-tm" />
                     </button>
                     {assignSubmenu && (
-                      <div className="pl-3 py-1 space-y-0.5 border-l-2 border-primary/20 ml-2 my-1 max-h-36 overflow-y-auto custom-scrollbar">
+                      <div className="pl-3 py-1 space-y-0.5 border-l-2 border-accent/20 ml-2 my-1 max-h-36 overflow-y-auto custom-scrollbar">
                         <button
                           type="button"
                           onClick={() => {
                             setMenuOpen(false);
                             onAssign(ticket, null);
                           }}
-                          className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-slate-100 ${
-                            cardAssignees.length === 0 ? 'font-bold text-primary' : 'text-slate-600'
+                          className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-hover ${
+                            cardAssignees.length === 0 ? 'font-bold text-accent' : 'text-ts'
                           }`}
                         >
                           <span>Unassigned</span>
-                          {cardAssignees.length === 0 && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                          {cardAssignees.length === 0 && <CheckCircle2 className="h-3 w-3 text-accent" />}
                         </button>
                         {members.map((m) => {
                           const isAssigned = cardAssigneeIds.includes(m.userId);
@@ -395,12 +377,12 @@ export function TicketCard({
                               onClick={() => {
                                 onAssign(ticket, m.userId);
                               }}
-                              className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-slate-100 ${
-                                isAssigned ? 'font-bold text-primary bg-primary/5' : 'text-slate-600'
+                              className={`w-full flex items-center justify-between px-2 py-1 rounded text-left text-[11px] hover:bg-hover ${
+                                isAssigned ? 'font-bold text-accent bg-accent/5' : 'text-ts'
                               }`}
                             >
                               <span className="truncate">{m.user.username || m.user.email}</span>
-                              {isAssigned && <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />}
+                              {isAssigned && <CheckCircle2 className="h-3 w-3 text-accent shrink-0" />}
                             </button>
                           );
                         })}
@@ -409,9 +391,8 @@ export function TicketCard({
                   </div>
                 )}
 
-                <div className="my-1 border-t border-slate-100" />
+                <div className="my-1 border-t border-divider" />
 
-                {/* Duplicate Ticket */}
                 {onDuplicate && (
                   <button
                     type="button"
@@ -419,36 +400,34 @@ export function TicketCard({
                       setMenuOpen(false);
                       onDuplicate(ticket);
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium text-slate-800 transition-colors"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium text-tp transition-colors"
                   >
-                    <Copy className="h-3.5 w-3.5 text-slate-500" />
+                    <Copy className="h-3.5 w-3.5 text-tm" />
                     <span>Duplicate Ticket</span>
                   </button>
                 )}
 
-                {/* Copy Link */}
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium text-slate-800 transition-colors"
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium text-tp transition-colors"
                 >
-                  <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+                  <ExternalLink className="h-3.5 w-3.5 text-tm" />
                   <span>Copy Link</span>
                 </button>
 
-                {/* Delete Ticket */}
                 {canDelete && onDelete && (
                   <>
-                    <div className="my-1 border-t border-slate-100" />
+                    <div className="my-1 border-t border-divider" />
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
                         onDelete(ticket);
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-red-50 text-left font-medium text-red-600 transition-colors"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-danger-subtle text-left font-medium text-danger transition-colors"
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                      <Trash2 className="h-3.5 w-3.5 text-danger" />
                       <span>Delete Ticket</span>
                     </button>
                   </>
@@ -459,104 +438,107 @@ export function TicketCard({
         </div>
       </div>
 
-      {/* Ticket Title */}
-      <h4
-        className={`font-medium text-[13px] leading-snug text-slate-900 group-hover:text-primary transition-colors line-clamp-2 ${
-          isDone ? 'line-through text-slate-400' : ''
-        } ${isCompact ? 'mb-1' : 'mb-2'}`}
+      <h3
+        className={`text-sm font-medium leading-snug mb-2.5 line-clamp-2 ${
+          isDone ? 'text-ts line-through' : 'text-tp'
+        } ${isCompact ? 'mb-2' : ''}`}
       >
         {ticket.title}
-      </h4>
+      </h3>
 
-
-
-      {/* Middle Tags & Progress Row */}
-      <div className="flex items-center justify-between gap-1 pt-1 mb-2.5 flex-wrap">
-        {/* Tags */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {tags.map((tag) => (
+      {cardTags.length > 0 && (
+        <div className={`flex flex-wrap gap-1.5 ${isCompact ? 'mb-2' : 'mb-3'}`}>
+          {cardTags.map((tag) => (
             <span
-              key={tag}
-              className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px] font-medium"
+              key={tag.label}
+              className={`text-[11px] px-2 py-0.5 rounded border font-medium ${
+                tag.accent
+                  ? 'bg-accent-subtle border-accent/30 text-accent'
+                  : 'bg-canvas border-border/60 text-ts'
+              }`}
             >
-              {tag}
+              {tag.label}
             </span>
           ))}
         </div>
+      )}
 
-        {/* Indicators: Acceptance Criteria Progress / Subtasks */}
-        <div className="flex items-center gap-2 font-mono text-[11px] text-slate-400 ml-auto">
+      {!isCompact && prTotal > 0 && (
+        <div className="flex flex-col gap-1 mb-2.5">
+          <div className="flex items-center justify-between text-[11px] text-ts font-mono">
+            <span className="font-sans text-ts flex items-center gap-1">
+              <GitPullRequest className="h-3 w-3" />
+              PR checks
+            </span>
+            <span className="text-tp font-medium">
+              {prCompleted}/{prTotal} ({Math.round((prCompleted / prTotal) * 100)}%)
+            </span>
+          </div>
+          <div className="w-full h-1.5 bg-canvas rounded-full overflow-hidden border border-border/60">
+            <div
+              className="h-full bg-accent/80 rounded-full transition-all"
+              style={{ width: `${prTotal > 0 ? (prCompleted / prTotal) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px] text-ts">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-1" title="Comments">
+            <MessageSquare className="h-[13px] w-[13px]" />
+            <span>{commentCount}</span>
+          </div>
           {acTotal > 0 && (
-            <span
-              className="flex items-center gap-1 hover:text-slate-600"
-              title={`${acCompleted} of ${acTotal} acceptance criteria checked`}
-            >
-              <CheckSquare className="h-3 w-3 text-slate-400" />
+            <div className="flex items-center gap-1" title="Acceptance criteria">
+              <CheckSquare className="h-[13px] w-[13px]" />
               <span>
                 {acCompleted}/{acTotal}
               </span>
-            </span>
-          )}
-
-          {prTotal > 0 && (
-            <span
-              className="flex items-center gap-1 hover:text-slate-600"
-              title={`${prCompleted} of ${prTotal} PR checks completed`}
-            >
-              <GitPullRequest className="h-3 w-3 text-slate-400" />
-              <span>
-                {prCompleted}/{prTotal}
-              </span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Footer: Assignee & Meta */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
-        {/* Assignee Avatar */}
-        <div className="flex items-center gap-1.5">
-          {cardAssignees.length > 0 ? (
-            <div
-              className="flex items-center gap-1.5"
-              title={cardAssignees.map((a) => a.username || a.email).join(', ')}
-            >
-              <div className="flex items-center -space-x-1.5">
-                {cardAssignees.slice(0, 3).map((u, i) => (
-                  <div key={u.id || i} className="relative ring-1.5 ring-white rounded-full">
-                    <Avatar
-                      name={u.username}
-                      email={u.email}
-                      avatarUrl={u.avatarUrl}
-                      size="xs"
-                    />
-                  </div>
-                ))}
-                {cardAssignees.length > 3 && (
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 ring-1.5 ring-white text-[9px] font-bold text-slate-600">
-                    +{cardAssignees.length - 3}
-                  </span>
-                )}
-              </div>
-              <span className="text-[11px] text-slate-600 font-medium truncate max-w-[110px]">
-                {cardAssignees.length === 1
-                  ? cardAssignees[0].username || cardAssignees[0].email
-                  : `${cardAssignees.length} assignees`}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-[11px] text-slate-400">
-              <UserIcon className="h-3 w-3" />
-              <span>Unassigned</span>
             </div>
           )}
+          {isDone && (
+            <span className="text-[10px] text-ts truncate">
+              Completed{' '}
+              {ticket.updatedAt
+                ? new Date(ticket.updatedAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : ''}
+            </span>
+          )}
         </div>
 
-        {/* Comment Count */}
-        <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-          <MessageSquare className="h-3 w-3 text-slate-400" />
-          <span>{commentCount}</span>
-        </div>
+        {cardAssignees.length > 0 ? (
+          <div
+            className="flex items-center -space-x-1.5 flex-shrink-0"
+            title={cardAssignees.map((a) => a.username || a.email).join(', ')}
+          >
+            {cardAssignees.slice(0, 3).map((u, i) => (
+              <Avatar
+                key={u.id || i}
+                name={u.username}
+                email={u.email}
+                avatarUrl={u.avatarUrl}
+                size="xs"
+                className="ring-2 ring-elevated"
+              />
+            ))}
+            {cardAssignees.length > 3 && (
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-elevated ring-2 ring-elevated text-[9px] font-semibold text-ts">
+                +{cardAssignees.length - 3}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div
+            className="w-5 h-5 rounded-full bg-surface border border-border/80 flex items-center justify-center flex-shrink-0"
+            title="Unassigned"
+          >
+            <UserIcon className="h-3 w-3 text-ts" />
+          </div>
+        )}
       </div>
     </article>
   );

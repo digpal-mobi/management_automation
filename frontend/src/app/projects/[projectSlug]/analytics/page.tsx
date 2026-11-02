@@ -7,7 +7,6 @@ import {
   fetchServerAnalytics,
 } from '@/lib/serverProject';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ProjectNav } from '@/components/layout/ProjectNav';
 import { AnalyticsView } from '@/components/analytics/AnalyticsView';
 
 interface ProjectAnalyticsPageProps {
@@ -67,17 +66,9 @@ export default async function ProjectAnalyticsPage({ params }: ProjectAnalyticsP
           { label: project.name, href: `/projects/${slug}` },
           { label: 'Velocity & Metrics' },
         ]}
-        icon={<BarChart3 className="h-6 w-6 text-[#003049]" />}
+        icon={<BarChart3 className="h-6 w-6 text-accent" />}
         title="Project Velocity & Metrics"
         description={project.description || 'Sprint progress, distribution by priority and type, and completion metrics.'}
-        actions={
-          <ProjectNav
-            projectId={internalId}
-            projectSlug={slug}
-            memberCount={members.length}
-            ticketCount={fallbackAnalytics.totalTickets}
-          />
-        }
       />
 
       {/* Server-Rendered Analytics View */}

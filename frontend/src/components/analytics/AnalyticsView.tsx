@@ -23,16 +23,16 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
   };
 
   const statusColors: Record<string, string> = {
-    'To Do': 'bg-[#669BBC]',
-    'In Progress': 'bg-[#003049]',
-    'Done': 'bg-[#15803D]',
+    'To Do': 'bg-chart-1',
+    'In Progress': 'bg-chart-3',
+    'Done': 'bg-chart-2',
   };
 
   const priorityColors: Record<string, string> = {
-    CRITICAL: 'bg-[#C1121F]',
-    HIGH: 'bg-[#D97706]',
-    MEDIUM: 'bg-[#003049]',
-    LOW: 'bg-[#669BBC]',
+    CRITICAL: 'bg-chart-5',
+    HIGH: 'bg-chart-3',
+    MEDIUM: 'bg-chart-1',
+    LOW: 'bg-chart-6',
   };
 
   return (
@@ -41,66 +41,66 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Tickets */}
         <Card className="p-5 space-y-2">
-          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
+          <div className="flex items-center justify-between text-ts text-xs font-semibold">
             <span>Total Tickets</span>
-            <div className="p-1.5 rounded-lg bg-[#EFF5F9]">
-              <Layers className="h-4 w-4 text-[#003049]" />
+            <div className="p-1.5 rounded-lg bg-accent-subtle">
+              <Layers className="h-4 w-4 text-accent" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#17212B]">
+          <div className="text-3xl font-extrabold text-tp">
             {analytics.totalTickets}
           </div>
-          <div className="text-[11px] text-[#526174]">
+          <div className="text-[11px] text-ts">
             Across all workflow states
           </div>
         </Card>
 
         {/* In Progress */}
         <Card className="p-5 space-y-2">
-          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
+          <div className="flex items-center justify-between text-ts text-xs font-semibold">
             <span>In Progress</span>
-            <div className="p-1.5 rounded-lg bg-[#EFF5F9]">
-              <Clock className="h-4 w-4 text-[#003049]" />
+            <div className="p-1.5 rounded-lg bg-accent-subtle">
+              <Clock className="h-4 w-4 text-accent" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#17212B]">
+          <div className="text-3xl font-extrabold text-tp">
             {analytics.inProgressTickets}
           </div>
-          <div className="text-[11px] text-[#526174]">
+          <div className="text-[11px] text-ts">
             Active developer tasks
           </div>
         </Card>
 
         {/* Completed Tickets */}
         <Card className="p-5 space-y-2">
-          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
+          <div className="flex items-center justify-between text-ts text-xs font-semibold">
             <span>Completed Tickets</span>
-            <div className="p-1.5 rounded-lg bg-[#F0FDF4]">
-              <CheckCircle2 className="h-4 w-4 text-[#15803D]" />
+            <div className="p-1.5 rounded-lg bg-success-subtle">
+              <CheckCircle2 className="h-4 w-4 text-success" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#17212B]">
+          <div className="text-3xl font-extrabold text-tp">
             {analytics.completedTickets}
           </div>
-          <div className="text-[11px] text-[#526174]">
+          <div className="text-[11px] text-ts">
             Moved to Done column
           </div>
         </Card>
 
         {/* Completion Rate */}
         <Card className="p-5 space-y-2">
-          <div className="flex items-center justify-between text-[#526174] text-xs font-semibold">
+          <div className="flex items-center justify-between text-ts text-xs font-semibold">
             <span>Completion Rate</span>
-            <div className="p-1.5 rounded-lg bg-[#EFF5F9]">
-              <BarChart3 className="h-4 w-4 text-[#003049]" />
+            <div className="p-1.5 rounded-lg bg-accent-subtle">
+              <BarChart3 className="h-4 w-4 text-accent" />
             </div>
           </div>
-          <div className="text-3xl font-extrabold text-[#17212B]">
+          <div className="text-3xl font-extrabold text-tp">
             {analytics.completionRate}%
           </div>
-          <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-hover rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#003049] rounded-full transition-all duration-500"
+              className="h-full bg-accent rounded-full transition-all duration-500"
               style={{ width: `${analytics.completionRate}%` }}
             />
           </div>
@@ -114,7 +114,7 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
           <CardHeader>
             <div>
               <CardTitle>Tickets by Board Column</CardTitle>
-              <p className="text-xs text-[#526174] mt-0.5">Workflow distribution</p>
+              <p className="text-xs text-ts mt-0.5">Workflow distribution</p>
             </div>
           </CardHeader>
 
@@ -124,17 +124,17 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
                 analytics.totalTickets > 0
                   ? Math.round((count / analytics.totalTickets) * 100)
                   : 0;
-              const barColor = statusColors[status] || 'bg-[#669BBC]';
+              const barColor = statusColors[status] || 'bg-accent';
 
               return (
                 <div key={status} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-medium">
-                    <span className="text-[#17212B]">{status}</span>
-                    <span className="text-[#526174] font-mono">
+                    <span className="text-tp">{status}</span>
+                    <span className="text-ts font-mono">
                       {count} ({pct}%)
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-hover rounded-full overflow-hidden">
                     <div
                       className={`h-full ${barColor} rounded-full transition-all duration-300`}
                       style={{ width: `${pct}%` }}
@@ -151,7 +151,7 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
           <CardHeader>
             <div>
               <CardTitle>Priority Breakdown</CardTitle>
-              <p className="text-xs text-[#526174] mt-0.5">Distribution across severity levels</p>
+              <p className="text-xs text-ts mt-0.5">Distribution across severity levels</p>
             </div>
           </CardHeader>
 
@@ -162,17 +162,17 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
                 analytics.totalTickets > 0
                   ? Math.round((count / analytics.totalTickets) * 100)
                   : 0;
-              const barColor = priorityColors[priority] || 'bg-[#003049]';
+              const barColor = priorityColors[priority] || 'bg-accent';
 
               return (
                 <div key={priority} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-medium">
-                    <span className="text-[#17212B]">{priority}</span>
-                    <span className="text-[#526174] font-mono">
+                    <span className="text-tp">{priority}</span>
+                    <span className="text-ts font-mono">
                       {count} ({pct}%)
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-hover rounded-full overflow-hidden">
                     <div
                       className={`h-full ${barColor} rounded-full transition-all duration-300`}
                       style={{ width: `${pct}%` }}
@@ -191,7 +191,7 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
           <CardHeader>
             <div>
               <CardTitle>Ticket Type Distribution</CardTitle>
-              <p className="text-xs text-[#526174] mt-0.5">Feature vs Bug vs Task breakdown</p>
+              <p className="text-xs text-ts mt-0.5">Feature vs Bug vs Task breakdown</p>
             </div>
           </CardHeader>
 
@@ -202,12 +202,12 @@ export function AnalyticsView({ analytics }: AnalyticsViewProps) {
                 return (
                   <div
                     key={type}
-                    className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1 text-center"
+                    className="p-4 rounded-xl bg-canvas border border-border space-y-1 text-center"
                   >
-                    <div className="text-[11px] font-semibold text-[#526174] uppercase tracking-wider">
+                    <div className="text-[11px] font-semibold text-ts uppercase tracking-wider">
                       {type}
                     </div>
-                    <div className="text-2xl font-bold text-[#17212B]">{count}</div>
+                    <div className="text-2xl font-bold text-tp">{count}</div>
                   </div>
                 );
               })}

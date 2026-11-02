@@ -70,10 +70,10 @@ export function AnalysisOverview({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
           <div>
             <CardTitle>
-              <Sparkles className="h-4 w-4 text-[#003049]" />
+              <Sparkles className="h-4 w-4 text-accent" />
               <span>AI Project Understanding & Requirements Extraction</span>
             </CardTitle>
-            <p className="text-[11px] text-[#526174] mt-0.5">
+            <p className="text-[11px] text-ts mt-0.5">
               Synthesized from project metadata and processed knowledge documents
             </p>
           </div>
@@ -97,7 +97,7 @@ export function AnalysisOverview({
       {/* Content */}
       {!analysis ? (
         <EmptyState
-          icon={<Sparkles className="h-6 w-6 text-[#003049]" />}
+          icon={<Sparkles className="h-6 w-6 text-accent" />}
           title="No Analysis Generated Yet"
           description="Trigger AI analysis to extract functional requirements, modules, architecture constraints, release milestones, and open questions from your project specification and documents."
           action={
@@ -115,14 +115,14 @@ export function AnalysisOverview({
           }
         />
       ) : (
-        <CardContent className="space-y-8 divide-y divide-[#E2E8F0]">
+        <CardContent className="space-y-8 divide-y divide-divider">
           {/* 1. Overview */}
           <div className="space-y-2">
-            <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#003049] flex items-center gap-1.5 font-bold">
-              <BookOpen className="h-3.5 w-3.5 text-[#003049]" />
+            <h4 className="text-[11px] font-mono uppercase tracking-wider text-accent flex items-center gap-1.5 font-bold">
+              <BookOpen className="h-3.5 w-3.5 text-accent" />
               <span>Executive Project Overview</span>
             </h4>
-            <p className="text-xs text-[#17212B] leading-relaxed bg-[#EFF5F9] p-4 rounded-xl border border-[#669BBC]/30">
+            <p className="text-xs text-tp leading-relaxed bg-accent-subtle p-4 rounded-xl border border-accent/30">
               {analysis.overview || 'Overview not generated.'}
             </p>
           </div>
@@ -130,40 +130,40 @@ export function AnalysisOverview({
           {/* Source Coverage & Extraction Validation Banner */}
           {(analysis.coverageReport || analysis.brief?.sourceCoverage) && (
             <div className="pt-6 space-y-3">
-              <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#166534] flex items-center gap-1.5 font-bold">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#166534]" />
+              <h4 className="text-[11px] font-mono uppercase tracking-wider text-success flex items-center gap-1.5 font-bold">
+                <ShieldCheck className="h-3.5 w-3.5 text-success" />
                 <span>Source Coverage & Extraction Validation (100% Reconciled)</span>
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
-                  <div className="text-base font-bold font-mono text-[#003049]">
+                <div className="p-3 rounded-xl bg-canvas border border-border">
+                  <div className="text-base font-bold font-mono text-accent">
                     {(analysis.coverageReport || analysis.brief?.sourceCoverage)?.sprintsRepresented || 12} / {(analysis.coverageReport || analysis.brief?.sourceCoverage)?.sprintsDetected || 12}
                   </div>
-                  <div className="text-[10px] text-[#526174] uppercase font-semibold mt-0.5">
+                  <div className="text-[10px] text-ts uppercase font-semibold mt-0.5">
                     Sprints Mapped
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
-                  <div className="text-base font-bold font-mono text-[#003049]">
+                <div className="p-3 rounded-xl bg-canvas border border-border">
+                  <div className="text-base font-bold font-mono text-accent">
                     {(analysis.coverageReport || analysis.brief?.sourceCoverage)?.reconciledCandidates || 82} / {(analysis.coverageReport || analysis.brief?.sourceCoverage)?.sourceBacklogCandidates || 82}
                   </div>
-                  <div className="text-[10px] text-[#526174] uppercase font-semibold mt-0.5">
+                  <div className="text-[10px] text-ts uppercase font-semibold mt-0.5">
                     Candidates Reconciled
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
-                  <div className="text-base font-bold font-mono text-[#003049]">
+                <div className="p-3 rounded-xl bg-canvas border border-border">
+                  <div className="text-base font-bold font-mono text-accent">
                     {(analysis.coverageReport || analysis.brief?.sourceCoverage)?.featuresExtracted || 22}
                   </div>
-                  <div className="text-[10px] text-[#526174] uppercase font-semibold mt-0.5">
+                  <div className="text-[10px] text-ts uppercase font-semibold mt-0.5">
                     Roadmap Features
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7]">
-                  <div className="text-base font-bold font-mono text-[#166534]">
+                <div className="p-3 rounded-xl bg-success-subtle border border-success-border">
+                  <div className="text-base font-bold font-mono text-success">
                     100% Validated
                   </div>
-                  <div className="text-[10px] text-[#166534] uppercase font-semibold mt-0.5">
+                  <div className="text-[10px] text-success uppercase font-semibold mt-0.5">
                     Zero Missing Requirements
                   </div>
                 </div>
@@ -174,8 +174,8 @@ export function AnalysisOverview({
           {/* 2. Functional Requirements */}
           {analysis.functionalRequirements && analysis.functionalRequirements.length > 0 && (
             <div className="pt-6 space-y-3">
-              <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#526174] flex items-center gap-1.5 font-bold">
-                <Layers className="h-3.5 w-3.5 text-[#003049]" />
+              <h4 className="text-[11px] font-mono uppercase tracking-wider text-ts flex items-center gap-1.5 font-bold">
+                <Layers className="h-3.5 w-3.5 text-accent" />
                 <span>Functional Requirements ({analysis.functionalRequirements.length})</span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -185,13 +185,13 @@ export function AnalysisOverview({
                   return (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] text-xs text-[#17212B] flex items-start gap-2.5"
+                      className="p-3.5 rounded-xl bg-canvas border border-border text-xs text-tp flex items-start gap-2.5"
                     >
-                      <CheckCircle2 className="h-4 w-4 text-[#003049] flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-semibold text-[#17212B] block">{title}</span>
+                        <span className="font-semibold text-tp block">{title}</span>
                         {desc && desc !== title && (
-                          <span className="text-[11px] text-[#526174] mt-0.5 block">
+                          <span className="text-[11px] text-ts mt-0.5 block">
                             {desc}
                           </span>
                         )}
@@ -206,8 +206,8 @@ export function AnalysisOverview({
           {/* 3. Non-Functional / Constraints - Papaya Whip Surface */}
           {analysis.nonFunctionalRequirements && analysis.nonFunctionalRequirements.length > 0 && (
             <div className="pt-6 space-y-3">
-              <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#780000] flex items-center gap-1.5 font-bold">
-                <ShieldAlert className="h-3.5 w-3.5 text-[#780000]" />
+              <h4 className="text-[11px] font-mono uppercase tracking-wider text-warning flex items-center gap-1.5 font-bold">
+                <ShieldAlert className="h-3.5 w-3.5 text-warning" />
                 <span>Non-Functional & Architectural Constraints ({analysis.nonFunctionalRequirements.length})</span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -217,12 +217,12 @@ export function AnalysisOverview({
                   return (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-xl bg-[#FDF0D5]/50 border border-[#F7DFAB] text-xs text-[#17212B] flex items-start gap-2.5"
+                      className="p-3.5 rounded-xl bg-warning-subtle/50 border border-warning/30 text-xs text-tp flex items-start gap-2.5"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#780000] mt-2 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-warning mt-2 flex-shrink-0" />
                       <div>
                         {cat && cat !== text && (
-                          <span className="text-[10px] font-mono uppercase text-[#780000] block mb-0.5 font-bold">
+                          <span className="text-[10px] font-mono uppercase text-warning block mb-0.5 font-bold">
                             {cat}
                           </span>
                         )}
@@ -238,8 +238,8 @@ export function AnalysisOverview({
           {/* 4. Complete Sprint Schedule & Milestones */}
           {(analysis.sprintSchedule || analysis.milestones) && (
             <div className="pt-6 space-y-3">
-              <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#526174] flex items-center gap-1.5 font-bold">
-                <Milestone className="h-3.5 w-3.5 text-[#003049]" />
+              <h4 className="text-[11px] font-mono uppercase tracking-wider text-ts flex items-center gap-1.5 font-bold">
+                <Milestone className="h-3.5 w-3.5 text-accent" />
                 <span>
                   Delivery Sprints & Phasing Schedule ({analysis.sprintSchedule?.length || analysis.milestones?.length || 0} Sprints)
                 </span>
@@ -251,16 +251,16 @@ export function AnalysisOverview({
                   return (
                     <div
                       key={idx}
-                      className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                      className="p-3 rounded-xl bg-canvas border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
                     >
                       <div className="space-y-0.5">
-                        <span className="font-semibold text-[#17212B] block">{sprintName}</span>
-                        {s.goal && <span className="text-[11px] text-[#526174] line-clamp-1">{s.goal}</span>}
+                        <span className="font-semibold text-tp block">{sprintName}</span>
+                        {s.goal && <span className="text-[11px] text-ts line-clamp-1">{s.goal}</span>}
                       </div>
-                      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 font-mono text-[11px] text-[#526174]">
+                      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 font-mono text-[11px] text-ts">
                         {dateRange && <span>{dateRange}</span>}
                         {s.candidateCount !== undefined && (
-                          <span className="px-2 py-0.5 rounded-full bg-[#EFF5F9] text-[#003049] font-bold border border-[#669BBC]/30">
+                          <span className="px-2 py-0.5 rounded-full bg-accent-subtle text-accent font-bold border border-accent/30">
                             {s.candidateCount} tickets ({s.storyPoints} pts)
                           </span>
                         )}
@@ -275,8 +275,8 @@ export function AnalysisOverview({
           {/* 5. Open Questions - Flag Red / Warning Alert Surface */}
           {analysis.openQuestions && analysis.openQuestions.length > 0 && (
             <div className="pt-6 space-y-3">
-              <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#C1121F] flex items-center gap-1.5 font-bold">
-                <HelpCircle className="h-3.5 w-3.5 text-[#C1121F]" />
+              <h4 className="text-[11px] font-mono uppercase tracking-wider text-danger flex items-center gap-1.5 font-bold">
+                <HelpCircle className="h-3.5 w-3.5 text-danger" />
                 <span>Open Questions & Architecture Ambiguities ({analysis.openQuestions.length})</span>
               </h4>
               <div className="space-y-2.5">
@@ -285,9 +285,9 @@ export function AnalysisOverview({
                   return (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-xl bg-[#FDF2F2]/60 border border-[#FDE8E8] text-xs text-[#17212B] flex items-start gap-2.5"
+                      className="p-3.5 rounded-xl bg-danger-subtle/60 border border-danger/30 text-xs text-tp flex items-start gap-2.5"
                     >
-                      <span className="font-mono text-[#C1121F] font-bold">{idx + 1}.</span>
+                      <span className="font-mono text-danger font-bold">{idx + 1}.</span>
                       <span>{text}</span>
                     </div>
                   );
@@ -298,13 +298,13 @@ export function AnalysisOverview({
 
           {/* Action Callout: Proceed to Roadmap & Generate Tickets */}
           <div className="pt-6">
-            <div className="p-5 rounded-2xl bg-[#EFF5F9] border border-[#669BBC]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-accent-subtle border border-accent/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <h4 className="text-xs font-bold text-[#003049] flex items-center gap-1.5">
-                  <Compass className="h-4 w-4 text-[#003049]" />
+                <h4 className="text-xs font-bold text-accent flex items-center gap-1.5">
+                  <Compass className="h-4 w-4 text-accent" />
                   <span>Roadmap Features & Autonomous Ticket Generation</span>
                 </h4>
-                <p className="text-[11px] text-[#526174]">
+                <p className="text-[11px] text-ts">
                   AI has synthesized your documentation into modules and proposed candidate roadmap features. Review them and generate developer-ready backlog tickets directly onto your Kanban board.
                 </p>
               </div>

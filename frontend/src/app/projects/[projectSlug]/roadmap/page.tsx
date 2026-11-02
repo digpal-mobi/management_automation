@@ -7,7 +7,6 @@ import {
   fetchServerFeatures,
 } from '@/lib/serverProject';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ProjectNav } from '@/components/layout/ProjectNav';
 import { RoadmapContainer } from '@/components/roadmap/RoadmapContainer';
 
 interface ProjectRoadmapPageProps {
@@ -58,17 +57,9 @@ export default async function ProjectRoadmapPage({ params }: ProjectRoadmapPageP
           { label: project.name, href: `/projects/${slug}` },
           { label: 'Roadmap & Modules' },
         ]}
-        icon={<Compass className="h-6 w-6 text-[#003049]" />}
+        icon={<Compass className="h-6 w-6 text-accent" />}
         title="Product Roadmap & Capabilities"
         description="Review, prioritize, and accept candidate features into modules. Select features to autonomously generate developer-ready backlog tickets."
-        actions={
-          <ProjectNav
-            projectId={internalId}
-            projectSlug={slug}
-            memberCount={members.length}
-            ticketCount={project.ticketCount}
-          />
-        }
       />
 
       {/* Client-Side Interactive Roadmap hydrated with SSR features */}

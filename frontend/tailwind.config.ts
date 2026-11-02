@@ -6,106 +6,159 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // Approved Brand Colors
-        brand: {
-          deep: "#003049",      // Deep Space Blue
-          steel: "#669BBC",     // Steel Blue
-          flag: "#C1121F",      // Flag Red
-          lava: "#780000",      // Molten Lava
-          papaya: "#FDF0D5",    // Papaya Whip
-        },
-        // Supporting Neutrals & Semantic Tokens
-        background: "#F7F8FA",  // Main page background
-        foreground: "#17212B",  // Primary text
+        canvas: "var(--color-canvas)",
+        navigation: "var(--color-navigation)",
+        nav: "var(--color-navigation)",
+        column: "var(--color-surface)",
         surface: {
-          DEFAULT: "#FFFFFF",   // Primary surface
-          muted: "#F1F4F7",     // Muted surface
-          subtle: "#E2E8F0",    // Divider / subtle border
+          DEFAULT: "var(--color-surface)",
+          muted: "var(--color-elevated)",
+          subtle: "var(--color-divider)",
         },
+        elevated: "var(--color-elevated)",
+        hover: "var(--color-hover)",
+        divider: "var(--color-divider)",
+        "border-subtle": "var(--color-divider)",
+
+        background: "var(--color-canvas)",
+        foreground: "var(--color-text-primary)",
+
         card: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#17212B",
-          muted: "#F1F4F7",
-          border: "#E2E8F0",
+          DEFAULT: "var(--color-elevated)",
+          foreground: "var(--color-text-primary)",
+          muted: "var(--color-surface)",
+          border: "var(--color-border)",
         },
         popover: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#17212B",
+          DEFAULT: "var(--color-elevated)",
+          foreground: "var(--color-text-primary)",
         },
+
         primary: {
-          DEFAULT: "#003049",   // Deep Space Blue
-          foreground: "#FFFFFF",
-          hover: "#002437",
-          subtle: "#E6EEF3",
+          DEFAULT: "var(--color-accent)",
+          foreground: "var(--color-canvas)",
+          hover: "var(--color-accent-hover)",
+          subtle: "var(--color-accent-subtle)",
         },
         secondary: {
-          DEFAULT: "#669BBC",   // Steel Blue
-          foreground: "#FFFFFF",
-          hover: "#5385A3",
-          subtle: "#EFF5F9",
+          DEFAULT: "var(--color-elevated)",
+          foreground: "var(--color-text-primary)",
+          hover: "var(--color-hover)",
+          subtle: "var(--color-accent-subtle)",
         },
         muted: {
-          DEFAULT: "#F1F4F7",
-          foreground: "#526174",
+          DEFAULT: "var(--color-elevated)",
+          foreground: "var(--color-text-secondary)",
         },
         accent: {
-          DEFAULT: "#669BBC",
-          foreground: "#FFFFFF",
-          hover: "#5385A3",
+          DEFAULT: "var(--color-accent)",
+          foreground: "var(--color-canvas)",
+          hover: "var(--color-accent-hover)",
+          subtle: "var(--color-accent-subtle)",
         },
         destructive: {
-          DEFAULT: "#C1121F",   // Flag Red
-          foreground: "#FFFFFF",
-          hover: "#9E0E19",
-          subtle: "#FDF2F2",
+          DEFAULT: "var(--color-danger)",
+          foreground: "var(--color-canvas)",
+          hover: "#c96f75",
+          subtle: "var(--color-danger-subtle)",
         },
-        lava: {
-          DEFAULT: "#780000",   // Molten Lava
-          foreground: "#FFFFFF",
-        },
-        papaya: {
-          DEFAULT: "#FDF0D5",   // Papaya Whip
-          foreground: "#17212B",
-          border: "#F7DFAB",
-        },
+
         success: {
-          DEFAULT: "#15803D",
-          foreground: "#FFFFFF",
-          subtle: "#F0FDF4",
-          border: "#BBF7D0",
+          DEFAULT: "var(--color-success)",
+          foreground: "var(--color-canvas)",
+          subtle: "var(--color-success-subtle)",
+          border: "rgba(93, 186, 157, 0.35)",
         },
         warning: {
-          DEFAULT: "#B45309",
-          foreground: "#FFFFFF",
-          subtle: "#FFFBEB",
-          border: "#FDE68A",
+          DEFAULT: "var(--color-warning)",
+          foreground: "var(--color-canvas)",
+          subtle: "var(--color-warning-subtle)",
+          border: "rgba(216, 179, 106, 0.35)",
         },
         info: {
-          DEFAULT: "#0284C7",
-          foreground: "#FFFFFF",
-          subtle: "#F0F9FF",
-          border: "#BAE6FD",
+          DEFAULT: "var(--color-accent)",
+          foreground: "var(--color-canvas)",
+          subtle: "var(--color-accent-subtle)",
+          border: "rgba(136, 169, 255, 0.35)",
         },
-        border: "#E2E8F0",
+        danger: {
+          DEFAULT: "var(--color-danger)",
+          foreground: "var(--color-canvas)",
+          subtle: "var(--color-danger-subtle)",
+          border: "rgba(217, 130, 135, 0.35)",
+        },
+
+        border: "var(--color-border)",
         input: {
-          DEFAULT: "#FFFFFF",
-          border: "#E2E8F0",
-          focus: "#003049",
+          DEFAULT: "var(--color-elevated)",
+          border: "var(--color-border)",
+          focus: "var(--color-accent)",
         },
-        ring: "#003049",
+        ring: "var(--color-accent)",
+
+        // Typography helpers (use as text-tp / text-ts / text-tm)
+        tp: "var(--color-text-primary)",
+        ts: "var(--color-text-secondary)",
+        tm: "var(--color-text-muted)",
+
+        chart: {
+          1: "var(--chart-1)",
+          2: "var(--chart-2)",
+          3: "var(--chart-3)",
+          4: "var(--chart-4)",
+          5: "var(--chart-5)",
+          6: "var(--chart-6)",
+        },
+      },
+      fontFamily: {
+        sans: [
+          "var(--font-geist-sans)",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
+        ],
+        mono: [
+          "var(--font-geist-mono)",
+          "JetBrains Mono",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          "monospace",
+        ],
       },
       borderRadius: {
-        lg: "0.5rem",
-        md: "0.375rem",
-        sm: "0.25rem",
+        lg: "var(--radius-modal)",
+        md: "var(--radius-card)",
+        sm: "var(--radius-button)",
+        button: "var(--radius-button)",
+        card: "var(--radius-card)",
+        modal: "var(--radius-modal)",
+      },
+      height: {
+        control: "var(--control-height)",
+        "control-sm": "var(--control-height-compact)",
+      },
+      minHeight: {
+        control: "var(--control-height)",
+        "control-sm": "var(--control-height-compact)",
       },
       boxShadow: {
-        card: "0 1px 3px 0 rgba(0, 48, 73, 0.05), 0 1px 2px -1px rgba(0, 48, 73, 0.05)",
-        "card-hover": "0 4px 6px -1px rgba(0, 48, 73, 0.08), 0 2px 4px -2px rgba(0, 48, 73, 0.06)",
-        dropdown: "0 10px 15px -3px rgba(0, 48, 73, 0.08), 0 4px 6px -4px rgba(0, 48, 73, 0.04)",
+        card: "0 1px 2px 0 rgba(0, 0, 0, 0.35)",
+        "card-hover": "0 4px 12px -2px rgba(0, 0, 0, 0.45)",
+        dropdown: "0 12px 28px -8px rgba(0, 0, 0, 0.55)",
+        modal: "0 24px 48px -12px rgba(0, 0, 0, 0.65)",
+      },
+      transitionDuration: {
+        DEFAULT: "150ms",
       },
     },
   },

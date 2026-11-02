@@ -189,15 +189,15 @@ export function DocumentLibrary({
       case 'xlsx':
       case 'xls':
       case 'csv':
-        return <FileSpreadsheet className="h-4 w-4 text-[#003049]" />;
+        return <FileSpreadsheet className="h-4 w-4 text-accent" />;
       case 'pdf':
       case 'docx':
-        return <FileText className="h-4 w-4 text-[#003049]" />;
+        return <FileText className="h-4 w-4 text-accent" />;
       case 'md':
       case 'txt':
-        return <FileCheck className="h-4 w-4 text-[#003049]" />;
+        return <FileCheck className="h-4 w-4 text-accent" />;
       default:
-        return <File className="h-4 w-4 text-[#003049]" />;
+        return <File className="h-4 w-4 text-accent" />;
     }
   };
 
@@ -213,8 +213,8 @@ export function DocumentLibrary({
             onClick={() => fileInputRef.current?.click()}
             className={`relative border border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-150 ${
               isDragging
-                ? 'border-[#003049] bg-[#EFF5F9]'
-                : 'border-[#CBD5E1] hover:border-[#003049] bg-white hover:bg-[#FDFDFE] shadow-card'
+                ? 'border-accent bg-accent-subtle'
+                : 'border-border hover:border-accent bg-elevated hover:bg-elevated shadow-card'
             }`}
           >
             <input
@@ -227,7 +227,7 @@ export function DocumentLibrary({
             />
 
             <div className="max-w-md mx-auto space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center mx-auto text-[#003049]">
+              <div className="w-10 h-10 rounded-xl bg-accent-subtle border border-accent/30 flex items-center justify-center mx-auto text-accent">
                 {isUploading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
@@ -236,10 +236,10 @@ export function DocumentLibrary({
               </div>
 
               <div>
-                <p className="text-xs font-bold text-[#17212B]">
+                <p className="text-xs font-bold text-tp">
                   {isUploading ? 'Parsing & Ingesting Documents...' : 'Upload Requirements, PDFs & PRDs'}
                 </p>
-                <p className="text-[11px] text-[#526174] mt-0.5">
+                <p className="text-[11px] text-ts mt-0.5">
                   Drag and drop files here, or click to browse from your computer
                 </p>
               </div>
@@ -248,19 +248,19 @@ export function DocumentLibrary({
                 {['.PDF', '.DOCX', '.MD', '.TXT', '.XLSX', '.XLS', '.CSV'].map((ext) => (
                   <span
                     key={ext}
-                    className="px-2 py-0.5 rounded bg-[#F1F4F7] border border-[#E2E8F0] text-[10px] font-mono text-[#526174] font-medium"
+                    className="px-2 py-0.5 rounded bg-hover border border-border text-[10px] font-mono text-ts font-medium"
                   >
                     {ext}
                   </span>
                 ))}
-                <span className="text-[10px] text-[#526174] ml-1">Up to 20MB per file</span>
+                <span className="text-[10px] text-ts ml-1">Up to 20MB per file</span>
               </div>
             </div>
           </div>
 
           {/* Alternative: Paste PRD Option */}
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] text-[#526174]">
+            <span className="text-[11px] text-ts">
               Don&apos;t have a document file? You can paste PRD text directly.
             </span>
             <Button
@@ -268,21 +268,21 @@ export function DocumentLibrary({
               size="xs"
               type="button"
               onClick={() => setIsPasteOpen(!isPasteOpen)}
-              leftIcon={<FileCode className="h-3.5 w-3.5 text-[#003049]" />}
+              leftIcon={<FileCode className="h-3.5 w-3.5 text-accent" />}
             >
               {isPasteOpen ? 'Hide PRD Editor' : 'Paste PRD / Spec Text'}
             </Button>
           </div>
 
           {isPasteOpen && (
-            <Card className="border-[#669BBC]/40 bg-[#FDFDFE]">
+            <Card className="border-accent/40 bg-elevated">
               <form onSubmit={handleSavePastedDoc} className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-[#17212B] flex items-center gap-1.5">
-                    <FileCode className="h-4 w-4 text-[#003049]" />
+                  <h4 className="text-xs font-bold text-tp flex items-center gap-1.5">
+                    <FileCode className="h-4 w-4 text-accent" />
                     <span>Paste Requirements or PRD Markdown</span>
                   </h4>
-                  <span className="text-[10px] text-[#526174]">Will be indexed as a project document</span>
+                  <span className="text-[10px] text-ts">Will be indexed as a project document</span>
                 </div>
 
                 <Input
@@ -331,10 +331,10 @@ export function DocumentLibrary({
         <CardHeader>
           <div className="flex items-center justify-between w-full">
             <CardTitle>
-              <FileText className="h-4 w-4 text-[#003049]" />
+              <FileText className="h-4 w-4 text-accent" />
               <span>Project Documents ({documents.length})</span>
             </CardTitle>
-            <span className="text-[11px] text-[#526174]">
+            <span className="text-[11px] text-ts">
               Grounding context for AI analysis & roadmap
             </span>
           </div>
@@ -342,12 +342,12 @@ export function DocumentLibrary({
 
         {documents.length === 0 ? (
           <EmptyState
-            icon={<FileText className="h-6 w-6 text-[#526174]" />}
+            icon={<FileText className="h-6 w-6 text-ts" />}
             title="No documents uploaded yet"
             description="Upload formal PRDs, architecture specifications, requirement matrices (.csv/.xlsx), or sprint notes to train the project context."
           />
         ) : (
-          <div className="divide-y divide-[#E2E8F0]">
+          <div className="divide-y divide-divider">
             {documents.map((doc) => {
               const isRetrying = retryingDocId === doc.id;
               const isDeleting = deletingDocId === doc.id;
@@ -355,20 +355,20 @@ export function DocumentLibrary({
               return (
                 <div
                   key={doc.id}
-                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#F7F8FA] transition-colors"
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-canvas transition-colors"
                 >
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-8 h-8 rounded-lg bg-accent-subtle border border-accent/30 flex items-center justify-center flex-shrink-0 mt-0.5">
                       {getFormatIcon(doc.fileFormat)}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-[#17212B] truncate max-w-sm">
+                        <span className="text-xs font-semibold text-tp truncate max-w-sm">
                           {doc.filename}
                         </span>
                         <Badge variant="docStatus" docStatus={doc.status} size="sm" />
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-[#526174] mt-1">
+                      <div className="flex items-center gap-3 text-[11px] text-ts mt-1">
                         <span>{Math.round(doc.fileSize / 1024)} KB</span>
                         {doc.chunks && doc.chunks.length > 0 && (
                           <span>• {doc.chunks.length} vector chunks</span>
@@ -376,7 +376,7 @@ export function DocumentLibrary({
                         <span>• {new Date(doc.createdAt).toLocaleDateString()}</span>
                       </div>
                       {doc.errorMessage && (
-                        <p className="text-[11px] text-[#C1121F] mt-1 font-medium">{doc.errorMessage}</p>
+                        <p className="text-[11px] text-danger mt-1 font-medium">{doc.errorMessage}</p>
                       )}
                     </div>
                   </div>
@@ -398,7 +398,7 @@ export function DocumentLibrary({
                         onClick={() => handleDelete(doc.id, doc.filename)}
                         disabled={isDeleting}
                         aria-label={`Delete ${doc.filename}`}
-                        className="p-1.5 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#FDE8E8] transition-colors disabled:opacity-50"
+                        className="p-1.5 rounded-lg text-ts hover:text-danger hover:bg-danger-subtle border border-transparent hover:border-danger/30 transition-colors disabled:opacity-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

@@ -87,16 +87,16 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-white border border-[#E2E8F0] p-6 sm:p-8 md:p-10 shadow-card">
+      <div className="relative overflow-hidden rounded-2xl bg-elevated border border-border p-6 sm:p-8 md:p-10 shadow-card">
         <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EFF5F9] border border-[#669BBC]/30 text-xs font-semibold text-[#003049]">
-            <Sparkles className="h-3.5 w-3.5 text-[#003049]" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-subtle border border-accent/30 text-xs font-semibold text-accent">
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
             <span>AI Project Management & Delivery Platform</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#17212B] tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-tp tracking-tight leading-tight">
             Welcome back, {user?.username}
           </h1>
-          <p className="text-xs sm:text-sm text-[#526174] leading-relaxed">
+          <p className="text-xs sm:text-sm text-ts leading-relaxed">
             Ingest technical documentation, extract structured requirements and roadmap features,
             and autonomously generate developer-ready backlog tickets on your terms.
           </p>
@@ -112,38 +112,38 @@ export default function HomePage() {
 
       {/* Global Stat Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] flex items-center justify-between shadow-card">
+        <div className="p-5 rounded-2xl bg-elevated border border-border flex items-center justify-between shadow-card">
           <div>
-            <div className="text-[11px] text-[#526174] font-semibold uppercase tracking-wider">
+            <div className="text-[11px] text-ts font-semibold uppercase tracking-wider">
               Your Workspaces
             </div>
-            <div className="text-2xl font-bold text-[#17212B] mt-0.5">{projects.length}</div>
+            <div className="text-2xl font-bold text-tp mt-0.5">{projects.length}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center text-[#003049]">
+          <div className="w-10 h-10 rounded-xl bg-accent-subtle border border-accent/30 flex items-center justify-center text-accent">
             <FolderKanban className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] flex items-center justify-between shadow-card">
+        <div className="p-5 rounded-2xl bg-elevated border border-border flex items-center justify-between shadow-card">
           <div>
-            <div className="text-[11px] text-[#526174] font-semibold uppercase tracking-wider">
+            <div className="text-[11px] text-ts font-semibold uppercase tracking-wider">
               Total Tickets
             </div>
-            <div className="text-2xl font-bold text-[#17212B] mt-0.5">{totalTickets}</div>
+            <div className="text-2xl font-bold text-tp mt-0.5">{totalTickets}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center text-[#003049]">
+          <div className="w-10 h-10 rounded-xl bg-accent-subtle border border-accent/30 flex items-center justify-center text-accent">
             <Kanban className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] flex items-center justify-between shadow-card">
+        <div className="p-5 rounded-2xl bg-elevated border border-border flex items-center justify-between shadow-card">
           <div>
-            <div className="text-[11px] text-[#526174] font-semibold uppercase tracking-wider">
+            <div className="text-[11px] text-ts font-semibold uppercase tracking-wider">
               Collaborators
             </div>
-            <div className="text-2xl font-bold text-[#17212B] mt-0.5">{totalMembers}</div>
+            <div className="text-2xl font-bold text-tp mt-0.5">{totalMembers}</div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center text-[#003049]">
+          <div className="w-10 h-10 rounded-xl bg-accent-subtle border border-accent/30 flex items-center justify-center text-accent">
             <Users className="h-5 w-5" />
           </div>
         </div>
@@ -152,8 +152,8 @@ export default function HomePage() {
       {pendingInvitations.length > 0 && (
         <section className="space-y-3" aria-label="Pending invitations">
           <div>
-            <h2 className="text-lg font-bold tracking-tight text-[#17212B]">Pending invitations</h2>
-            <p className="text-xs text-[#526174]">
+            <h2 className="text-lg font-bold tracking-tight text-tp">Pending invitations</h2>
+            <p className="text-xs text-ts">
               You will not see a project workspace until you accept its invitation.
             </p>
           </div>
@@ -161,12 +161,12 @@ export default function HomePage() {
             {pendingInvitations.map((invitation) => (
               <div
                 key={invitation.id}
-                className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-card"
+                className="rounded-2xl border border-border bg-elevated p-4 shadow-card"
               >
-                <p className="text-sm font-semibold text-[#17212B]">
+                <p className="text-sm font-semibold text-tp">
                   {invitation.project?.name || 'Project invitation'}
                 </p>
-                <p className="mt-1 text-xs text-[#526174]">
+                <p className="mt-1 text-xs text-ts">
                   {invitation.inviter?.username || 'A teammate'} invited you as a {invitation.role}.
                 </p>
                 <Link href="/notifications" className="mt-3 inline-flex">
@@ -184,8 +184,8 @@ export default function HomePage() {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
           <div>
-            <h2 className="text-lg font-bold text-[#17212B] tracking-tight">Your Workspaces</h2>
-            <p className="text-xs text-[#526174]">
+            <h2 className="text-lg font-bold text-tp tracking-tight">Your Workspaces</h2>
+            <p className="text-xs text-ts">
               Workspaces you own or collaborate on with your engineering team
             </p>
           </div>
@@ -214,7 +214,7 @@ export default function HomePage() {
             {projects.map((proj) => (
               <div
                 key={proj.id}
-                className="group flex flex-col justify-between p-5 rounded-2xl bg-white hover:bg-[#FDFDFE] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-all duration-200 shadow-card hover:shadow-card-hover"
+                className="group flex flex-col justify-between p-5 rounded-2xl bg-elevated hover:bg-elevated border border-border hover:border-border transition-all duration-200 shadow-card hover:shadow-card-hover"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -222,7 +222,7 @@ export default function HomePage() {
                       href={`/projects/${proj.slug || proj.id}`}
                       className="hover:underline"
                     >
-                      <h3 className="text-base font-bold text-[#17212B] tracking-tight line-clamp-1">
+                      <h3 className="text-base font-bold text-tp tracking-tight line-clamp-1">
                         {proj.name}
                       </h3>
                     </Link>
@@ -231,28 +231,28 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <p className="text-xs text-[#526174] line-clamp-2 leading-relaxed min-h-[32px]">
+                  <p className="text-xs text-ts line-clamp-2 leading-relaxed min-h-[32px]">
                     {proj.description || 'No description provided.'}
                   </p>
 
-                  <div className="flex items-center gap-3 text-xs text-[#526174] pt-1">
+                  <div className="flex items-center gap-3 text-xs text-ts pt-1">
                     <span className="flex items-center gap-1.5">
-                      <Kanban className="h-3.5 w-3.5 text-[#669BBC]" />
+                      <Kanban className="h-3.5 w-3.5 text-accent" />
                       {proj.ticketCount || 0} tickets
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5 text-[#669BBC]" />
+                      <Users className="h-3.5 w-3.5 text-accent" />
                       {proj.memberCount || 1} members
                     </span>
                   </div>
                 </div>
 
                 {/* Direct Section Access & Board Link */}
-                <div className="pt-4 mt-4 border-t border-[#E2E8F0] space-y-3">
-                  <div className="grid grid-cols-4 gap-1 text-[11px] font-medium text-[#526174]">
+                <div className="pt-4 mt-4 border-t border-border space-y-3">
+                  <div className="grid grid-cols-4 gap-1 text-[11px] font-medium text-ts">
                     <Link
                       href={`/projects/${proj.slug || proj.id}/knowledge`}
-                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-hover hover:bg-hover hover:text-accent transition-colors"
                       title="Knowledge Base"
                     >
                       <FileText className="h-3 w-3" />
@@ -260,7 +260,7 @@ export default function HomePage() {
                     </Link>
                     <Link
                       href={`/projects/${proj.slug || proj.id}/roadmap`}
-                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-hover hover:bg-hover hover:text-accent transition-colors"
                       title="Roadmap"
                     >
                       <Compass className="h-3 w-3" />
@@ -268,7 +268,7 @@ export default function HomePage() {
                     </Link>
                     <Link
                       href={`/projects/${proj.slug || proj.id}/analytics`}
-                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-hover hover:bg-hover hover:text-accent transition-colors"
                       title="Analytics"
                     >
                       <BarChart3 className="h-3 w-3" />
@@ -276,7 +276,7 @@ export default function HomePage() {
                     </Link>
                     <Link
                       href={`/projects/${proj.slug || proj.id}/members`}
-                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#F1F4F7] hover:bg-[#E2E8F0] hover:text-[#003049] transition-colors"
+                      className="flex items-center justify-center gap-1 py-1.5 rounded-lg bg-hover hover:bg-hover hover:text-accent transition-colors"
                       title="Team"
                     >
                       <Users className="h-3 w-3" />
@@ -286,7 +286,7 @@ export default function HomePage() {
 
                   <Link
                     href={`/projects/${proj.slug || proj.id}/board`}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#003049] hover:bg-[#002437] text-white text-xs font-semibold shadow-sm transition-all"
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-canvas text-xs font-semibold shadow-card transition-all"
                   >
                     <span>Open Kanban Board</span>
                     <ArrowRight className="h-3.5 w-3.5" />

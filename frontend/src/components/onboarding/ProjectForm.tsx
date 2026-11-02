@@ -164,17 +164,17 @@ export function ProjectForm() {
     <div className="max-w-3xl mx-auto space-y-6">
       <PageHeader
         backLink={{ label: 'Back to Workspaces', href: '/' }}
-        icon={<FolderKanban className="h-6 w-6 text-[#003049]" />}
+        icon={<FolderKanban className="h-6 w-6 text-accent" />}
         title="Create New Project"
         description="Initialize your project workspace. Upload technical PRDs, architecture PDFs, or specifications so the AI can extract modules, constraints, and generate backlog tickets."
       />
 
       {error && (
-        <div className="p-4 rounded-xl bg-[#FDF2F2] border border-[#FDE8E8] text-xs text-[#C1121F] flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-danger-subtle border border-danger/30 text-xs text-danger flex items-center justify-between">
           <span className="font-medium">{error}</span>
           <button
             onClick={() => setError(null)}
-            className="font-semibold text-[#780000] underline text-[11px] ml-3 flex-shrink-0"
+            className="font-semibold text-warning underline text-[11px] ml-3 flex-shrink-0"
           >
             Dismiss
           </button>
@@ -186,8 +186,8 @@ export function ProjectForm() {
         {/* Card 1: Core Info */}
         <Card>
           <CardContent className="space-y-4">
-            <h3 className="text-sm font-bold text-[#17212B] flex items-center gap-2">
-              <FolderKanban className="h-4 w-4 text-[#003049]" />
+            <h3 className="text-sm font-bold text-tp flex items-center gap-2">
+              <FolderKanban className="h-4 w-4 text-accent" />
               <span>Project Information</span>
             </h3>
 
@@ -215,11 +215,11 @@ export function ProjectForm() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-[#17212B] flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-[#003049]" />
+                <h3 className="text-sm font-bold text-tp flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-accent" />
                   <span>PRD Documents & Technical Specifications</span>
                 </h3>
-                <p className="text-xs text-[#526174] mt-0.5">
+                <p className="text-xs text-ts mt-0.5">
                   Attach PDFs, Word docs, Markdown, or paste PRDs for autonomous requirements & ticket generation.
                 </p>
               </div>
@@ -233,8 +233,8 @@ export function ProjectForm() {
               onClick={() => fileInputRef.current?.click()}
               className={`relative border border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-150 ${
                 isDragging
-                  ? 'border-[#003049] bg-[#EFF5F9]'
-                  : 'border-[#CBD5E1] hover:border-[#003049] bg-[#FDFDFE] hover:bg-[#F7F8FA]'
+                  ? 'border-accent bg-accent-subtle'
+                  : 'border-border hover:border-accent bg-elevated hover:bg-canvas'
               }`}
             >
               <input
@@ -247,14 +247,14 @@ export function ProjectForm() {
               />
 
               <div className="max-w-md mx-auto space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 flex items-center justify-center mx-auto text-[#003049]">
+                <div className="w-10 h-10 rounded-xl bg-accent-subtle border border-accent/30 flex items-center justify-center mx-auto text-accent">
                   <UploadCloud className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#17212B]">
+                  <p className="text-xs font-bold text-tp">
                     Drag and drop PRDs or click to select files
                   </p>
-                  <p className="text-[11px] text-[#526174]">
+                  <p className="text-[11px] text-ts">
                     Supports PDF, DOCX, Markdown, Text, and Excel (.pdf, .docx, .md, .txt, .xlsx, .xls)
                   </p>
                 </div>
@@ -264,26 +264,26 @@ export function ProjectForm() {
             {/* Selected Files List */}
             {selectedFiles.length > 0 && (
               <div className="space-y-2 pt-1">
-                <p className="text-[11px] font-semibold text-[#17212B]">
+                <p className="text-[11px] font-semibold text-tp">
                   Selected Documents ({selectedFiles.length}):
                 </p>
                 <div className="space-y-1.5">
                   {selectedFiles.map((file, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#EFF5F9]/50 border border-[#669BBC]/20 text-xs"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-accent-subtle/50 border border-accent/20 text-xs"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="h-4 w-4 text-[#003049] flex-shrink-0" />
-                        <span className="font-medium text-[#17212B] truncate">{file.name}</span>
-                        <span className="text-[10px] text-[#526174] font-mono">
+                        <FileText className="h-4 w-4 text-accent flex-shrink-0" />
+                        <span className="font-medium text-tp truncate">{file.name}</span>
+                        <span className="text-[10px] text-ts font-mono">
                           ({Math.round(file.size / 1024)} KB)
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveFile(idx)}
-                        className="p-1 rounded-lg hover:bg-[#FDF2F2] text-[#526174] hover:text-[#C1121F] transition-colors"
+                        className="p-1 rounded-lg hover:bg-danger-subtle text-ts hover:text-danger transition-colors"
                         title="Remove file"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -299,7 +299,7 @@ export function ProjectForm() {
               <button
                 type="button"
                 onClick={() => setShowPastePrd(!showPastePrd)}
-                className="flex items-center gap-1.5 text-xs text-[#003049] hover:underline font-medium"
+                className="flex items-center gap-1.5 text-xs text-accent hover:underline font-medium"
               >
                 <FileCode className="h-3.5 w-3.5" />
                 <span>{showPastePrd ? 'Hide PRD Text Paste' : 'Or Paste PRD / Markdown Text Directly'}</span>
@@ -327,7 +327,7 @@ export function ProjectForm() {
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-1.5 text-xs text-[#526174] hover:text-[#003049] font-medium transition-colors"
+                className="flex items-center gap-1.5 text-xs text-ts hover:text-accent font-medium transition-colors"
               >
                 {showAdvanced ? (
                   <ChevronUp className="h-3.5 w-3.5" />
@@ -343,7 +343,7 @@ export function ProjectForm() {
             </div>
 
             {showAdvanced && (
-              <div className="space-y-4 pt-3 border-t border-[#E2E8F0]">
+              <div className="space-y-4 pt-3 border-t border-border">
                 <Input
                   label="Goals & Objectives"
                   value={goals}
@@ -410,7 +410,7 @@ export function ProjectForm() {
 
           <div className="flex items-center gap-3">
             {submitStep && (
-              <span className="text-xs text-[#003049] font-medium animate-pulse">
+              <span className="text-xs text-accent font-medium animate-pulse">
                 {submitStep}
               </span>
             )}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { forwardRef } from 'react';
+import { cn } from '@/lib/cn';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -15,10 +16,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-xs font-semibold text-[#17212B]"
-          >
+          <label htmlFor={inputId} className="block text-label text-tp">
             {label}
           </label>
         )}
@@ -26,19 +24,21 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           rows={rows}
-          className={`w-full rounded-xl bg-white border text-xs text-[#17212B] placeholder-[#94A3B8] transition-all duration-150
-            p-3.5 leading-relaxed custom-scrollbar
-            focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049]
-            disabled:opacity-50 disabled:bg-[#F1F4F7] disabled:cursor-not-allowed
-            ${error ? 'border-[#C1121F] focus-visible:ring-[#C1121F] focus:border-[#C1121F]' : 'border-[#E2E8F0] hover:border-[#CBD5E1]'}
-            ${className}`}
+          className={cn(
+            'w-full rounded-button bg-elevated border text-xs text-tp placeholder:text-tm transition-all duration-150',
+            'p-3.5 leading-relaxed custom-scrollbar',
+            'focus:outline-none focus-visible:ring-1 focus-visible:ring-accent focus:border-accent',
+            'disabled:opacity-50 disabled:bg-surface disabled:cursor-not-allowed',
+            error
+              ? 'border-danger focus-visible:ring-danger focus:border-danger'
+              : 'border-border hover:border-tm',
+            className
+          )}
           {...props}
         />
-        {error && (
-          <p className="text-[11px] text-[#C1121F] font-medium leading-tight">{error}</p>
-        )}
+        {error && <p className="text-caption text-danger leading-tight">{error}</p>}
         {!error && helperText && (
-          <p className="text-[11px] text-[#526174] leading-tight">{helperText}</p>
+          <p className="text-caption text-ts leading-tight">{helperText}</p>
         )}
       </div>
     );

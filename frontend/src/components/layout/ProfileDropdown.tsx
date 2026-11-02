@@ -139,7 +139,7 @@ export function ProfileDropdown({ onOpen }: ProfileDropdownProps) {
       <button
         ref={triggerRef}
         type="button"
-        className="flex items-center gap-2.5 rounded-xl py-1 pl-1 pr-2 text-left hover:bg-[#F1F4F7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003049]"
+        className="flex items-center gap-2.5 rounded-xl py-1 pl-1 pr-2 text-left hover:bg-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label={
           unreadCount > 0
             ? `${PROFILE_MENU_TRIGGER_LABEL}. ${unreadLabel}`
@@ -158,14 +158,14 @@ export function ProfileDropdown({ onOpen }: ProfileDropdownProps) {
         <span className="relative">
           <Avatar name={user.username} email={user.email} avatarUrl={user.avatarUrl} size="sm" />
           {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 inline-flex min-w-[16px] items-center justify-center rounded-full bg-[#C1121F] px-1 text-[9px] font-bold leading-4 text-white">
+            <span className="absolute -right-1 -top-1 inline-flex min-w-[16px] items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold leading-4 text-canvas">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </span>
         <span className="hidden sm:block">
-          <span className="block text-xs font-semibold leading-none text-[#17212B]">{user.username}</span>
-          <span className="mt-1 block max-w-[140px] truncate text-[10px] leading-none text-[#526174]">
+          <span className="block text-xs font-semibold leading-none text-tp">{user.username}</span>
+          <span className="mt-1 block max-w-[140px] truncate text-[10px] leading-none text-ts">
             {user.email}
           </span>
         </span>
@@ -177,12 +177,12 @@ export function ProfileDropdown({ onOpen }: ProfileDropdownProps) {
           role="menu"
           aria-label="Account"
           data-testid="profile-menu"
-          className="absolute right-0 z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[#E2E8F0] bg-white p-1.5 shadow-dropdown"
+          className="absolute right-0 z-50 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-modal border border-border bg-elevated p-1.5 shadow-dropdown"
           onKeyDown={onMenuKeyDown}
         >
-          <div className="border-b border-[#E2E8F0] px-3 py-2.5 sm:hidden">
-            <p className="truncate text-xs font-semibold text-[#17212B]">{user.username}</p>
-            <p className="truncate text-[11px] text-[#526174]">{user.email}</p>
+          <div className="border-b border-border px-3 py-2.5 sm:hidden">
+            <p className="truncate text-xs font-semibold text-tp">{user.username}</p>
+            <p className="truncate text-[11px] text-ts">{user.email}</p>
           </div>
           {PROFILE_MENU_ITEMS.map((item, index) => {
             const Icon = ICONS[item.id];
@@ -197,10 +197,10 @@ export function ProfileDropdown({ onOpen }: ProfileDropdownProps) {
                 role="menuitem"
                 tabIndex={menu.activeIndex === index ? 0 : -1}
                 data-testid={`profile-menu-${item.id}`}
-                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003049] ${
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   isLogout
-                    ? 'text-[#C1121F] hover:bg-[#FDF2F2]'
-                    : 'text-[#17212B] hover:bg-[#F1F4F7]'
+                    ? 'text-danger hover:bg-danger-subtle'
+                    : 'text-tp hover:bg-hover'
                 }`}
                 onClick={() => activate(item)}
               >
@@ -208,7 +208,7 @@ export function ProfileDropdown({ onOpen }: ProfileDropdownProps) {
                 <span className="flex-1">{item.label}</span>
                 {item.id === 'notifications' && unreadCount > 0 && (
                   <span
-                    className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#C1121F] px-1.5 text-[10px] font-bold text-white"
+                    className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-canvas"
                     aria-label={unreadLabel}
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}

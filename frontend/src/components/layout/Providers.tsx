@@ -17,9 +17,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           richColors
           toastOptions={{
             style: {
-              background: '#0f172a',
-              border: '1px solid #1e293b',
-              color: '#f8fafc',
+              background: 'var(--color-elevated)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-primary)',
             },
           }}
         />

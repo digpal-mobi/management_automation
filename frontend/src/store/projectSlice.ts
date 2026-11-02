@@ -1,9 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Project, ProjectAnalytics, User } from '@/types';
+import { Project, ProjectMember, ProjectAnalytics, User } from '@/types';
 
 interface ProjectState {
   projects: Project[];
   currentProject: Project | null;
+  members: ProjectMember[];
   analytics: ProjectAnalytics | null;
   users: User[];
   currentUser: User | null;
@@ -14,6 +15,7 @@ interface ProjectState {
 const initialState: ProjectState = {
   projects: [],
   currentProject: null,
+  members: [],
   analytics: null,
   users: [],
   currentUser: null,
@@ -32,6 +34,9 @@ export const projectSlice = createSlice({
     },
     setCurrentProject: (state, action: PayloadAction<Project | null>) => {
       state.currentProject = action.payload;
+    },
+    setMembers: (state, action: PayloadAction<ProjectMember[]>) => {
+      state.members = action.payload;
     },
     setAnalytics: (state, action: PayloadAction<ProjectAnalytics | null>) => {
       state.analytics = action.payload;
@@ -61,6 +66,7 @@ export const projectSlice = createSlice({
 export const {
   setProjects,
   setCurrentProject,
+  setMembers,
   setAnalytics,
   setUsers,
   setCurrentUser,

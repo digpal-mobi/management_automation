@@ -8,7 +8,6 @@ import {
   fetchServerAnalysis,
 } from '@/lib/serverProject';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ProjectNav } from '@/components/layout/ProjectNav';
 import { KnowledgeContainer } from '@/components/knowledge/KnowledgeContainer';
 
 interface ProjectKnowledgePageProps {
@@ -60,17 +59,9 @@ export default async function ProjectKnowledgePage({ params }: ProjectKnowledgeP
           { label: project.name, href: `/projects/${slug}` },
           { label: 'Knowledge & Docs' },
         ]}
-        icon={<BookOpen className="h-6 w-6 text-[#003049]" />}
+        icon={<BookOpen className="h-6 w-6 text-accent" />}
         title="Knowledge Base & Documentation"
         description="Central repository for technical PRDs, architecture specifications, metadata, and autonomous requirements extraction."
-        actions={
-          <ProjectNav
-            projectId={internalId}
-            projectSlug={slug}
-            memberCount={members.length}
-            ticketCount={project.ticketCount}
-          />
-        }
       />
 
       {/* Client-Side Interactive Knowledge Container hydrated with initial SSR data */}

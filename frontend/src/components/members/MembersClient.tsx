@@ -15,7 +15,6 @@ import { Select } from '@/components/ui/Select';
 import { Avatar } from '@/components/ui/Avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ProjectNav } from '@/components/layout/ProjectNav';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
@@ -303,7 +302,7 @@ export function MembersClient({
   if (error || !project) {
     return (
       <EmptyState
-        icon={<AlertCircle className="h-6 w-6 text-[#526174]" />}
+        icon={<AlertCircle className="h-6 w-6 text-ts" />}
         title="Unable to view members"
         description={error || 'Project not found or you lack permission to view this workspace.'}
         action={
@@ -327,54 +326,46 @@ export function MembersClient({
           { label: project.name, href: `/projects/${projectSlug}` },
           { label: 'Team & Collaboration' },
         ]}
-        icon={<Users className="h-6 w-6 text-[#003049]" />}
+        icon={<Users className="h-6 w-6 text-accent" />}
         title="Team & Collaboration"
         description="Manage workspace collaborators, assign project roles, and configure contributor permissions."
         actions={
-          <div className="flex items-center gap-3">
-            <ProjectNav
-              projectId={projectId}
-              projectSlug={projectSlug}
-              memberCount={members.length}
-              ticketCount={project.ticketCount}
-            />
-            {isOwnerOrManager && (
-              <Button
-                variant="primary"
-                size="sm"
-                leftIcon={<UserPlus className="h-3.5 w-3.5" />}
-                onClick={() => setIsInviteOpen(true)}
-              >
-                Invite
-              </Button>
-            )}
-          </div>
+          isOwnerOrManager ? (
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<UserPlus className="h-3.5 w-3.5" />}
+              onClick={() => setIsInviteOpen(true)}
+            >
+              Invite
+            </Button>
+          ) : undefined
         }
       />
 
       {/* Permissions Legend */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+        <div className="p-3.5 rounded-xl bg-elevated border border-border shadow-card space-y-1">
           <Badge variant="role" role="owner" size="sm" />
-          <p className="text-[11px] text-[#526174]">
+          <p className="text-[11px] text-ts">
             Full control: delete project, manage team, all CRUD.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+        <div className="p-3.5 rounded-xl bg-elevated border border-border shadow-card space-y-1">
           <Badge variant="role" role="manager" size="sm" />
-          <p className="text-[11px] text-[#526174]">
+          <p className="text-[11px] text-ts">
             Manage tickets & boards, invite and manage team members.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+        <div className="p-3.5 rounded-xl bg-elevated border border-border shadow-card space-y-1">
           <Badge variant="role" role="developer" size="sm" />
-          <p className="text-[11px] text-[#526174]">
+          <p className="text-[11px] text-ts">
             Create, update and move tickets, add comments.
           </p>
         </div>
-        <div className="p-3.5 rounded-xl bg-white border border-[#E2E8F0] shadow-sm space-y-1">
+        <div className="p-3.5 rounded-xl bg-elevated border border-border shadow-card space-y-1">
           <Badge variant="role" role="editor" size="sm" />
-          <p className="text-[11px] text-[#526174]">
+          <p className="text-[11px] text-ts">
             View-only access and comment on tickets.
           </p>
         </div>
@@ -387,13 +378,13 @@ export function MembersClient({
             <CardTitle>
               <span>Project Members ({members.length})</span>
             </CardTitle>
-            <span className="text-xs text-[#526174]">
-              Your role: <strong className="text-[#17212B] capitalize">{userRole}</strong>
+            <span className="text-xs text-ts">
+              Your role: <strong className="text-tp capitalize">{userRole}</strong>
             </span>
           </div>
         </CardHeader>
 
-        <div className="divide-y divide-[#E2E8F0]">
+        <div className="divide-y divide-divider">
           {members.map((member) => {
             const isSelf = member.userId === user?.id;
             const isOwner = member.role === 'owner';
@@ -406,7 +397,7 @@ export function MembersClient({
             return (
               <div
                 key={member.id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#F7F8FA] transition-colors"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-canvas transition-colors"
               >
                 {/* User Info */}
                 <div className="flex items-center gap-3">
@@ -418,16 +409,16 @@ export function MembersClient({
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-[#17212B]">
+                      <span className="text-sm font-semibold text-tp">
                         {member.user.username}
                       </span>
                       {isSelf && (
-                        <span className="text-[10px] bg-[#EFF5F9] text-[#003049] px-1.5 py-0.5 rounded border border-[#669BBC]/30 font-medium">
+                        <span className="text-[10px] bg-accent-subtle text-accent px-1.5 py-0.5 rounded border border-accent/30 font-medium">
                           You
                         </span>
                       )}
                     </div>
-                    <span className="text-xs text-[#526174] block">
+                    <span className="text-xs text-ts block">
                       {member.user.email}
                     </span>
                   </div>
@@ -447,13 +438,13 @@ export function MembersClient({
                             e.target.value as ProjectMemberRole
                           )
                         }
-                        className="py-1 pl-3 pr-7 rounded-lg bg-white border border-[#E2E8F0] hover:border-[#669BBC] text-xs font-medium text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] cursor-pointer appearance-none disabled:opacity-50 transition-colors shadow-sm"
+                        className="py-1 pl-3 pr-7 rounded-lg bg-elevated border border-border hover:border-accent text-xs font-medium text-tp focus:outline-none focus-visible:ring-1 focus-visible:ring-accent cursor-pointer appearance-none disabled:opacity-50 transition-colors shadow-card"
                       >
                         <option value="manager">Manager</option>
                         <option value="developer">Developer</option>
                         <option value="editor">Editor</option>
                       </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ts pointer-events-none" />
                     </div>
                   ) : (
                     <Badge variant="role" role={member.role} size="sm" />
@@ -466,7 +457,7 @@ export function MembersClient({
                         handleRemoveMember(member.userId, member.user.username)
                       }
                       disabled={updatingUserId === member.userId}
-                      className="p-1.5 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#C1121F]/20 transition-colors disabled:opacity-50"
+                      className="p-1.5 rounded-lg text-ts hover:text-danger hover:bg-danger-subtle border border-transparent hover:border-danger/20 transition-colors disabled:opacity-50"
                       title="Remove member from project"
                       aria-label={`Remove ${member.user.username} from project`}
                     >
@@ -479,7 +470,7 @@ export function MembersClient({
           })}
 
           {members.length === 0 && (
-            <div className="py-12 text-center text-[#526174] text-xs">
+            <div className="py-12 text-center text-ts text-xs">
               No members found in this project.
             </div>
           )}
@@ -490,13 +481,13 @@ export function MembersClient({
         <Card>
           <CardHeader>
             <CardTitle>
-              <Mail className="h-4 w-4 text-[#003049]" />
+              <Mail className="h-4 w-4 text-accent" />
               <span>Pending invitations ({pendingInvitations.length})</span>
             </CardTitle>
           </CardHeader>
-          <div className="divide-y divide-[#E2E8F0]">
+          <div className="divide-y divide-divider">
             {pendingInvitations.length === 0 && (
-              <p className="px-5 py-8 text-center text-xs text-[#526174]">
+              <p className="px-5 py-8 text-center text-xs text-ts">
                 No pending invitations. Invited people do not get project access until they accept.
               </p>
             )}
@@ -506,10 +497,10 @@ export function MembersClient({
                 className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="text-sm font-semibold text-[#17212B]">
+                  <p className="text-sm font-semibold text-tp">
                     {invitation.invitee?.username || invitation.recipientEmail}
                   </p>
-                  <p className="text-xs text-[#526174]">
+                  <p className="text-xs text-ts">
                     {invitation.recipientEmail} · {invitation.role} · pending
                   </p>
                 </div>
@@ -532,12 +523,12 @@ export function MembersClient({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-[#003049]" />
+              <UserPlus className="h-5 w-5 text-accent" />
               <span>Invite Team Member</span>
             </DialogTitle>
             <DialogDescription>
               Invite an existing user by email or username to collaborate on{' '}
-              <strong className="text-[#17212B]">{project.name}</strong>.
+              <strong className="text-tp">{project.name}</strong>.
             </DialogDescription>
           </DialogHeader>
 
@@ -549,19 +540,19 @@ export function MembersClient({
               {...register('identifier')}
             />
             {searchResults.length > 0 && (
-              <ul className="max-h-40 overflow-auto rounded-xl border border-[#E2E8F0]">
+              <ul className="max-h-40 overflow-auto rounded-xl border border-border">
                 {searchResults.map((result) => (
                   <li key={result.id}>
                     <button
                       type="button"
-                      className="flex w-full flex-col px-3 py-2 text-left hover:bg-[#F1F4F7]"
+                      className="flex w-full flex-col px-3 py-2 text-left hover:bg-hover"
                       onClick={() => {
                         setValue('identifier', result.email, { shouldValidate: true });
                         setSearchResults([]);
                       }}
                     >
-                      <span className="text-xs font-semibold text-[#17212B]">{result.username}</span>
-                      <span className="text-[11px] text-[#526174]">{result.email}</span>
+                      <span className="text-xs font-semibold text-tp">{result.username}</span>
+                      <span className="text-[11px] text-ts">{result.email}</span>
                     </button>
                   </li>
                 ))}
@@ -574,7 +565,7 @@ export function MembersClient({
               <option value="editor">Editor (View-only & comments)</option>
             </Select>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E2E8F0]">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
               <Button
                 type="button"
                 variant="outline"

@@ -3,42 +3,168 @@
 @tailwind utilities;
 
 :root {
-  --background: #F7F8FA;
-  --foreground: #17212B;
+  color-scheme: dark;
+
+  --color-canvas: #0d1117;
+  --color-navigation: #111821;
+  --color-surface: #151c26;
+  --color-elevated: #202a36;
+  --color-hover: #273342;
+
+  --color-border: #303d4d;
+  --color-divider: #26313f;
+
+  --color-text-primary: #eef2f7;
+  --color-text-secondary: #95a3b5;
+  --color-text-muted: #687789;
+
+  --color-accent: #88a9ff;
+  --color-accent-hover: #a2bbff;
+  --color-accent-subtle: #202d48;
+
+  --color-success: #5dba9d;
+  --color-warning: #d8b36a;
+  --color-danger: #d98287;
+
+  --color-success-subtle: rgba(93, 186, 157, 0.12);
+  --color-warning-subtle: rgba(216, 179, 106, 0.12);
+  --color-danger-subtle: rgba(217, 130, 135, 0.12);
+  --color-accent-subtle-fill: #202d48;
+
+  --radius-button: 8px;
+  --radius-card: 10px;
+  --radius-modal: 12px;
+
+  --control-height: 36px;
+  --control-height-compact: 32px;
+
+  --background: var(--color-canvas);
+  --foreground: var(--color-text-primary);
+
+  --chart-1: #88a9ff;
+  --chart-2: #5dba9d;
+  --chart-3: #d8b36a;
+  --chart-4: #a2bbff;
+  --chart-5: #d98287;
+  --chart-6: #95a3b5;
 }
 
-body {
-  color: var(--foreground);
-  background-color: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  overflow-x: hidden;
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    color: var(--color-text-primary);
+    background-color: var(--color-canvas);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 22px;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--color-accent-subtle);
+    color: var(--color-text-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
 }
 
-::selection {
-  background: #003049;
-  color: #FFFFFF;
+@layer utilities {
+  .font-mono {
+    font-family: var(--font-geist-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .text-page-title {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 32px;
+  }
+
+  .text-section {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  .text-card-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  .text-body {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+  }
+
+  .text-body-compact {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 18px;
+  }
+
+  .text-label {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+
+  .text-caption {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
+  }
 }
 
-/* Custom Scrollbar for Light Theme */
+/* Obsidian Pulse scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #F1F4F7;
+  background: var(--color-surface);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: var(--color-border);
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: var(--color-text-muted);
 }
 
-/* Code block styles */
-pre code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+/* Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-surface);
+}
+
+pre code,
+code {
+  font-family: var(--font-geist-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

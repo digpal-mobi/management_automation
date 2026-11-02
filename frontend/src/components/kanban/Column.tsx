@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   Sliders,
   Settings,
-  Palette,
   Check,
   X,
   ArrowDown,
@@ -148,6 +147,7 @@ export function Column({
 
   const wipLimit = column.wipLimit ?? 0;
   const isWipExceeded = wipLimit > 0 && tickets.length > wipLimit;
+  const isWipAtLimit = wipLimit > 0 && tickets.length >= wipLimit && !isWipExceeded;
 
   // Collapsed column rendering
   if (column.isCollapsed) {
@@ -157,7 +157,7 @@ export function Column({
         style={colStyle}
         {...colAttributes}
         {...colListeners}
-        className="w-12 min-w-12 max-w-12 h-[600px] flex flex-col items-center py-4 bg-slate-100/80 rounded-xl border border-slate-200/80 flex-shrink-0 shadow-sm transition-all select-none group cursor-grab active:cursor-grabbing"
+        className="w-12 min-w-12 max-w-12 h-[600px] flex flex-col items-center py-4 bg-surface/80 rounded-xl border border-border/70 flex-shrink-0 shadow-sm transition-all select-none group cursor-grab active:cursor-grabbing"
       >
         <button
           type="button"
@@ -166,19 +166,19 @@ export function Column({
             e.stopPropagation();
             onToggleCollapse && onToggleCollapse(column);
           }}
-          className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors mb-4"
+          className="p-1 rounded-lg text-tm hover:text-tp hover:bg-elevated transition-colors mb-4"
           title={`Expand ${column.name} column`}
         >
           <ChevronRight className="h-4 w-4" />
         </button>
 
-        <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-mono text-[10px] font-bold flex items-center justify-center mb-4">
+        <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-elevated text-ts font-medium mb-4">
           {tickets.length}
         </span>
 
         <div className="flex-1 flex items-center justify-center">
           <span
-            className="transform -rotate-90 whitespace-nowrap text-xs font-bold text-slate-600 uppercase tracking-wider"
+            className="transform -rotate-90 whitespace-nowrap text-xs font-semibold text-ts uppercase tracking-wide"
             style={{ width: 'max-content' }}
           >
             {column.name}
@@ -191,49 +191,41 @@ export function Column({
   return (
     <div
       ref={setColNodeRef}
-      style={{
-        ...colStyle,
-        borderTop: column.color ? `3px solid ${column.color}` : undefined,
-      }}
-      className={`w-[316px] min-w-[316px] max-w-[320px] flex flex-col rounded-xl p-3 shadow-sm transition-all flex-shrink-0 select-none ${
+      style={colStyle}
+      className={`w-[290px] shrink-0 h-full max-h-full flex flex-col rounded-xl bg-surface border shadow-sm transition-all select-none ${
         isColDragging
-          ? 'opacity-40 border-2 border-primary bg-indigo-50/50'
+          ? 'opacity-40 border-2 border-accent bg-accent-subtle/50'
           : isWipExceeded
-          ? 'bg-rose-50/40 border border-rose-200/80 shadow-md'
-          : 'bg-slate-100/90 border border-slate-200/70 hover:border-slate-300'
+          ? 'border-danger/35 shadow-md'
+          : 'border-border/70 hover:border-border'
       }`}
     >
       {/* Column Header */}
       <div
         {...colAttributes}
         {...colListeners}
-        className="h-8 flex items-center justify-between mb-2 px-1 group cursor-grab active:cursor-grabbing rounded-lg hover:bg-slate-200/50 transition-colors"
+        className="flex items-center justify-between px-3 py-2.5 border-b border-border/40 shrink-0 group cursor-grab active:cursor-grabbing"
         title="Drag header to reorder column"
       >
-        {/* Left: Drag Handle, Title, and Count */}
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {/* Column Drag Handle */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <span
-            className="text-slate-400 opacity-60 group-hover:opacity-100 hover:text-slate-700 transition-opacity p-0.5 rounded flex-shrink-0"
+            className="text-tm opacity-0 group-hover:opacity-70 hover:opacity-100 hover:text-tp transition-opacity p-0.5 rounded flex-shrink-0"
             aria-label="Drag column"
           >
-            <GripVertical className="h-4 w-4" />
+            <GripVertical className="h-3.5 w-3.5" />
           </span>
 
-          {/* Column Color indicator */}
-          {column.color && (
-            <span
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-2xs"
-              style={{ backgroundColor: column.color }}
-            />
-          )}
+          <span
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${column.color ? '' : 'bg-ts'}`}
+            style={column.color ? { backgroundColor: column.color } : undefined}
+            aria-hidden
+          />
 
-          {/* Column Title: either inline edit or text */}
           {isEditingTitle ? (
             <div
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 flex-1"
+              className="flex items-center gap-1 flex-1 min-w-0"
             >
               <input
                 type="text"
@@ -244,105 +236,99 @@ export function Column({
                   if (e.key === 'Enter') handleSaveTitle();
                   if (e.key === 'Escape') handleCancelTitle();
                 }}
-                className="w-full px-1.5 py-0.5 text-xs font-bold text-slate-900 bg-white border border-primary rounded focus:outline-none"
+                className="w-full px-1.5 py-0.5 text-xs font-semibold text-tp bg-elevated border border-accent rounded focus:outline-none uppercase"
               />
               <button
                 type="button"
                 onClick={handleSaveTitle}
-                className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
+                className="p-1 text-success hover:bg-success-subtle rounded"
               >
                 <Check className="h-3 w-3" />
               </button>
               <button
                 type="button"
                 onClick={handleCancelTitle}
-                className="p-1 text-slate-400 hover:bg-slate-200 rounded"
+                className="p-1 text-tm hover:bg-elevated rounded"
               >
                 <X className="h-3 w-3" />
               </button>
             </div>
           ) : (
             <div
-              className="flex items-center gap-1.5 min-w-0"
+              className="flex items-center gap-2 min-w-0 flex-wrap"
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 if (canManageColumns) setIsEditingTitle(true);
               }}
               title={canManageColumns ? 'Double-click to rename' : undefined}
             >
-              <h3
-                className={`font-bold text-[13px] uppercase tracking-wide truncate ${
-                  isWipExceeded ? 'text-red-700' : 'text-slate-800'
+              <h2
+                className={`text-xs font-semibold uppercase tracking-wide truncate ${
+                  isWipExceeded ? 'text-danger' : 'text-tp'
                 }`}
               >
                 {column.name}
-              </h3>
+              </h2>
+              <span
+                className={`font-mono text-[11px] px-1.5 py-0.5 rounded bg-elevated font-medium flex-shrink-0 ${
+                  isWipExceeded ? 'text-danger' : 'text-ts'
+                }`}
+              >
+                {tickets.length}
+              </span>
+              {wipLimit > 0 && (
+                <span
+                  className={`text-[10px] font-mono flex-shrink-0 ${
+                    isWipExceeded
+                      ? 'px-1 py-0.5 rounded bg-danger-subtle text-danger font-medium border border-danger/30'
+                      : isWipAtLimit
+                      ? 'px-1 py-0.5 rounded bg-accent/20 text-accent font-medium'
+                      : 'text-ts'
+                  }`}
+                  title={`WIP Limit: ${tickets.length}/${wipLimit}`}
+                >
+                  {isWipExceeded || isWipAtLimit
+                    ? `WIP: ${tickets.length}/${wipLimit}`
+                    : `WIP: ${wipLimit}`}
+                </span>
+              )}
             </div>
           )}
-
-          {/* Ticket Count Badge */}
-          <span
-            className={`w-5 h-5 rounded-full text-xs font-mono font-bold flex items-center justify-center flex-shrink-0 ${
-              isWipExceeded
-                ? 'bg-red-600 text-white'
-                : 'bg-slate-200 text-slate-700'
-            }`}
-          >
-            {tickets.length}
-          </span>
         </div>
 
-        {/* Right Header Controls: WIP Badge, Add Button, Context Menu */}
         <div
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className="flex items-center gap-1 flex-shrink-0"
         >
-          {/* WIP Badge (only shown when a limit is configured) */}
-          {wipLimit > 0 && (
-            <span
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold tracking-tight ${
-                isWipExceeded
-                  ? 'bg-red-100 text-red-700 border border-red-200'
-                  : 'bg-slate-200 text-slate-600'
-              }`}
-              title={`WIP Limit: ${tickets.length}/${wipLimit}`}
-            >
-              WIP: {tickets.length}/{wipLimit} {isWipExceeded && '!'}
-            </span>
-          )}
-
-          {/* Quick Add Ticket to this column */}
           {canCreateTicket && (
             <button
               type="button"
               onClick={() => onAddTicketClick(column)}
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+              className="w-6 h-6 rounded hover:bg-elevated text-ts hover:text-tp flex items-center justify-center transition-colors"
               title={`Add ticket to ${column.name}`}
               aria-label={`Add ticket to ${column.name}`}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
             </button>
           )}
 
-          {/* Column Context Menu */}
           <div className="relative" ref={menuRef}>
             <button
               type="button"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+              className="w-6 h-6 rounded hover:bg-elevated text-ts hover:text-tp flex items-center justify-center transition-colors"
               title="Column options"
               aria-label="Column options"
             >
-              <MoreHorizontal className="h-3.5 w-3.5" />
+              <MoreHorizontal className="h-4 w-4" />
             </button>
 
             {menuOpen && (
               <div
-                className="absolute right-0 top-7 w-48 rounded-xl bg-white border border-slate-200 shadow-dropdown p-1.5 z-50 text-xs text-slate-700 animate-in fade-in zoom-in-95 duration-100"
+                className="absolute right-0 top-7 w-48 rounded-xl bg-elevated border border-border shadow-dropdown p-1.5 z-50 text-xs text-ts animate-in fade-in zoom-in-95 duration-100"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Quick Add Ticket */}
                 {canCreateTicket && (
                   <button
                     type="button"
@@ -350,29 +336,27 @@ export function Column({
                       setMenuOpen(false);
                       onAddTicketClick(column);
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                   >
-                    <Plus className="h-3.5 w-3.5 text-slate-500" />
+                    <Plus className="h-3.5 w-3.5 text-tm" />
                     <span>Add Ticket</span>
                   </button>
                 )}
 
                 {canManageColumns && (
                   <>
-                    {/* Rename inline */}
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
                         setIsEditingTitle(true);
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                     >
-                      <Edit2 className="h-3.5 w-3.5 text-slate-500" />
+                      <Edit2 className="h-3.5 w-3.5 text-tm" />
                       <span>Rename Column</span>
                     </button>
 
-                    {/* Column Settings */}
                     {onEditColumn && (
                       <button
                         type="button"
@@ -380,21 +364,20 @@ export function Column({
                           setMenuOpen(false);
                           onEditColumn(column);
                         }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                       >
-                        <Settings className="h-3.5 w-3.5 text-slate-500" />
+                        <Settings className="h-3.5 w-3.5 text-tm" />
                         <span>Column Settings</span>
                       </button>
                     )}
 
-                    {/* Quick Color Palette */}
                     {onChangeColor && (
-                      <div className="px-2.5 py-1.5 border-t border-slate-100 my-1">
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      <div className="px-2.5 py-1.5 border-t border-divider my-1">
+                        <span className="text-[10px] font-semibold text-tm uppercase tracking-wider block mb-1.5">
                           Column Color
                         </span>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {['#003049', '#669BBC', '#C1121F', '#15803D', '#7C3AED', '#EA580C', '#0D9488', '#526174'].map((color) => (
+                          {['#88A9FF', '#5DBA9D', '#D8B36A', '#D98287', '#A2BBFF', '#95A3B5', '#687789', '#273342'].map((color) => (
                             <button
                               key={color}
                               type="button"
@@ -403,7 +386,7 @@ export function Column({
                                 onChangeColor(column, color);
                               }}
                               className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                                column.color === color ? 'border-slate-800 ring-2 ring-primary/30 scale-105' : 'border-white shadow-2xs'
+                                column.color === color ? 'border-border ring-2 ring-accent/30 scale-105' : 'border-border shadow-2xs'
                               }`}
                               style={{ backgroundColor: color }}
                               title={color}
@@ -413,7 +396,6 @@ export function Column({
                       </div>
                     )}
 
-                    {/* Move Left */}
                     <button
                       type="button"
                       disabled={isFirst}
@@ -421,13 +403,12 @@ export function Column({
                         setMenuOpen(false);
                         if (onMoveColumnLeft) onMoveColumnLeft(column);
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none text-left font-medium transition-colors"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover disabled:opacity-30 disabled:pointer-events-none text-left font-medium transition-colors"
                     >
-                      <ArrowLeft className="h-3.5 w-3.5 text-slate-500" />
+                      <ArrowLeft className="h-3.5 w-3.5 text-tm" />
                       <span>Move Left</span>
                     </button>
 
-                    {/* Move Right */}
                     <button
                       type="button"
                       disabled={isLast}
@@ -435,13 +416,12 @@ export function Column({
                         setMenuOpen(false);
                         if (onMoveColumnRight) onMoveColumnRight(column);
                       }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none text-left font-medium transition-colors"
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover disabled:opacity-30 disabled:pointer-events-none text-left font-medium transition-colors"
                     >
-                      <ArrowRight className="h-3.5 w-3.5 text-slate-500" />
+                      <ArrowRight className="h-3.5 w-3.5 text-tm" />
                       <span>Move Right</span>
                     </button>
 
-                    {/* Configure WIP Limit */}
                     {onConfigureWip && (
                       <button
                         type="button"
@@ -449,14 +429,13 @@ export function Column({
                           setMenuOpen(false);
                           onConfigureWip(column);
                         }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                       >
-                        <Sliders className="h-3.5 w-3.5 text-slate-500" />
+                        <Sliders className="h-3.5 w-3.5 text-tm" />
                         <span>Configure WIP Limit</span>
                       </button>
                     )}
 
-                    {/* Duplicate Column */}
                     {onDuplicateColumn && (
                       <button
                         type="button"
@@ -464,14 +443,13 @@ export function Column({
                           setMenuOpen(false);
                           onDuplicateColumn(column);
                         }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                       >
-                        <Copy className="h-3.5 w-3.5 text-slate-500" />
+                        <Copy className="h-3.5 w-3.5 text-tm" />
                         <span>Duplicate Column</span>
                       </button>
                     )}
 
-                    {/* Collapse Column */}
                     {onToggleCollapse && (
                       <button
                         type="button"
@@ -479,26 +457,25 @@ export function Column({
                           setMenuOpen(false);
                           onToggleCollapse(column);
                         }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-left font-medium transition-colors"
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-hover text-left font-medium transition-colors"
                       >
-                        <ChevronLeft className="h-3.5 w-3.5 text-slate-500" />
+                        <ChevronLeft className="h-3.5 w-3.5 text-tm" />
                         <span>Collapse Column</span>
                       </button>
                     )}
 
-                    {/* Delete Column */}
                     {onDeleteColumn && (
                       <>
-                        <div className="my-1 border-t border-slate-100" />
+                        <div className="my-1 border-t border-divider" />
                         <button
                           type="button"
                           onClick={() => {
                             setMenuOpen(false);
                             onDeleteColumn(column);
                           }}
-                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-red-50 text-left font-medium text-red-600 transition-colors"
+                          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-danger-subtle text-left font-medium text-danger transition-colors"
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                          <Trash2 className="h-3.5 w-3.5 text-danger" />
                           <span>Delete Column</span>
                         </button>
                       </>
@@ -511,18 +488,17 @@ export function Column({
         </div>
       </div>
 
-      {/* WIP Limit Exceeded Warning Banner */}
       {isWipExceeded && (
-        <div className="mb-2.5 p-2 rounded-xl bg-red-100 border border-red-200/80 text-red-900 flex items-center justify-between text-xs shadow-xs">
+        <div className="mx-2.5 mt-2 p-2 rounded-lg bg-danger-subtle border border-danger/30 text-danger flex items-center justify-between text-xs shadow-xs shrink-0">
           <div className="flex items-center gap-1.5 font-semibold">
-            <AlertTriangle className="h-3.5 w-3.5 text-red-600 flex-shrink-0" />
+            <AlertTriangle className="h-3.5 w-3.5 text-danger flex-shrink-0" />
             <span>WIP limit exceeded ({wipLimit} max)</span>
           </div>
           {onConfigureWip && (
             <button
               type="button"
               onClick={() => onConfigureWip(column)}
-              className="text-[11px] font-mono font-bold text-red-700 underline hover:text-red-900"
+              className="text-[11px] font-mono font-bold text-danger underline hover:text-danger/80"
             >
               Details
             </button>
@@ -530,11 +506,11 @@ export function Column({
         </div>
       )}
 
-      {/* Droppable Task Card Stack Container */}
+      {/* Droppable Task Card Stack */}
       <div
         ref={setDropNodeRef}
-        className={`flex-1 flex flex-col gap-2 min-h-[140px] rounded-lg transition-colors ${
-          isOver ? 'bg-primary-subtle/30 ring-1 ring-primary/30 p-1' : ''
+        className={`p-2.5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2.5 min-h-[140px] transition-colors ${
+          isOver ? 'bg-accent-subtle/20 ring-1 ring-inset ring-accent/20' : ''
         }`}
       >
         <SortableContext items={tickets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
@@ -557,26 +533,37 @@ export function Column({
           ))}
         </SortableContext>
 
-        {/* Drop Target Indicator when dragging over */}
         {isOver && (
-          <div className="h-11 rounded-xl bg-indigo-50 border-2 border-dashed border-indigo-300 flex items-center justify-center gap-1.5 text-indigo-700 font-mono text-xs font-semibold shadow-inner my-1 animate-pulse">
+          <div className="h-11 rounded-[10px] bg-accent-subtle border-2 border-dashed border-accent/40 flex items-center justify-center gap-1.5 text-accent font-mono text-xs font-semibold animate-pulse">
             <ArrowDown className="h-3.5 w-3.5" />
             <span>Drop card here</span>
           </div>
         )}
 
-        {/* Empty Column Placeholder */}
         {tickets.length === 0 && !isOver && (
           <button
             type="button"
             onClick={() => canCreateTicket && onAddTicketClick(column)}
-            className="h-16 w-full rounded-xl border border-dashed border-slate-200/90 hover:border-slate-300 bg-white/40 hover:bg-white/70 flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer group"
+            className="p-4 rounded-[10px] border-2 border-dashed border-border/60 text-center flex flex-col items-center justify-center gap-1 py-7 hover:border-accent/40 transition-colors text-[11px] text-tm/70 font-medium"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-5 w-5 text-tm/60" />
             <span>Add ticket</span>
           </button>
         )}
       </div>
+
+      {canCreateTicket && (
+        <div className="p-2 border-t border-border/30 shrink-0">
+          <button
+            type="button"
+            onClick={() => onAddTicketClick(column)}
+            className="w-full py-1.5 px-2 rounded-lg text-ts hover:text-tp hover:bg-elevated/80 text-xs font-medium flex items-center gap-1.5 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add task</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

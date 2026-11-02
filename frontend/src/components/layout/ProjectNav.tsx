@@ -11,6 +11,7 @@ import {
   BarChart3,
   CalendarClock,
 } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 export interface ProjectNavProps {
   projectId: string;
@@ -74,30 +75,32 @@ export function ProjectNav({
   return (
     <nav
       aria-label="Project Navigation"
-      className={`w-full overflow-x-auto custom-scrollbar pb-1 ${className}`}
+      className={cn('w-full overflow-x-auto custom-scrollbar pb-1', className)}
     >
-      <div className="inline-flex items-center gap-1.5 p-1 rounded-xl bg-white border border-[#E2E8F0] shadow-sm min-w-full sm:min-w-0">
+      <div className="inline-flex items-center gap-1.5 p-1 rounded-card bg-elevated border border-border min-w-full sm:min-w-0">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 select-none ${
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-button text-label whitespace-nowrap transition-all duration-150 select-none',
                 item.isActive
-                  ? 'bg-[#003049] text-white font-semibold shadow-sm'
-                  : 'text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7]'
-              }`}
+                  ? 'bg-accent-subtle text-accent font-medium'
+                  : 'text-ts hover:text-tp hover:bg-hover'
+              )}
             >
               <Icon className="h-3.5 w-3.5 flex-shrink-0" />
               <span>{item.label}</span>
               {item.badge && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  className={cn(
+                    'text-[10px] px-1.5 py-0.5 rounded-full font-mono',
                     item.isActive
-                      ? 'bg-white/25 text-white font-bold'
-                      : 'bg-[#F1F4F7] text-[#526174] border border-[#E2E8F0]'
-                  }`}
+                      ? 'bg-accent/20 text-accent font-bold'
+                      : 'bg-surface text-ts border border-border'
+                  )}
                 >
                   {item.badge}
                 </span>

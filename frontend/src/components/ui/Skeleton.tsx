@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '@/lib/cn';
 
 export function Skeleton({
   className = '',
@@ -8,7 +9,7 @@ export function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-[#E2E8F0]/80 ${className}`}
+      className={cn('animate-pulse rounded-button bg-elevated/80', className)}
       {...props}
     />
   );

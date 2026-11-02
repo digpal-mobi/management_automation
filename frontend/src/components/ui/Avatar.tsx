@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { cn } from '@/lib/cn';
 
 export interface AvatarProps {
   name?: string;
@@ -31,7 +32,11 @@ export function Avatar({
   if (avatarUrl && !imageFailed) {
     return (
       <div
-        className={`relative inline-flex items-center justify-center rounded-full overflow-hidden border border-[#E2E8F0] bg-[#F1F4F7] flex-shrink-0 ${sizeMap[size]} ${className}`}
+        className={cn(
+          'relative inline-flex items-center justify-center rounded-full overflow-hidden border border-border bg-elevated flex-shrink-0',
+          sizeMap[size],
+          className
+        )}
         title={identifier}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -47,7 +52,11 @@ export function Avatar({
 
   return (
     <div
-      className={`inline-flex items-center justify-center rounded-full border border-[#003049]/20 bg-[#003049] text-white font-bold flex-shrink-0 select-none ${sizeMap[size]} ${className}`}
+      className={cn(
+        'inline-flex items-center justify-center rounded-full border border-accent/30 bg-accent-subtle text-accent font-bold flex-shrink-0 select-none',
+        sizeMap[size],
+        className
+      )}
       title={identifier}
     >
       <span>{initial}</span>

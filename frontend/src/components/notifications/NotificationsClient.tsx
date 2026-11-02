@@ -147,7 +147,7 @@ export function NotificationsClient() {
     <div className="space-y-6">
       <PageHeader
         backLink={{ label: 'Workspaces', href: '/' }}
-        icon={<Bell className="h-6 w-6 text-[#003049]" />}
+        icon={<Bell className="h-6 w-6 text-accent" />}
         title="Notifications"
         description="Project invitations and updates for your account."
         actions={
@@ -165,7 +165,7 @@ export function NotificationsClient() {
       />
 
       {error && (
-        <div className="flex items-start justify-between gap-3 rounded-2xl border border-[#FDE8E8] bg-[#FDF2F2] px-4 py-3 text-xs text-[#C1121F]">
+        <div className="flex items-start justify-between gap-3 rounded-2xl border border-danger/30 bg-danger-subtle px-4 py-3 text-xs text-danger">
           <span>{error}</span>
           <Button variant="outline" size="xs" onClick={() => void loadNotifications()}>
             Retry
@@ -188,31 +188,31 @@ export function NotificationsClient() {
           return (
             <article
               key={notification.id}
-              className={`rounded-2xl border bg-white p-4 shadow-card ${
-                notification.readAt ? 'border-[#E2E8F0]' : 'border-[#669BBC]/50'
+              className={`rounded-2xl border bg-elevated p-4 shadow-card ${
+                notification.readAt ? 'border-border' : 'border-accent/50'
               }`}
             >
               <button
                 type="button"
-                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003049] rounded-xl"
+                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl"
                 onClick={() => void openNotification(notification)}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-semibold text-[#17212B]">{notification.title}</h2>
-                    <p className="mt-1 text-xs leading-relaxed text-[#526174]">{notification.message}</p>
+                    <h2 className="text-sm font-semibold text-tp">{notification.title}</h2>
+                    <p className="mt-1 text-xs leading-relaxed text-ts">{notification.message}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <time className="block text-[11px] text-[#526174]" dateTime={notification.createdAt}>
+                    <time className="block text-[11px] text-ts" dateTime={notification.createdAt}>
                       {formatRelativeTime(notification.createdAt)}
                     </time>
-                    <span className="mt-1 inline-flex text-[10px] font-semibold uppercase tracking-wide text-[#526174]">
+                    <span className="mt-1 inline-flex text-[10px] font-semibold uppercase tracking-wide text-ts">
                       {notification.readAt ? 'Read' : 'Unread'}
                     </span>
                   </div>
                 </div>
                 {notification.project?.name && (
-                  <p className="mt-2 text-[11px] font-medium text-[#003049]">
+                  <p className="mt-2 text-[11px] font-medium text-accent">
                     Project: {notification.project.name}
                   </p>
                 )}
@@ -244,7 +244,7 @@ export function NotificationsClient() {
                       </Button>
                     </>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] bg-[#F1F4F7] px-2.5 py-1 text-[11px] font-medium text-[#526174]">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-hover px-2.5 py-1 text-[11px] font-medium text-ts">
                       <MailX className="h-3.5 w-3.5" aria-hidden="true" />
                       {invitationStatus === 'ACCEPTED'
                         ? 'Accepted'

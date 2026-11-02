@@ -1,16 +1,35 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { setFilters, clearFilters } from '@/store/boardSlice';
 import { TicketPriority, ProjectMember } from '@/types';
-import { Search, X, Sparkles, Filter, ChevronDown, Check, User, AlertCircle, Calendar, Tag } from 'lucide-react';
+import {
+  Search,
+  X,
+  Sparkles,
+  Filter,
+  ChevronDown,
+  LayoutGrid,
+  List,
+  CalendarDays,
+  GanttChart,
+  BarChart3,
+  ArrowUpDown,
+  Rows3,
+  Zap,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 interface BoardFiltersProps {
   members?: ProjectMember[];
   sprints?: string[];
   currentUserId?: string;
   searchInputRef?: React.RefObject<HTMLInputElement>;
+  projectSlug?: string;
+  onOpenPreferences?: () => void;
 }
 
 export function BoardFilters({
@@ -18,6 +37,8 @@ export function BoardFilters({
   sprints = [],
   currentUserId,
   searchInputRef,
+  projectSlug,
+  onOpenPreferences,
 }: BoardFiltersProps) {
   const dispatch = useAppDispatch();
   const { filters } = useAppSelector((state) => state.board);
@@ -26,7 +47,6 @@ export function BoardFilters({
   const localSearchRef = useRef<HTMLInputElement>(null);
   const inputRef = searchInputRef || localSearchRef;
 
-  // Global keyboard shortcuts for ⌘F, M, and U
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
@@ -58,7 +78,6 @@ export function BoardFilters({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [dispatch, filters.assignedToMe, filters.urgentOnly, currentUserId, inputRef]);
 
-  // Close filter popover on outside click
   useEffect(() => {
     if (!isFilterPopoverOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -89,104 +108,123 @@ export function BoardFilters({
     Boolean(filters.urgentOnly),
   ].filter(Boolean).length;
 
+  const viewBtn = (active: boolean) =>
+    cn(
+      'flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-colors',
+      active
+        ? 'bg-accent-subtle text-accent font-medium shadow-sm'
+        : 'text-ts hover:text-tp hover:bg-elevated/50'
+    );
+
   return (
-    <div className="flex items-center justify-between gap-3 pt-2 pb-1 border-t border-slate-100 select-none">
-      {/* Left: Compact Search & Simple Filter Popover */}
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        {/* Search Input */}
-        <div className="relative flex items-center w-full max-w-xs">
-          <Search className="absolute left-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+    <div className="flex items-center justify-between flex-wrap gap-2 pt-0.5 select-none">
+      <div className="flex items-center p-0.5 rounded-lg bg-surface border border-border/70 text-xs">
+        <span className={viewBtn(true)}>
+          <LayoutGrid className="h-[15px] w-[15px]" />
+          <span>Board</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-accent ml-0.5" />
+        </span>
+        {projectSlug && (
+          <>
+            <Link href={`/projects/${projectSlug}/plan`} className={viewBtn(false)}>
+              <List className="h-[15px] w-[15px]" />
+              <span>List</span>
+            </Link>
+            <Link href={`/projects/${projectSlug}/roadmap`} className={viewBtn(false)}>
+              <CalendarDays className="h-[15px] w-[15px]" />
+              <span>Calendar</span>
+            </Link>
+            <Link href={`/projects/${projectSlug}/roadmap`} className={viewBtn(false)}>
+              <GanttChart className="h-[15px] w-[15px]" />
+              <span>Timeline</span>
+            </Link>
+            <Link href={`/projects/${projectSlug}/analytics`} className={viewBtn(false)}>
+              <BarChart3 className="h-[15px] w-[15px]" />
+              <span>Dashboard</span>
+            </Link>
+          </>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 h-7 px-2 rounded-lg bg-surface border border-border/80 text-ts hover:border-accent/30 w-44">
+          <Search className="h-[14px] w-[14px] shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={filters.search}
             onChange={(e) => dispatch(setFilters({ search: e.target.value }))}
-            placeholder={
-              filters.isSemantic
-                ? 'Semantic AI search... (⌘F)'
-                : 'Search tickets... (⌘F)'
-            }
-            className={`w-full h-8 pl-8 pr-10 rounded-lg text-xs bg-slate-50 text-slate-800 placeholder-slate-400 border transition-all focus:outline-none focus:bg-white ${
-              filters.isSemantic
-                ? 'border-indigo-400 ring-1 ring-indigo-400/20 bg-white'
-                : 'border-slate-200 focus:border-slate-300'
-            }`}
+            placeholder="Filter tasks..."
+            className="bg-transparent border-none p-0 text-xs text-tp placeholder:text-ts focus:ring-0 focus:outline-none w-full"
           />
-          {filters.search ? (
+          {filters.search && (
             <button
               type="button"
               onClick={() => dispatch(setFilters({ search: '' }))}
               aria-label="Clear search"
-              className="absolute right-2.5 text-slate-400 hover:text-slate-700 transition-colors"
+              className="text-tm hover:text-tp"
             >
               <X className="h-3 w-3" />
             </button>
-          ) : (
-            <span className="absolute right-2 px-1 py-0.2 rounded bg-slate-200/70 text-slate-400 font-mono text-[9px] pointer-events-none">
-              ⌘F
-            </span>
           )}
         </div>
 
-        {/* AI Semantic Search Toggle */}
         <button
           type="button"
           onClick={() => dispatch(setFilters({ isSemantic: !filters.isSemantic }))}
-          title="Toggle semantic AI search"
-          className={`h-8 px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors border ${
+          className={cn(
+            'h-7 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-colors',
             filters.isSemantic
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-              : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
-          }`}
+              ? 'bg-accent text-canvas border-accent'
+              : 'bg-surface border-border/80 hover:bg-elevated text-ts hover:text-tp'
+          )}
+          title="Toggle semantic AI search"
         >
-          <Sparkles className={`h-3.5 w-3.5 ${filters.isSemantic ? 'text-indigo-200 animate-pulse' : 'text-indigo-600'}`} />
-          <span className="hidden sm:inline">AI Search</span>
+          <Sparkles className="h-[14px] w-[14px]" />
+          <span className="hidden sm:inline">AI</span>
         </button>
 
-        {/* Consolidated Filter Popover Trigger */}
         <div className="relative" ref={filterPopoverRef}>
           <button
             type="button"
             onClick={() => setIsFilterPopoverOpen(!isFilterPopoverOpen)}
-            className={`h-8 px-2.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors border ${
-              activeFacetCount > 0
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold'
-                : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900'
-            }`}
+            className={cn(
+              'h-7 px-2.5 rounded-lg bg-surface border border-border/80 hover:bg-elevated text-tp text-xs font-medium flex items-center gap-1.5 transition-colors',
+              activeFacetCount > 0 && 'border-accent/40'
+            )}
           >
-            <Filter className="h-3.5 w-3.5" />
+            <Filter className="h-[14px] w-[14px] text-ts" />
             <span>Filter</span>
             {activeFacetCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent font-semibold">
                 {activeFacetCount}
               </span>
             )}
-            <ChevronDown className="h-3 w-3 text-slate-400" />
           </button>
 
-          {/* Filter Dropdown Popover */}
           {isFilterPopoverOpen && (
-            <div className="absolute left-0 top-9 w-72 rounded-xl bg-white border border-slate-200 shadow-lg p-3 z-50 text-xs text-slate-700 space-y-3 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                <span className="font-semibold text-slate-900">Filter Tickets</span>
+            <div className="absolute right-0 top-9 w-72 rounded-xl bg-elevated border border-border shadow-dropdown p-3 z-50 text-xs text-ts space-y-3">
+              <div className="flex items-center justify-between pb-1.5 border-b border-divider">
+                <span className="font-semibold text-tp">Filter Tickets</span>
                 {activeFacetCount > 0 && (
                   <button
                     type="button"
                     onClick={() => dispatch(clearFilters())}
-                    className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium"
+                    className="text-[11px] text-accent hover:text-accent-hover font-medium"
                   >
                     Reset all
                   </button>
                 )}
               </div>
 
-              {/* Priority */}
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">Priority</label>
+                <label className="block text-[11px] font-medium text-tm mb-1">Priority</label>
                 <select
                   value={filters.priority}
-                  onChange={(e) => dispatch(setFilters({ priority: e.target.value as 'ALL' | TicketPriority }))}
-                  className="w-full h-7 px-2 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:bg-white"
+                  onChange={(e) =>
+                    dispatch(setFilters({ priority: e.target.value as 'ALL' | TicketPriority }))
+                  }
+                  className="w-full h-7 px-2 rounded-md bg-surface border border-border text-xs text-tp focus:outline-none"
                 >
                   <option value="ALL">All priorities</option>
                   <option value="Critical">Critical</option>
@@ -196,13 +234,12 @@ export function BoardFilters({
                 </select>
               </div>
 
-              {/* Assignee */}
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">Assignee</label>
+                <label className="block text-[11px] font-medium text-tm mb-1">Assignee</label>
                 <select
                   value={filters.assigneeId}
                   onChange={(e) => dispatch(setFilters({ assigneeId: e.target.value }))}
-                  className="w-full h-7 px-2 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:bg-white"
+                  className="w-full h-7 px-2 rounded-md bg-surface border border-border text-xs text-tp focus:outline-none"
                 >
                   <option value="ALL">All assignees</option>
                   {members.map((m) => (
@@ -213,13 +250,12 @@ export function BoardFilters({
                 </select>
               </div>
 
-              {/* Type */}
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">Type</label>
+                <label className="block text-[11px] font-medium text-tm mb-1">Type</label>
                 <select
                   value={filters.type}
                   onChange={(e) => dispatch(setFilters({ type: e.target.value }))}
-                  className="w-full h-7 px-2 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:bg-white"
+                  className="w-full h-7 px-2 rounded-md bg-surface border border-border text-xs text-tp focus:outline-none"
                 >
                   <option value="ALL">All types</option>
                   <option value="Feature">Feature</option>
@@ -229,14 +265,13 @@ export function BoardFilters({
                 </select>
               </div>
 
-              {/* Sprint */}
               {sprints.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Sprint</label>
+                  <label className="block text-[11px] font-medium text-tm mb-1">Sprint</label>
                   <select
                     value={filters.sprint}
                     onChange={(e) => dispatch(setFilters({ sprint: e.target.value }))}
-                    className="w-full h-7 px-2 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:bg-white"
+                    className="w-full h-7 px-2 rounded-md bg-surface border border-border text-xs text-tp focus:outline-none"
                   >
                     <option value="ALL">All sprints</option>
                     {sprints.map((s) => (
@@ -248,25 +283,24 @@ export function BoardFilters({
                 </div>
               )}
 
-              {/* Quick Toggles */}
-              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+              <div className="pt-2 border-t border-divider space-y-1.5">
                 {currentUserId && (
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-ts">
                     <input
                       type="checkbox"
                       checked={filters.assignedToMe}
                       onChange={(e) => dispatch(setFilters({ assignedToMe: e.target.checked }))}
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-0"
+                      className="rounded border-border text-accent focus:ring-accent/30"
                     />
                     <span>Assigned to me (M)</span>
                   </label>
                 )}
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-ts">
                   <input
                     type="checkbox"
                     checked={filters.urgentOnly}
                     onChange={(e) => dispatch(setFilters({ urgentOnly: e.target.checked }))}
-                    className="rounded border-slate-300 text-red-600 focus:ring-0"
+                    className="rounded border-border text-danger focus:ring-danger/30"
                   />
                   <span>Urgent only (U)</span>
                 </label>
@@ -275,12 +309,50 @@ export function BoardFilters({
           )}
         </div>
 
-        {/* Clear Filters button (shown when any filter or search is active) */}
+        <button
+          type="button"
+          className="h-7 px-2.5 rounded-lg bg-surface border border-border/80 hover:bg-elevated text-ts hover:text-tp text-xs font-medium flex items-center gap-1 transition-colors"
+          title="Sort"
+        >
+          <ArrowUpDown className="h-[14px] w-[14px]" />
+          <span>Sort</span>
+        </button>
+
+        <button
+          type="button"
+          className="h-7 px-2.5 rounded-lg bg-surface border border-border/80 hover:bg-elevated text-ts hover:text-tp text-xs font-medium flex items-center gap-1 transition-colors"
+          title="Group by status"
+        >
+          <Rows3 className="h-[14px] w-[14px]" />
+          <span className="hidden lg:inline">Group: Status</span>
+          <ChevronDown className="h-[13px] w-[13px]" />
+        </button>
+
+        {projectSlug && (
+          <Link
+            href={`/projects/${projectSlug}/plan`}
+            className="h-7 px-2.5 rounded-lg bg-surface border border-border/80 hover:bg-elevated text-ts hover:text-tp text-xs font-medium flex items-center gap-1 transition-colors"
+            title="Sprint Automations"
+          >
+            <Zap className="h-[14px] w-[14px] text-warning" />
+            <span className="hidden xl:inline">Automations</span>
+          </Link>
+        )}
+
+        <button
+          type="button"
+          onClick={onOpenPreferences}
+          className="w-7 h-7 rounded-lg bg-surface border border-border/80 hover:bg-elevated text-ts hover:text-tp flex items-center justify-center transition-colors"
+          title="Column & Workflow Settings"
+        >
+          <SlidersHorizontal className="h-[15px] w-[15px]" />
+        </button>
+
         {hasActiveFilters && (
           <button
             type="button"
             onClick={() => dispatch(clearFilters())}
-            className="text-xs text-slate-400 hover:text-slate-700 transition-colors flex items-center gap-1"
+            className="text-xs text-tm hover:text-tp transition-colors flex items-center gap-1"
             title="Reset filters"
           >
             <X className="h-3 w-3" />

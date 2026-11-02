@@ -118,7 +118,7 @@ export function ProjectInfoEditor({
       <CardHeader>
         <div className="flex items-center justify-between w-full">
           <CardTitle>
-            <FileText className="h-4 w-4 text-[#003049]" />
+            <FileText className="h-4 w-4 text-accent" />
             <span>Project Specification & Metadata</span>
           </CardTitle>
 
@@ -222,7 +222,7 @@ export function ProjectInfoEditor({
           />
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E2E8F0]">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
             <Button
               type="button"
               variant="outline"
@@ -246,10 +246,10 @@ export function ProjectInfoEditor({
         <CardContent className="space-y-6">
           {/* Main Description */}
           <div>
-            <h4 className="text-[11px] uppercase tracking-wider text-[#526174] font-mono mb-1 font-semibold">
+            <h4 className="text-[11px] uppercase tracking-wider text-ts font-mono mb-1 font-semibold">
               Description
             </h4>
-            <p className="text-xs text-[#17212B] leading-relaxed">
+            <p className="text-xs text-tp leading-relaxed">
               {project.description || 'No description provided.'}
             </p>
           </div>
@@ -257,34 +257,34 @@ export function ProjectInfoEditor({
           {/* Grid of Key Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Release Date */}
-            <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-[#526174]">
-                <Calendar className="h-3.5 w-3.5 text-[#003049]" />
+            <div className="p-4 rounded-xl bg-canvas border border-border space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-ts">
+                <Calendar className="h-3.5 w-3.5 text-accent" />
                 <span>Target Release</span>
               </div>
-              <p className="text-xs text-[#17212B] font-semibold">
+              <p className="text-xs text-tp font-semibold">
                 {project.targetReleaseDate || 'Not specified'}
               </p>
             </div>
 
             {/* Target Users */}
-            <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
-              <div className="flex items-center gap-1.5 text-xs text-[#526174]">
-                <Users className="h-3.5 w-3.5 text-[#003049]" />
+            <div className="p-4 rounded-xl bg-canvas border border-border space-y-1">
+              <div className="flex items-center gap-1.5 text-xs text-ts">
+                <Users className="h-3.5 w-3.5 text-accent" />
                 <span>Target Personas</span>
               </div>
-              <p className="text-xs text-[#17212B] font-semibold line-clamp-1">
+              <p className="text-xs text-tp font-semibold line-clamp-1">
                 {project.targetUsers || 'Not specified'}
               </p>
             </div>
 
             {/* Tech Stack */}
-            <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1 sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-1.5 text-xs text-[#526174]">
-                <Server className="h-3.5 w-3.5 text-[#003049]" />
+            <div className="p-4 rounded-xl bg-canvas border border-border space-y-1 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-1.5 text-xs text-ts">
+                <Server className="h-3.5 w-3.5 text-accent" />
                 <span>Tech Stack</span>
               </div>
-              <p className="text-xs text-[#17212B] font-semibold line-clamp-1">
+              <p className="text-xs text-tp font-semibold line-clamp-1">
                 {project.techStack || 'Not specified'}
               </p>
             </div>
@@ -293,48 +293,48 @@ export function ProjectInfoEditor({
           {/* Extended Detail Accordion / Blocks */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             {project.goals && (
-              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-[#003049] font-semibold">
-                  <Target className="h-3.5 w-3.5 text-[#003049]" />
+              <div className="p-4 rounded-xl bg-canvas border border-border space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-accent font-semibold">
+                  <Target className="h-3.5 w-3.5 text-accent" />
                   <span>Goals & Objectives</span>
                 </div>
-                <p className="text-xs text-[#526174] leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-ts leading-relaxed whitespace-pre-line">
                   {project.goals}
                 </p>
               </div>
             )}
 
             {project.technicalConstraints && (
-              <div className="p-4 rounded-xl bg-[#FDF0D5]/50 border border-[#F7DFAB] space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-[#780000] font-semibold">
-                  <Shield className="h-3.5 w-3.5 text-[#780000]" />
+              <div className="p-4 rounded-xl bg-warning-subtle/50 border border-warning/30 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-warning font-semibold">
+                  <Shield className="h-3.5 w-3.5 text-warning" />
                   <span>Technical Constraints</span>
                 </div>
-                <p className="text-xs text-[#17212B] leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-tp leading-relaxed whitespace-pre-line">
                   {project.technicalConstraints}
                 </p>
               </div>
             )}
 
             {project.businessRequirements && (
-              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-[#003049] font-semibold">
-                  <Info className="h-3.5 w-3.5 text-[#003049]" />
+              <div className="p-4 rounded-xl bg-canvas border border-border space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-accent font-semibold">
+                  <Info className="h-3.5 w-3.5 text-accent" />
                   <span>Business Requirements</span>
                 </div>
-                <p className="text-xs text-[#526174] leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-ts leading-relaxed whitespace-pre-line">
                   {project.businessRequirements}
                 </p>
               </div>
             )}
 
             {project.knownDependencies && (
-              <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-[#003049] font-semibold">
-                  <Link2 className="h-3.5 w-3.5 text-[#003049]" />
+              <div className="p-4 rounded-xl bg-canvas border border-border space-y-1">
+                <div className="flex items-center gap-1.5 text-xs text-accent font-semibold">
+                  <Link2 className="h-3.5 w-3.5 text-accent" />
                   <span>Known Dependencies</span>
                 </div>
-                <p className="text-xs text-[#526174] leading-relaxed whitespace-pre-line">
+                <p className="text-xs text-ts leading-relaxed whitespace-pre-line">
                   {project.knownDependencies}
                 </p>
               </div>

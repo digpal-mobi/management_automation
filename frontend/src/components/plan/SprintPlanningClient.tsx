@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Project, ProjectMember, SprintPlan, PlanningSprintAllocation, UnscheduledTicketItem } from '@/types';
 import { planApi, projectsApi } from '@/lib/api';
-import { ProjectNav } from '@/components/layout/ProjectNav';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -229,7 +228,7 @@ export function SprintPlanningClient({
   if (!project) {
     return (
       <EmptyState
-        icon={<AlertCircle className="h-6 w-6 text-[#526174]" />}
+        icon={<AlertCircle className="h-6 w-6 text-ts" />}
         title="Project Not Found"
         description="The requested project workspace could not be located."
       />
@@ -252,28 +251,20 @@ export function SprintPlanningClient({
           { label: project.name, href: `/projects/${projectSlug}` },
           { label: 'Sprint Planning Brain' },
         ]}
-        icon={<CalendarClock className="h-6 w-6 text-[#003049]" />}
+        icon={<CalendarClock className="h-6 w-6 text-accent" />}
         title="AI Sprint Planning Brain"
         description="Dependency-aware ticket sequencing, capacity optimization, and sprint delivery schedule."
-        actions={
-          <ProjectNav
-            projectId={projectId}
-            projectSlug={projectSlug}
-            memberCount={members.length}
-            ticketCount={project.ticketCount}
-          />
-        }
       />
 
       {/* Main Action Bar & Status Banner */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 rounded-2xl bg-elevated border border-border shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span
               className={`px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 ${
                 isApproved
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
-                  : 'bg-amber-50 text-amber-800 border border-amber-200 shadow-sm'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-card'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200 shadow-card'
               }`}
             >
               {isApproved ? (
@@ -289,7 +280,7 @@ export function SprintPlanningClient({
               )}
             </span>
             {plan?.createdAt && (
-              <span className="text-xs text-[#526174] flex items-center gap-1">
+              <span className="text-xs text-ts flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 {new Date(plan.createdAt).toLocaleDateString()} {new Date(plan.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -304,7 +295,7 @@ export function SprintPlanningClient({
             onClick={() => setIsOptionsOpen(true)}
             className="flex items-center gap-1.5"
           >
-            <SlidersHorizontal className="h-3.5 w-3.5 text-[#526174]" />
+            <SlidersHorizontal className="h-3.5 w-3.5 text-ts" />
             <span>Capacity & Rules</span>
           </Button>
 
@@ -313,9 +304,9 @@ export function SprintPlanningClient({
             size="sm"
             onClick={handleGeneratePlan}
             disabled={isPlanning}
-            className="flex items-center gap-1.5 border-[#003049] text-[#003049] hover:bg-[#F1F4F7]"
+            className="flex items-center gap-1.5 border-accent text-accent hover:bg-hover"
           >
-            <Sparkles className="h-3.5 w-3.5 text-[#003049]" />
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
             <span>{isPlanning ? 'Planning...' : 'Re-Plan Sprints with AI'}</span>
           </Button>
 
@@ -324,7 +315,7 @@ export function SprintPlanningClient({
               size="sm"
               onClick={handleApprovePlan}
               disabled={isApproving || !plan}
-              className="bg-[#003049] hover:bg-[#002236] text-white flex items-center gap-1.5 shadow-sm"
+              className="bg-accent hover:bg-accent-hover text-canvas flex items-center gap-1.5 shadow-card"
             >
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
               <span>{isApproving ? 'Approving...' : 'Approve & Apply Plan'}</span>
@@ -335,54 +326,54 @@ export function SprintPlanningClient({
 
       {/* KPI Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-elevated border border-border shadow-card flex items-center gap-3.5">
           <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
             <CalendarClock className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xl font-bold text-[#17212B]">{sprintAllocations.length}</div>
-            <div className="text-xs text-[#526174]">Planned Sprints</div>
+            <div className="text-xl font-bold text-tp">{sprintAllocations.length}</div>
+            <div className="text-xs text-ts">Planned Sprints</div>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-elevated border border-border shadow-card flex items-center gap-3.5">
           <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
             <Layers className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xl font-bold text-[#17212B]">
+            <div className="text-xl font-bold text-tp">
               {validation?.totalScheduled || sprintAllocations.reduce((sum, s) => sum + s.tickets.length, 0)}
-              <span className="text-xs font-normal text-[#526174] ml-1">
+              <span className="text-xs font-normal text-ts ml-1">
                 / {validation?.totalTicketsAnalyzed || project.ticketCount || 82}
               </span>
             </div>
-            <div className="text-xs text-[#526174]">Tickets Scheduled</div>
+            <div className="text-xs text-ts">Tickets Scheduled</div>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5">
-          <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+        <div className="p-4 rounded-2xl bg-elevated border border-border shadow-card flex items-center gap-3.5">
+          <div className="h-10 w-10 rounded-xl bg-accent-subtle text-indigo-700 flex items-center justify-center shrink-0">
             <Gauge className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xl font-bold text-[#17212B]">{validation?.capacityUtilizationAverage || 92}%</div>
-            <div className="text-xs text-[#526174]">Avg Capacity Util.</div>
+            <div className="text-xl font-bold text-tp">{validation?.capacityUtilizationAverage || 92}%</div>
+            <div className="text-xs text-ts">Avg Capacity Util.</div>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-elevated border border-border shadow-card flex items-center gap-3.5">
           <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
             <GitMerge className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xl font-bold text-[#17212B]">{criticalPath?.ticketIds.length || 0}</div>
-            <div className="text-xs text-[#526174]">Critical Path Tickets</div>
+            <div className="text-xl font-bold text-tp">{criticalPath?.ticketIds.length || 0}</div>
+            <div className="text-xs text-ts">Critical Path Tickets</div>
           </div>
         </div>
       </div>
 
       {/* Tabs Bar */}
-      <div className="flex items-center gap-1.5 border-b border-[#E2E8F0] pb-2 overflow-x-auto custom-scrollbar">
+      <div className="flex items-center gap-1.5 border-b border-border pb-2 overflow-x-auto custom-scrollbar">
         {[
           { id: 'schedule', label: 'Sprint Schedule & Sequencing', icon: CalendarClock, count: sprintAllocations.length },
           { id: 'unscheduled', label: 'Unscheduled Backlog', icon: AlertTriangle, count: unscheduledTickets.length, alert: unscheduledTickets.length > 0 },
@@ -398,8 +389,8 @@ export function SprintPlanningClient({
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
                 isActive
-                  ? 'bg-[#003049] text-white shadow-sm'
-                  : 'text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7]'
+                  ? 'bg-accent text-canvas shadow-card'
+                  : 'text-ts hover:text-accent hover:bg-hover'
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -408,10 +399,10 @@ export function SprintPlanningClient({
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                     isActive
-                      ? 'bg-white/20 text-white'
+                      ? 'bg-canvas/20 text-canvas'
                       : tab.alert
                       ? 'bg-amber-100 text-amber-800'
-                      : 'bg-[#E2E8F0] text-[#526174]'
+                      : 'bg-hover text-ts'
                   }`}
                 >
                   {tab.count}
@@ -430,34 +421,34 @@ export function SprintPlanningClient({
             return (
               <div
                 key={sprint.sprintId}
-                className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden transition-all duration-150"
+                className="bg-elevated rounded-2xl border border-border shadow-card overflow-hidden transition-all duration-150"
               >
                 {/* Sprint Header */}
-                <div className="p-4 sm:p-5 bg-gradient-to-r from-[#F8FAFC] to-white border-b border-[#E2E8F0] flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="p-4 sm:p-5 bg-gradient-to-r from-elevated to-surface border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2.5">
-                      <span className="px-2.5 py-1 rounded-lg bg-[#003049] text-white text-xs font-bold tracking-wide">
+                      <span className="px-2.5 py-1 rounded-lg bg-accent text-canvas text-xs font-bold tracking-wide">
                         {sprint.sprintId}
                       </span>
-                      <h3 className="text-base font-bold text-[#17212B]">{sprint.name}</h3>
-                      <span className="text-xs text-[#526174]">
+                      <h3 className="text-base font-bold text-tp">{sprint.name}</h3>
+                      <span className="text-xs text-ts">
                         ({sprint.startDate} → {sprint.endDate})
                       </span>
                     </div>
-                    <p className="text-xs text-[#526174] mt-1">
-                      <span className="font-semibold text-[#17212B]">Goal:</span> {sprint.goal}
+                    <p className="text-xs text-ts mt-1">
+                      <span className="font-semibold text-tp">Goal:</span> {sprint.goal}
                     </p>
                   </div>
 
                   {/* Capacity Bar & Utilization */}
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="text-xs font-bold text-[#17212B]">
+                      <div className="text-xs font-bold text-tp">
                         {sprint.allocatedPoints} / {sprint.capacityPoints} pts
                       </div>
-                      <div className="text-[11px] text-[#526174]">{sprint.tickets.length} tickets</div>
+                      <div className="text-[11px] text-ts">{sprint.tickets.length} tickets</div>
                     </div>
-                    <div className="w-28 bg-[#E2E8F0] rounded-full h-2.5 overflow-hidden">
+                    <div className="w-28 bg-hover rounded-full h-2.5 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-300 ${
                           isOverCapacity ? 'bg-rose-500' : sprint.utilizationPercentage > 85 ? 'bg-emerald-500' : 'bg-blue-500'
@@ -469,12 +460,12 @@ export function SprintPlanningClient({
                 </div>
 
                 {/* Role Breakdown Badges */}
-                <div className="px-4 py-2.5 bg-[#FAFBFD] border-b border-[#E2E8F0] flex items-center gap-2 flex-wrap text-xs text-[#526174]">
-                  <span className="font-medium text-[#17212B]">Role Allocation:</span>
+                <div className="px-4 py-2.5 bg-elevated border-b border-border flex items-center gap-2 flex-wrap text-xs text-ts">
+                  <span className="font-medium text-tp">Role Allocation:</span>
                   {Object.entries(sprint.roleBreakdown || {}).map(([role, pts]) => (
                     <span
                       key={role}
-                      className="px-2 py-0.5 rounded-md bg-white border border-[#E2E8F0] text-[11px] font-semibold text-[#17212B]"
+                      className="px-2 py-0.5 rounded-md bg-elevated border border-border text-[11px] font-semibold text-tp"
                     >
                       {role}: {pts} pts
                     </span>
@@ -488,28 +479,28 @@ export function SprintPlanningClient({
                 </div>
 
                 {/* Sequenced Tickets Table */}
-                <div className="divide-y divide-[#E2E8F0]">
+                <div className="divide-y divide-divider">
                   {sprint.tickets.map((t) => (
                     <div
                       key={t.ticketId}
-                      className="p-3.5 sm:px-5 hover:bg-[#F8FAFC] transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
+                      className="p-3.5 sm:px-5 hover:bg-hover transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs"
                     >
                       <div className="flex items-start gap-3 min-w-0">
                         {/* Execution Sequence Order Badge */}
-                        <div className="h-6 w-6 rounded-md bg-[#E2E8F0] text-[#17212B] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="h-6 w-6 rounded-md bg-hover text-tp font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                           #{t.executionOrder}
                         </div>
 
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             {t.sourceCandidateId && (
-                              <span className="font-mono font-bold text-[#003049]">{t.sourceCandidateId}</span>
+                              <span className="font-mono font-bold text-accent">{t.sourceCandidateId}</span>
                             )}
-                            <span className="font-semibold text-[#17212B]">{t.title}</span>
+                            <span className="font-semibold text-tp">{t.title}</span>
                           </div>
 
-                          <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-[#526174]">
-                            <span className="px-2 py-0.5 rounded bg-[#F1F4F7] text-[#526174] font-medium">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-ts">
+                            <span className="px-2 py-0.5 rounded bg-hover text-ts font-medium">
                               {t.module || 'Core'}
                             </span>
                             <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
@@ -522,7 +513,7 @@ export function SprintPlanningClient({
                               className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                                 t.priority === 'Critical' || t.priority === 'High'
                                   ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-slate-100 text-slate-700'
+                                  : 'bg-elevated text-ts'
                               }`}
                             >
                               {t.priority}
@@ -547,7 +538,7 @@ export function SprintPlanningClient({
                             });
                             setExplanationModalOpen(true);
                           }}
-                          className="px-2.5 py-1 rounded-lg border border-[#E2E8F0] hover:border-[#003049] text-[#526174] hover:text-[#003049] text-xs font-medium flex items-center gap-1 transition-colors"
+                          className="px-2.5 py-1 rounded-lg border border-border hover:border-accent text-ts hover:text-accent text-xs font-medium flex items-center gap-1 transition-colors"
                         >
                           <Info className="h-3.5 w-3.5" />
                           <span>Why this order?</span>
@@ -560,7 +551,7 @@ export function SprintPlanningClient({
                           className={`p-1.5 rounded-lg border transition-colors ${
                             t.isLocked
                               ? 'bg-amber-50 border-amber-300 text-amber-800'
-                              : 'border-[#E2E8F0] text-[#526174] hover:text-[#17212B]'
+                              : 'border-border text-ts hover:text-tp'
                           }`}
                         >
                           {t.isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
@@ -578,7 +569,7 @@ export function SprintPlanningClient({
                             setMoveModalOpen(true);
                           }}
                           title="Move ticket to another sprint"
-                          className="px-2.5 py-1 rounded-lg border border-[#E2E8F0] hover:border-[#003049] text-[#526174] hover:text-[#003049] text-xs font-medium transition-colors"
+                          className="px-2.5 py-1 rounded-lg border border-border hover:border-accent text-ts hover:text-accent text-xs font-medium transition-colors"
                         >
                           Move...
                         </button>
@@ -606,10 +597,10 @@ export function SprintPlanningClient({
           </div>
 
           {unscheduledTickets.length === 0 ? (
-            <div className="p-8 text-center bg-white rounded-2xl border border-[#E2E8F0] shadow-sm">
+            <div className="p-8 text-center bg-elevated rounded-2xl border border-border shadow-card">
               <CheckCircle2 className="h-10 w-10 text-emerald-600 mx-auto mb-2" />
-              <h4 className="text-base font-bold text-[#17212B]">All Approved Tickets Scheduled!</h4>
-              <p className="text-xs text-[#526174] max-w-md mx-auto mt-1">
+              <h4 className="text-base font-bold text-tp">All Approved Tickets Scheduled!</h4>
+              <p className="text-xs text-ts max-w-md mx-auto mt-1">
                 Every ticket fits within available sprint capacities and satisfies all topological prerequisites.
               </p>
             </div>
@@ -618,7 +609,7 @@ export function SprintPlanningClient({
               {unscheduledTickets.map((ut) => (
                 <div
                   key={ut.ticketId}
-                  className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs"
+                  className="p-4 rounded-2xl bg-elevated border border-border shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs"
                 >
                   <div>
                     <div className="flex items-center gap-2">
@@ -626,18 +617,18 @@ export function SprintPlanningClient({
                         {ut.reasonCode}
                       </span>
                       {ut.sourceCandidateId && (
-                        <span className="font-mono font-bold text-[#003049]">{ut.sourceCandidateId}</span>
+                        <span className="font-mono font-bold text-accent">{ut.sourceCandidateId}</span>
                       )}
-                      <span className="font-bold text-[#17212B]">{ut.title}</span>
+                      <span className="font-bold text-tp">{ut.title}</span>
                     </div>
-                    <p className="text-xs text-[#526174] mt-1">{ut.reasonDescription}</p>
+                    <p className="text-xs text-ts mt-1">{ut.reasonDescription}</p>
                     <div className="mt-1 text-xs text-blue-700 font-medium">
                       Action Required: {ut.actionRequired}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="px-2 py-1 rounded bg-[#F1F4F7] text-[#17212B] font-bold">
+                    <span className="px-2 py-1 rounded bg-hover text-tp font-bold">
                       {ut.storyPoints} pts
                     </span>
                   </div>
@@ -651,12 +642,12 @@ export function SprintPlanningClient({
       {/* Tab 3: Dependency Graph & Critical Path View */}
       {activeTab === 'dependencies' && (
         <div className="space-y-6">
-          <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <h4 className="text-sm font-bold text-[#17212B] mb-2 flex items-center gap-2">
-              <GitMerge className="h-4 w-4 text-[#003049]" />
+          <div className="p-4 rounded-2xl bg-elevated border border-border shadow-card">
+            <h4 className="text-sm font-bold text-tp mb-2 flex items-center gap-2">
+              <GitMerge className="h-4 w-4 text-accent" />
               <span>Critical Path Analysis</span>
             </h4>
-            <p className="text-xs text-[#526174] mb-4">
+            <p className="text-xs text-ts mb-4">
               The Critical Path represents the longest dependent sequence of implementation tasks. Any delay in this chain directly delays the project target release date.
             </p>
 
@@ -668,25 +659,25 @@ export function SprintPlanningClient({
                     <span>{tid}</span>
                   </div>
                   {idx < (criticalPath?.ticketIds.length || 0) - 1 && (
-                    <ArrowRight className="h-3.5 w-3.5 text-[#94A3B8]" />
+                    <ArrowRight className="h-3.5 w-3.5 text-tm" />
                   )}
                 </React.Fragment>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-[#E2E8F0] font-bold text-xs text-[#17212B]">
+          <div className="bg-elevated rounded-2xl border border-border shadow-card overflow-hidden">
+            <div className="p-4 border-b border-border font-bold text-xs text-tp">
               Active Dependency Edges ({plan?.dependencies?.length || 0})
             </div>
-            <div className="divide-y divide-[#E2E8F0] max-h-[500px] overflow-y-auto">
+            <div className="divide-y divide-divider max-h-[500px] overflow-y-auto">
               {(plan?.dependencies || []).map((dep, idx) => (
                 <div key={idx} className="p-3.5 text-xs flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-bold text-[#003049]">{dep.sourceKey}</span>
-                    <ArrowRight className="h-3 w-3 text-[#526174]" />
-                    <span className="font-mono font-bold text-[#003049]">{dep.targetKey}</span>
-                    <span className="text-[11px] text-[#526174]">({dep.reason || dep.type})</span>
+                    <span className="font-mono font-bold text-accent">{dep.sourceKey}</span>
+                    <ArrowRight className="h-3 w-3 text-ts" />
+                    <span className="font-mono font-bold text-accent">{dep.targetKey}</span>
+                    <span className="text-[11px] text-ts">({dep.reason || dep.type})</span>
                   </div>
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
@@ -705,12 +696,12 @@ export function SprintPlanningClient({
       {/* Tab 4: Validation & Integrity Report */}
       {activeTab === 'validation' && (
         <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
-            <h4 className="text-sm font-bold text-[#17212B] mb-2 flex items-center gap-2">
+          <div className="p-4 rounded-2xl bg-elevated border border-border shadow-card">
+            <h4 className="text-sm font-bold text-tp mb-2 flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
               <span>Planning Integrity & Hard Constraints Audit</span>
             </h4>
-            <p className="text-xs text-[#526174] mb-4">
+            <p className="text-xs text-ts mb-4">
               Deterministic validation verifies that topological ordering, capacity bounds, and assignment integrity are mathematically sound.
             </p>
 
@@ -718,7 +709,7 @@ export function SprintPlanningClient({
               {(validation?.ruleEvaluations || []).map((rule, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-xl border border-[#E2E8F0] flex items-start gap-3 bg-[#FAFBFD]"
+                  className="p-3 rounded-xl border border-border flex items-start gap-3 bg-elevated"
                 >
                   {rule.passed ? (
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -726,8 +717,8 @@ export function SprintPlanningClient({
                     <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
                   )}
                   <div>
-                    <div className="text-xs font-bold text-[#17212B]">{rule.rule}</div>
-                    <div className="text-[11px] text-[#526174] mt-0.5">{rule.details}</div>
+                    <div className="text-xs font-bold text-tp">{rule.rule}</div>
+                    <div className="text-[11px] text-ts mt-0.5">{rule.details}</div>
                   </div>
                 </div>
               ))}
@@ -739,30 +730,30 @@ export function SprintPlanningClient({
       {/* Tab 5: Plan Version History */}
       {activeTab === 'history' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-[#E2E8F0] font-bold text-xs text-[#17212B]">
+          <div className="bg-elevated rounded-2xl border border-border shadow-card overflow-hidden">
+            <div className="p-4 border-b border-border font-bold text-xs text-tp">
               Plan Revision History ({planHistory.length})
             </div>
-            <div className="divide-y divide-[#E2E8F0]">
+            <div className="divide-y divide-divider">
               {planHistory.map((h) => (
                 <div key={h.id} className="p-4 text-xs flex items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-[#17212B]">{h.title}</span>
+                      <span className="font-bold text-sm text-tp">{h.title}</span>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           h.status === 'APPROVED'
                             ? 'bg-emerald-100 text-emerald-800'
                             : h.status === 'SUPERSEDED'
-                            ? 'bg-slate-100 text-slate-600'
+                            ? 'bg-elevated text-ts'
                             : 'bg-amber-100 text-amber-800'
                         }`}
                       >
                         {h.status}
                       </span>
                     </div>
-                    <p className="text-xs text-[#526174] mt-0.5">{h.summary}</p>
-                    <div className="text-[11px] text-[#94A3B8] mt-1">
+                    <p className="text-xs text-ts mt-0.5">{h.summary}</p>
+                    <div className="text-[11px] text-tm mt-1">
                       Created: {new Date(h.createdAt).toLocaleDateString()} at {new Date(h.createdAt).toLocaleTimeString()}
                     </div>
                   </div>
@@ -775,20 +766,20 @@ export function SprintPlanningClient({
 
       {/* Options & Capacity Settings Modal */}
       <Dialog open={isOptionsOpen} onOpenChange={setIsOptionsOpen}>
-        <DialogContent className="max-w-md bg-white rounded-2xl p-6">
+        <DialogContent className="max-w-md bg-elevated rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-[#17212B] flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-[#003049]" />
+            <DialogTitle className="text-base font-bold text-tp flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 text-accent" />
               <span>Sprint Planning Brain Configuration</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-[#526174]">
+            <DialogDescription className="text-xs text-ts">
               Tune team velocity limits and constraint policies before triggering the optimization run.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-4 text-xs">
             <div>
-              <label className="font-semibold text-[#17212B] block mb-1">
+              <label className="font-semibold text-tp block mb-1">
                 Default Story-Point Capacity per Sprint
               </label>
               <input
@@ -797,28 +788,28 @@ export function SprintPlanningClient({
                 max={60}
                 value={capacityInput}
                 onChange={(e) => setCapacityInput(parseInt(e.target.value) || 28)}
-                className="w-full px-3 py-2 border border-[#E2E8F0] rounded-xl text-xs focus:outline-none focus:border-[#003049]"
+                className="w-full px-3 py-2 border border-border rounded-xl text-xs focus:outline-none focus:border-accent"
               />
-              <span className="text-[11px] text-[#94A3B8]">Standard agile 2-week iteration velocity.</span>
+              <span className="text-[11px] text-tm">Standard agile 2-week iteration velocity.</span>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl border border-[#E2E8F0] bg-[#FAFBFD]">
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-elevated">
               <div>
-                <div className="font-semibold text-[#17212B]">Strict Capacity Enforcement</div>
-                <div className="text-[11px] text-[#526174]">Do not allow minor overflow tolerance.</div>
+                <div className="font-semibold text-tp">Strict Capacity Enforcement</div>
+                <div className="text-[11px] text-ts">Do not allow minor overflow tolerance.</div>
               </div>
               <input
                 type="checkbox"
                 checked={strictCapacity}
                 onChange={(e) => setStrictCapacity(e.target.checked)}
-                className="h-4 w-4 rounded text-[#003049]"
+                className="h-4 w-4 rounded text-accent"
               />
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl border border-[#E2E8F0] bg-[#FAFBFD]">
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-elevated">
               <div>
-                <div className="font-semibold text-[#17212B]">Allow Co-Sprint Dependencies</div>
-                <div className="text-[11px] text-[#526174]">
+                <div className="font-semibold text-tp">Allow Co-Sprint Dependencies</div>
+                <div className="text-[11px] text-ts">
                   Permit prerequisite and dependent in same sprint with strict sequence order.
                 </div>
               </div>
@@ -826,7 +817,7 @@ export function SprintPlanningClient({
                 type="checkbox"
                 checked={allowCoSprint}
                 onChange={(e) => setAllowCoSprint(e.target.checked)}
-                className="h-4 w-4 rounded text-[#003049]"
+                className="h-4 w-4 rounded text-accent"
               />
             </div>
 
@@ -837,7 +828,7 @@ export function SprintPlanningClient({
               <Button
                 size="sm"
                 onClick={handleGeneratePlan}
-                className="bg-[#003049] hover:bg-[#002236] text-white flex items-center gap-1.5"
+                className="bg-accent hover:bg-accent-hover text-canvas flex items-center gap-1.5"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>Run Planning Engine</span>
@@ -849,21 +840,21 @@ export function SprintPlanningClient({
 
       {/* Move Ticket Modal */}
       <Dialog open={moveModalOpen} onOpenChange={setMoveModalOpen}>
-        <DialogContent className="max-w-sm bg-white rounded-2xl p-5">
+        <DialogContent className="max-w-sm bg-elevated rounded-2xl p-5">
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold text-[#17212B]">Move Ticket to Sprint</DialogTitle>
-            <DialogDescription className="text-xs text-[#526174]">
+            <DialogTitle className="text-sm font-bold text-tp">Move Ticket to Sprint</DialogTitle>
+            <DialogDescription className="text-xs text-ts">
               {selectedTicket?.title}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-3 text-xs">
             <div>
-              <label className="font-semibold text-[#17212B] block mb-1">Target Sprint</label>
+              <label className="font-semibold text-tp block mb-1">Target Sprint</label>
               <select
                 value={targetSprintId}
                 onChange={(e) => setTargetSprintId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-[#E2E8F0] text-xs font-medium cursor-pointer"
+                className="w-full px-3 py-2 rounded-xl border border-border text-xs font-medium cursor-pointer"
               >
                 {sprintAllocations.map((s) => (
                   <option key={s.sprintId} value={s.sprintId}>
@@ -877,7 +868,7 @@ export function SprintPlanningClient({
               <Button variant="outline" size="sm" onClick={() => setMoveModalOpen(false)}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleMoveTicket} className="bg-[#003049] text-white">
+              <Button size="sm" onClick={handleMoveTicket} className="bg-accent text-canvas">
                 Apply Move
               </Button>
             </div>
@@ -887,23 +878,23 @@ export function SprintPlanningClient({
 
       {/* "Why this order?" Explanation Modal */}
       <Dialog open={explanationModalOpen} onOpenChange={setExplanationModalOpen}>
-        <DialogContent className="max-w-md bg-white rounded-2xl p-6">
+        <DialogContent className="max-w-md bg-elevated rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold text-[#17212B] flex items-center gap-2">
-              <Info className="h-4 w-4 text-[#003049]" />
+            <DialogTitle className="text-sm font-bold text-tp flex items-center gap-2">
+              <Info className="h-4 w-4 text-accent" />
               <span>Sequencing & Allocation Rationale</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-[#526174]">
+            <DialogDescription className="text-xs text-ts">
               {selectedExplanation?.title}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-3 p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs leading-relaxed text-[#17212B]">
+          <div className="mt-3 p-4 rounded-xl bg-elevated border border-border text-xs leading-relaxed text-tp">
             {selectedExplanation?.text}
           </div>
 
           <div className="flex justify-end pt-3">
-            <Button size="sm" onClick={() => setExplanationModalOpen(false)} className="bg-[#003049] text-white">
+            <Button size="sm" onClick={() => setExplanationModalOpen(false)} className="bg-accent text-canvas">
               Close
             </Button>
           </div>

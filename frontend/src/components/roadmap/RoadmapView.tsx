@@ -517,13 +517,13 @@ export function RoadmapView({
     return (
       <div
         key={feature.id}
-        className="p-5 hover:bg-[#FDFDFE] transition-colors space-y-3"
+        className="p-5 hover:bg-elevated transition-colors space-y-3"
       >
         {/* Top Row: Name, Status, Priority, Actions */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-sm font-semibold text-[#17212B]">
+              <h4 className="text-sm font-semibold text-tp">
                 {feature.name}
               </h4>
               <Badge
@@ -537,24 +537,24 @@ export function RoadmapView({
                 size="sm"
               />
               {feature.sprint && (
-                <span className="text-[10px] font-mono text-[#003049] bg-[#EFF5F9] px-2 py-0.5 rounded-full border border-[#669BBC]/30 font-bold flex items-center gap-1">
+                <span className="text-[10px] font-mono text-accent bg-accent-subtle px-2 py-0.5 rounded-full border border-accent/30 font-bold flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
                   Sprint {feature.sprint}
                 </span>
               )}
               {feature.targetDate && (
-                <span className="text-[10px] font-mono text-[#526174]">
+                <span className="text-[10px] font-mono text-ts">
                   {feature.targetDate}
                 </span>
               )}
               {feature.sourceCandidateIds &&
                 (feature.sourceCandidateIds as string[]).length > 0 && (
-                  <span className="text-[10px] font-mono text-[#526174] bg-[#F7F8FA] px-2 py-0.5 rounded-full border border-[#E2E8F0] font-medium">
+                  <span className="text-[10px] font-mono text-ts bg-canvas px-2 py-0.5 rounded-full border border-border font-medium">
                     {(feature.sourceCandidateIds as string[]).length} ticket candidates
                   </span>
                 )}
               {feature.isAiGenerated && (
-                <span className="text-[10px] font-mono text-[#526174] bg-[#F7F8FA] px-1.5 py-0.5 rounded border border-[#E2E8F0] font-medium">
+                <span className="text-[10px] font-mono text-ts bg-canvas px-1.5 py-0.5 rounded border border-border font-medium">
                   AI Suggested
                 </span>
               )}
@@ -569,7 +569,7 @@ export function RoadmapView({
                 <button
                   type="button"
                   onClick={() => handleStatusChange(feature.id, "ACCEPTED")}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#003049] text-white hover:bg-[#002437] transition-colors shadow-xs"
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-accent text-canvas hover:bg-accent-hover transition-colors shadow-xs"
                   title="Approve into active roadmap"
                 >
                   Accept
@@ -581,7 +581,7 @@ export function RoadmapView({
                 <button
                   type="button"
                   onClick={() => handleStatusChange(feature.id, "DEFERRED")}
-                  className="px-2.5 py-1 rounded-lg text-[11px] text-[#526174] hover:text-[#17212B] bg-[#F1F4F7] hover:bg-[#E2E8F0] border border-[#E2E8F0] transition-colors"
+                  className="px-2.5 py-1 rounded-lg text-[11px] text-ts hover:text-tp bg-hover hover:bg-hover border border-border transition-colors"
                   title="Defer to later phase"
                 >
                   Defer
@@ -607,7 +607,7 @@ export function RoadmapView({
                     : "Generate developer tickets for this feature"
                 }
               >
-                <TicketIcon className="h-3 w-3 mr-1 text-[#003049]" />
+                <TicketIcon className="h-3 w-3 mr-1 text-accent" />
                 <span>
                   {ticketCount > 0 ? "View Tickets" : "Generate Tickets"}
                 </span>
@@ -617,7 +617,7 @@ export function RoadmapView({
               <button
                 type="button"
                 onClick={() => openEditModal(feature)}
-                className="p-1.5 rounded-lg text-[#526174] hover:text-[#003049] hover:bg-[#F1F4F7] border border-transparent hover:border-[#E2E8F0] transition-colors"
+                className="p-1.5 rounded-lg text-ts hover:text-accent hover:bg-hover border border-transparent hover:border-border transition-colors"
                 title="Edit feature specifications"
               >
                 <Edit2 className="h-3.5 w-3.5" />
@@ -627,7 +627,7 @@ export function RoadmapView({
               <button
                 type="button"
                 onClick={() => handleDeleteFeature(feature.id, feature.name)}
-                className="p-1.5 rounded-lg text-[#526174] hover:text-[#C1121F] hover:bg-[#FDF2F2] border border-transparent hover:border-[#FDE8E8] transition-colors"
+                className="p-1.5 rounded-lg text-ts hover:text-danger hover:bg-danger-subtle border border-transparent hover:border-danger/30 transition-colors"
                 title="Delete feature"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -637,26 +637,26 @@ export function RoadmapView({
         </div>
 
         {/* Description */}
-        <p className="text-xs text-[#526174] leading-relaxed">
+        <p className="text-xs text-ts leading-relaxed">
           {feature.description}
         </p>
 
         {/* Business Value & Constraints */}
         {feature.businessValue && (
-          <div className="text-[11px] text-[#526174]">
-            <strong className="text-[#17212B]">Business Value:</strong>{" "}
+          <div className="text-[11px] text-ts">
+            <strong className="text-tp">Business Value:</strong>{" "}
             {feature.businessValue}
           </div>
         )}
 
         {/* Meta Footer: Dependencies, Source References, Linked Tickets */}
-        <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#526174] pt-2 border-t border-[#E2E8F0]">
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-ts pt-2 border-t border-border">
           {/* Dependencies */}
           {feature.dependencies && feature.dependencies.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <GitBranch className="h-3 w-3 text-[#526174]" />
-              <span className="text-[#526174]">Prerequisites:</span>
-              <span className="text-[#17212B] font-medium">
+              <GitBranch className="h-3 w-3 text-ts" />
+              <span className="text-ts">Prerequisites:</span>
+              <span className="text-tp font-medium">
                 {feature.dependencies.join(", ")}
               </span>
             </div>
@@ -665,9 +665,9 @@ export function RoadmapView({
           {/* Source References */}
           {feature.sourceReferences && feature.sourceReferences.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <BookOpen className="h-3 w-3 text-[#526174]" />
-              <span className="text-[#526174]">Source:</span>
-              <span className="text-[#17212B] font-medium">
+              <BookOpen className="h-3 w-3 text-ts" />
+              <span className="text-ts">Source:</span>
+              <span className="text-tp font-medium">
                 {feature.sourceReferences[0].docTitle}{" "}
                 {feature.sourceReferences[0].location &&
                   `(${feature.sourceReferences[0].location})`}
@@ -687,7 +687,7 @@ export function RoadmapView({
                     : null,
                 );
               }}
-              className="flex items-center gap-1 text-[#003049] hover:text-[#669BBC] font-semibold ml-auto transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-accent hover:text-accent font-semibold ml-auto transition-colors cursor-pointer"
               title="Click to view generated tickets"
             >
               <TicketIcon className="h-3 w-3" />
@@ -702,32 +702,32 @@ export function RoadmapView({
   return (
     <div className="space-y-6">
       {/* Action Bar & Filter Controls */}
-      <div className="flex flex-col gap-3.5 p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-card">
+      <div className="flex flex-col gap-3.5 p-4 rounded-2xl bg-elevated border border-border shadow-card">
         {/* Top row: Search and Group By Toggle */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {/* Search */}
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ts" />
             <input
               type="text"
               placeholder="Search features..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-elevated border border-border text-xs text-tp placeholder:text-tm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
             />
           </div>
 
           {/* Grouping Toggle */}
           <div className="flex items-center gap-2 self-start sm:self-center">
-            <span className="text-xs text-[#526174] font-medium">Group by:</span>
-            <div className="inline-flex rounded-xl p-0.5 bg-[#F1F4F7] border border-[#E2E8F0]">
+            <span className="text-xs text-ts font-medium">Group by:</span>
+            <div className="inline-flex rounded-xl p-0.5 bg-hover border border-border">
               <button
                 type="button"
                 onClick={() => setGroupBy("sprint")}
                 className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
                   groupBy === "sprint"
-                    ? "bg-white text-[#003049] shadow-xs"
-                    : "text-[#526174] hover:text-[#17212B]"
+                    ? "bg-elevated text-accent shadow-xs"
+                    : "text-ts hover:text-tp"
                 }`}
               >
                 Sprint
@@ -737,8 +737,8 @@ export function RoadmapView({
                 onClick={() => setGroupBy("module")}
                 className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
                   groupBy === "module"
-                    ? "bg-white text-[#003049] shadow-xs"
-                    : "text-[#526174] hover:text-[#17212B]"
+                    ? "bg-elevated text-accent shadow-xs"
+                    : "text-ts hover:text-tp"
                 }`}
               >
                 Module
@@ -748,7 +748,7 @@ export function RoadmapView({
         </div>
 
         {/* Bottom row: Filters and Action Buttons */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-3 border-t border-[#F1F4F7]">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-3 border-t border-divider">
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Sprint Filter */}
@@ -756,7 +756,7 @@ export function RoadmapView({
               <select
                 value={selectedSprint}
                 onChange={(e) => setSelectedSprint(e.target.value)}
-                className="py-1.5 pl-3 pr-8 rounded-xl bg-white border border-[#003049]/30 text-xs font-semibold text-[#003049] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] cursor-pointer appearance-none transition-colors"
+                className="py-1.5 pl-3 pr-8 rounded-xl bg-elevated border border-accent/30 text-xs font-semibold text-accent focus:outline-none focus-visible:ring-1 focus-visible:ring-accent cursor-pointer appearance-none transition-colors"
                 title="Filter roadmap and ticket generation by sprint"
               >
                 <option value="ALL">All Sprints ({allSprints.length})</option>
@@ -767,7 +767,7 @@ export function RoadmapView({
                 ))}
                 <option value="UNSCHEDULED">Unscheduled / Backlog</option>
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#003049] pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-accent pointer-events-none" />
             </div>
 
             {/* Module Filter */}
@@ -775,7 +775,7 @@ export function RoadmapView({
               <select
                 value={selectedModule}
                 onChange={(e) => setSelectedModule(e.target.value)}
-                className="py-1.5 pl-3 pr-8 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none transition-colors"
+                className="py-1.5 pl-3 pr-8 rounded-xl bg-elevated border border-border hover:border-border text-xs text-tp focus:outline-none focus-visible:ring-1 focus-visible:ring-accent focus:border-accent cursor-pointer appearance-none transition-colors"
               >
                 <option value="ALL">All Modules ({allModules.length})</option>
                 {allModules.map((m) => (
@@ -784,7 +784,7 @@ export function RoadmapView({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ts pointer-events-none" />
             </div>
 
             {/* Status Filter */}
@@ -792,14 +792,14 @@ export function RoadmapView({
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="py-1.5 pl-3 pr-8 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none transition-colors"
+                className="py-1.5 pl-3 pr-8 rounded-xl bg-elevated border border-border hover:border-border text-xs text-tp focus:outline-none focus-visible:ring-1 focus-visible:ring-accent focus:border-accent cursor-pointer appearance-none transition-colors"
               >
                 <option value="ALL">All Review Statuses</option>
                 <option value="PROPOSED">Proposed</option>
                 <option value="ACCEPTED">Accepted</option>
                 <option value="DEFERRED">Deferred</option>
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ts pointer-events-none" />
             </div>
 
             {/* Priority Filter */}
@@ -807,7 +807,7 @@ export function RoadmapView({
               <select
                 value={selectedPriority}
                 onChange={(e) => setSelectedPriority(e.target.value)}
-                className="py-1.5 pl-3 pr-8 rounded-xl bg-white border border-[#E2E8F0] hover:border-[#CBD5E1] text-xs text-[#17212B] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#003049] focus:border-[#003049] cursor-pointer appearance-none transition-colors"
+                className="py-1.5 pl-3 pr-8 rounded-xl bg-elevated border border-border hover:border-border text-xs text-tp focus:outline-none focus-visible:ring-1 focus-visible:ring-accent focus:border-accent cursor-pointer appearance-none transition-colors"
               >
                 <option value="ALL">All Priorities</option>
                 <option value="Critical">Critical</option>
@@ -815,7 +815,7 @@ export function RoadmapView({
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#526174] pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ts pointer-events-none" />
             </div>
           </div>
 
@@ -826,7 +826,7 @@ export function RoadmapView({
               variant="outline"
               size="sm"
               onClick={handleOpenBrief}
-              className="text-xs font-semibold text-[#003049] border-[#003049]/30 hover:bg-[#EFF5F9]"
+              className="text-xs font-semibold text-accent border-accent/30 hover:bg-accent-subtle"
               title="Inspect synthesized Project Brief, 11 Sprints Schedule, and Coverage Report"
             >
               <FileText className="h-3.5 w-3.5 mr-1" />
@@ -841,7 +841,7 @@ export function RoadmapView({
                   size="sm"
                   isLoading={isGeneratingSprint === selectedSprint}
                   onClick={() => handleGenerateSprintTickets(selectedSprint)}
-                  className="text-xs font-semibold bg-[#003049] hover:bg-[#002437] text-white shadow-xs"
+                  className="text-xs font-semibold bg-accent hover:bg-accent-hover text-canvas shadow-xs"
                   title={`Generate developer tickets strictly for Sprint ${selectedSprint}`}
                 >
                   <Sparkles className="h-3.5 w-3.5 mr-1" />
@@ -853,7 +853,7 @@ export function RoadmapView({
                   size="sm"
                   disabled={isClearing}
                   onClick={() => handleClearTickets(selectedSprint)}
-                  className="text-xs font-semibold text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                  className="text-xs font-semibold text-danger border-danger/30 hover:bg-danger-subtle hover:border-danger/40"
                   title={`Clear all tickets for Sprint ${selectedSprint}`}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1" />
@@ -870,7 +870,7 @@ export function RoadmapView({
                   size="sm"
                   isLoading={isGeneratingAll}
                   onClick={handleGenerateAllBacklog}
-                  className="text-xs font-medium text-[#526174] hover:text-[#17212B]"
+                  className="text-xs font-medium text-ts hover:text-tp"
                   title="Generate all 82 tickets across all 11 sprints at once (caution: adds many tickets)"
                 >
                   <Layers className="h-3.5 w-3.5 mr-1" />
@@ -882,7 +882,7 @@ export function RoadmapView({
                   size="sm"
                   disabled={isClearing}
                   onClick={() => handleClearTickets()}
-                  className="text-xs font-semibold text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                  className="text-xs font-semibold text-danger border-danger/30 hover:bg-danger-subtle hover:border-danger/40"
                   title="Clear all tickets from the project Kanban board to start fresh"
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1" />
@@ -910,7 +910,7 @@ export function RoadmapView({
       {/* Empty State */}
       {features.length === 0 ? (
         <EmptyState
-          icon={<Map className="h-6 w-6 text-[#003049]" />}
+          icon={<Map className="h-6 w-6 text-accent" />}
           title="No Features Identified Yet"
           description="Run AI analysis on your project knowledge base to extract proposed features, or manually add your first roadmap capability."
           action={
@@ -944,21 +944,21 @@ export function RoadmapView({
               return (
                 <div
                   key={group.sprintCode}
-                  className="rounded-2xl border border-[#E2E8F0] bg-white shadow-card overflow-hidden"
+                  className="rounded-2xl border border-border bg-elevated shadow-card overflow-hidden"
                 >
                   {/* Sprint Group Header */}
-                  <div className="px-5 py-3.5 border-b border-[#E2E8F0] bg-[#F7F8FA] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="px-5 py-3.5 border-b border-border bg-canvas flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Calendar className="h-4 w-4 text-[#003049]" />
-                      <h3 className="text-sm font-bold text-[#17212B]">
+                      <Calendar className="h-4 w-4 text-accent" />
+                      <h3 className="text-sm font-bold text-tp">
                         {group.sprintLabel}
                       </h3>
                       {group.targetDate && (
-                        <span className="text-[11px] font-mono text-[#526174] bg-white px-2 py-0.5 rounded-full border border-[#E2E8F0]">
+                        <span className="text-[11px] font-mono text-ts bg-elevated px-2 py-0.5 rounded-full border border-border">
                           {group.targetDate}
                         </span>
                       )}
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white text-[#526174] border border-[#E2E8F0] font-medium">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-elevated text-ts border border-border font-medium">
                         {group.features.length} feature(s)
                       </span>
                       {totalInstantiated > 0 ? (
@@ -967,7 +967,7 @@ export function RoadmapView({
                           {totalInstantiated} ticket(s) on board
                         </span>
                       ) : (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#EFF5F9] text-[#003049] border border-[#669BBC]/30 font-medium">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-accent-subtle text-accent border border-accent/30 font-medium">
                           {totalCandidates} candidate tickets planned
                         </span>
                       )}
@@ -981,7 +981,7 @@ export function RoadmapView({
                           size="sm"
                           isLoading={isGeneratingSprint === group.sprintCode}
                           onClick={() => handleGenerateSprintTickets(group.sprintCode)}
-                          className="text-xs font-semibold bg-[#003049] hover:bg-[#002437] text-white shadow-xs"
+                          className="text-xs font-semibold bg-accent hover:bg-accent-hover text-canvas shadow-xs"
                           title={`Generate only Sprint ${group.sprintCode} tickets into the Kanban board`}
                         >
                           <Sparkles className="h-3 w-3 mr-1" />
@@ -996,7 +996,7 @@ export function RoadmapView({
                             size="sm"
                             disabled={isClearing}
                             onClick={() => handleClearTickets(group.sprintCode)}
-                            className="text-xs text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                            className="text-xs text-danger border-danger/30 hover:bg-danger-subtle hover:border-danger/40"
                             title={`Clear tickets for Sprint ${group.sprintCode}`}
                           >
                             <Trash2 className="h-3 w-3 mr-1" />
@@ -1008,9 +1008,9 @@ export function RoadmapView({
                   </div>
 
                   {/* Feature Cards in Sprint */}
-                  <div className="divide-y divide-[#E2E8F0]">
+                  <div className="divide-y divide-divider">
                     {group.features.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-[#526174]">
+                      <div className="p-6 text-center text-xs text-ts">
                         No features scheduled in this sprint matching your filter.
                       </div>
                     ) : (
@@ -1028,23 +1028,23 @@ export function RoadmapView({
               ([moduleName, moduleFeatures]) => (
                 <div
                   key={moduleName}
-                  className="rounded-2xl border border-[#E2E8F0] bg-white shadow-card overflow-hidden"
+                  className="rounded-2xl border border-border bg-elevated shadow-card overflow-hidden"
                 >
                   {/* Module Header */}
-                  <div className="px-5 py-3.5 border-b border-[#E2E8F0] bg-[#F7F8FA] flex items-center justify-between">
+                  <div className="px-5 py-3.5 border-b border-border bg-canvas flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <FolderTree className="h-4 w-4 text-[#003049]" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-[#17212B]">
+                      <FolderTree className="h-4 w-4 text-accent" />
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-tp">
                         {moduleName}
                       </h3>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white text-[#526174] border border-[#E2E8F0] font-medium">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-elevated text-ts border border-border font-medium">
                         {moduleFeatures.length} feature(s)
                       </span>
                     </div>
                   </div>
 
                   {/* Feature Cards in Module */}
-                  <div className="divide-y divide-[#E2E8F0]">
+                  <div className="divide-y divide-divider">
                     {moduleFeatures.map((feature) => renderFeatureCard(feature))}
                   </div>
                 </div>
@@ -1069,7 +1069,7 @@ export function RoadmapView({
 
           <form onSubmit={handleAddFeature} className="space-y-4 pt-2">
             <div>
-              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+              <label className="text-[11px] font-semibold text-tp block mb-1">
                 Feature Name *
               </label>
               <input
@@ -1078,13 +1078,13 @@ export function RoadmapView({
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="e.g. Audit Logging & Compliance Export"
-                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp placeholder:text-tm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+                <label className="text-[11px] font-semibold text-tp block mb-1">
                   Module / Subsystem
                 </label>
                 <input
@@ -1092,12 +1092,12 @@ export function RoadmapView({
                   value={newModule}
                   onChange={(e) => setNewModule(e.target.value)}
                   placeholder="e.g. Security & Compliance"
-                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                  className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp placeholder:text-tm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+                <label className="text-[11px] font-semibold text-tp block mb-1">
                   Priority
                 </label>
                 <select
@@ -1105,7 +1105,7 @@ export function RoadmapView({
                   onChange={(e) =>
                     setNewPriority(e.target.value as TicketPriority)
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="Critical">Critical</option>
                   <option value="High">High</option>
@@ -1116,7 +1116,7 @@ export function RoadmapView({
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+              <label className="text-[11px] font-semibold text-tp block mb-1">
                 Description *
               </label>
               <textarea
@@ -1125,12 +1125,12 @@ export function RoadmapView({
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 placeholder="Detailed scope of the planned feature..."
-                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] custom-scrollbar"
+                className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp placeholder:text-tm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent custom-scrollbar"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+              <label className="text-[11px] font-semibold text-tp block mb-1">
                 Business Value / Objective
               </label>
               <input
@@ -1138,12 +1138,12 @@ export function RoadmapView({
                 value={newBusinessValue}
                 onChange={(e) => setNewBusinessValue(e.target.value)}
                 placeholder="Why is this valuable to users or the business?"
-                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp placeholder:text-tm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+              <label className="text-[11px] font-semibold text-tp block mb-1">
                 Prerequisites / Dependencies (Comma-separated)
               </label>
               <input
@@ -1151,11 +1151,11 @@ export function RoadmapView({
                 value={newDependencies}
                 onChange={(e) => setNewDependencies(e.target.value)}
                 placeholder="e.g. User Authentication, Database Schema"
-                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] placeholder-[#94A3B8] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp placeholder:text-tm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1193,7 +1193,7 @@ export function RoadmapView({
 
           <form onSubmit={handleSaveEdit} className="space-y-4 pt-2">
             <div>
-              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+              <label className="text-[11px] font-semibold text-tp block mb-1">
                 Feature Name *
               </label>
               <input
@@ -1201,25 +1201,25 @@ export function RoadmapView({
                 required
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+                <label className="text-[11px] font-semibold text-tp block mb-1">
                   Module
                 </label>
                 <input
                   type="text"
                   value={editModule}
                   onChange={(e) => setEditModule(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                  className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+                <label className="text-[11px] font-semibold text-tp block mb-1">
                   Priority
                 </label>
                 <select
@@ -1227,7 +1227,7 @@ export function RoadmapView({
                   onChange={(e) =>
                     setEditPriority(e.target.value as TicketPriority)
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="Critical">Critical</option>
                   <option value="High">High</option>
@@ -1237,7 +1237,7 @@ export function RoadmapView({
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+                <label className="text-[11px] font-semibold text-tp block mb-1">
                   Status
                 </label>
                 <select
@@ -1245,7 +1245,7 @@ export function RoadmapView({
                   onChange={(e) =>
                     setEditStatus(e.target.value as FeatureReviewStatus)
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] cursor-pointer"
+                  className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent cursor-pointer"
                 >
                   <option value="PROPOSED">Proposed</option>
                   <option value="ACCEPTED">Accepted</option>
@@ -1255,7 +1255,7 @@ export function RoadmapView({
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+              <label className="text-[11px] font-semibold text-tp block mb-1">
                 Description *
               </label>
               <textarea
@@ -1263,23 +1263,23 @@ export function RoadmapView({
                 required
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049] custom-scrollbar"
+                className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent custom-scrollbar"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-[#17212B] block mb-1">
+              <label className="text-[11px] font-semibold text-tp block mb-1">
                 Business Value
               </label>
               <input
                 type="text"
                 value={editBusinessValue}
                 onChange={(e) => setEditBusinessValue(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E2E8F0] text-xs text-[#17212B] focus:outline-none focus:border-[#003049] focus:ring-1 focus:ring-[#003049]"
+                className="w-full px-3.5 py-2 rounded-xl bg-elevated border border-border text-xs text-tp focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1314,7 +1314,7 @@ export function RoadmapView({
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TicketIcon className="h-4 w-4 text-[#003049]" />
+              <TicketIcon className="h-4 w-4 text-accent" />
               <span>Generate Tickets for Feature</span>
             </DialogTitle>
             <DialogDescription>
@@ -1324,20 +1324,20 @@ export function RoadmapView({
           </DialogHeader>
 
           <div className="space-y-4 pt-2">
-            <div className="p-4 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 space-y-1">
-              <span className="text-xs font-semibold text-[#003049] block">
+            <div className="p-4 rounded-xl bg-accent-subtle border border-accent/30 space-y-1">
+              <span className="text-xs font-semibold text-accent block">
                 Feature Scope:
               </span>
-              <p className="text-[11px] text-[#526174] leading-relaxed">
+              <p className="text-[11px] text-ts leading-relaxed">
                 {generatingForFeature?.description}
               </p>
             </div>
 
             {generatedTickets ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-[#17212B]">
+                <div className="flex items-center justify-between text-xs font-semibold text-tp">
                   <span>Generated Tickets ({generatedTickets.length}):</span>
-                  <span className="text-[11px] text-[#526174]">
+                  <span className="text-[11px] text-ts">
                     Added to project backlog
                   </span>
                 </div>
@@ -1346,10 +1346,10 @@ export function RoadmapView({
                   {generatedTickets.map((t) => (
                     <div
                       key={t.id}
-                      className="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1 shadow-xs"
+                      className="p-3 rounded-xl bg-elevated border border-border space-y-1 shadow-xs"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-[#17212B] truncate">
+                        <span className="text-xs font-semibold text-tp truncate">
                           {t.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -1361,7 +1361,7 @@ export function RoadmapView({
                           />
                         </div>
                       </div>
-                      <p className="text-[11px] text-[#526174] line-clamp-2">
+                      <p className="text-[11px] text-ts line-clamp-2">
                         {t.description}
                       </p>
                     </div>
@@ -1369,14 +1369,14 @@ export function RoadmapView({
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-[#526174] leading-relaxed">
+              <p className="text-xs text-ts leading-relaxed">
                 Click below to generate implementation tickets with acceptance
                 criteria, technical notes, and complexity estimates. Tickets
                 will enter the project backlog for your review.
               </p>
             )}
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -1419,11 +1419,11 @@ export function RoadmapView({
       <Dialog open={isBriefOpen} onOpenChange={setIsBriefOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-[#003049]">
-              <FileText className="h-5 w-5 text-[#003049]" />
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-accent">
+              <FileText className="h-5 w-5 text-accent" />
               <span>Project Brief & Source Coverage Report</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-[#526174]">
+            <DialogDescription className="text-xs text-ts">
               Synthesized from PRD specifications, sprint schedule worksheets,
               and architecture boundaries.
             </DialogDescription>
@@ -1431,27 +1431,27 @@ export function RoadmapView({
 
           {loadingBrief ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="h-6 w-6 animate-spin text-[#003049]" />
-              <span className="text-xs text-[#526174]">
+              <Loader2 className="h-6 w-6 animate-spin text-accent" />
+              <span className="text-xs text-ts">
                 Loading Project Brief...
               </span>
             </div>
           ) : !briefData ? (
-            <div className="py-8 text-center text-xs text-[#526174]">
+            <div className="py-8 text-center text-xs text-ts">
               No brief data available yet. Please run AI analysis or upload
               project documents.
             </div>
           ) : (
             <div className="space-y-6 pt-2">
               {/* Tabs Navigation */}
-              <div className="flex items-center gap-2 border-b border-[#E2E8F0] pb-2 overflow-x-auto">
+              <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setBriefTab("overview")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     briefTab === "overview"
-                      ? "bg-[#003049] text-white"
-                      : "text-[#526174] hover:bg-[#F1F4F7]"
+                      ? "bg-accent text-canvas"
+                      : "text-ts hover:bg-hover"
                   }`}
                 >
                   Overview & Scope
@@ -1461,8 +1461,8 @@ export function RoadmapView({
                   onClick={() => setBriefTab("sprints")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     briefTab === "sprints"
-                      ? "bg-[#003049] text-white"
-                      : "text-[#526174] hover:bg-[#F1F4F7]"
+                      ? "bg-accent text-canvas"
+                      : "text-ts hover:bg-hover"
                   }`}
                 >
                   Sprint Schedule ({briefData.sprintSchedule?.length || 0})
@@ -1472,8 +1472,8 @@ export function RoadmapView({
                   onClick={() => setBriefTab("coverage")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     briefTab === "coverage"
-                      ? "bg-[#003049] text-white"
-                      : "text-[#526174] hover:bg-[#F1F4F7]"
+                      ? "bg-accent text-canvas"
+                      : "text-ts hover:bg-hover"
                   }`}
                 >
                   Source Coverage (100%)
@@ -1483,8 +1483,8 @@ export function RoadmapView({
                   onClick={() => setBriefTab("architecture")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     briefTab === "architecture"
-                      ? "bg-[#003049] text-white"
-                      : "text-[#526174] hover:bg-[#F1F4F7]"
+                      ? "bg-accent text-canvas"
+                      : "text-ts hover:bg-hover"
                   }`}
                 >
                   Architecture & Roles
@@ -1494,8 +1494,8 @@ export function RoadmapView({
                   onClick={() => setBriefTab("risks")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     briefTab === "risks"
-                      ? "bg-[#003049] text-white"
-                      : "text-[#526174] hover:bg-[#F1F4F7]"
+                      ? "bg-accent text-canvas"
+                      : "text-ts hover:bg-hover"
                   }`}
                 >
                   Launch Gates & Risks
@@ -1505,28 +1505,28 @@ export function RoadmapView({
               {/* Tab 1: Overview & Scope */}
               {briefTab === "overview" && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-[#EFF5F9] border border-[#669BBC]/30 space-y-1.5">
-                    <h4 className="text-xs font-bold text-[#003049] uppercase tracking-wider font-mono">
+                  <div className="p-4 rounded-xl bg-accent-subtle border border-accent/30 space-y-1.5">
+                    <h4 className="text-xs font-bold text-accent uppercase tracking-wider font-mono">
                       Executive Summary & Objectives
                     </h4>
-                    <p className="text-xs text-[#17212B] leading-relaxed">
+                    <p className="text-xs text-tp leading-relaxed">
                       {briefData.overview}
                     </p>
                   </div>
 
                   {briefData.visionAndGoals?.goals && (
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-[#17212B]">
+                      <h4 className="text-xs font-bold text-tp">
                         Core Goals & Success Metrics
                       </h4>
-                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-[#526174]">
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-ts">
                         {briefData.visionAndGoals.goals.map(
                           (g: string, i: number) => (
                             <li
                               key={i}
-                              className="flex items-start gap-2 p-2.5 rounded-lg bg-[#F7F8FA] border border-[#E2E8F0]"
+                              className="flex items-start gap-2 p-2.5 rounded-lg bg-canvas border border-border"
                             >
-                              <CheckCircle2 className="h-4 w-4 text-[#003049] shrink-0 mt-0.5" />
+                              <CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                               <span>{g}</span>
                             </li>
                           ),
@@ -1536,11 +1536,11 @@ export function RoadmapView({
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                    <div className="p-3.5 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7] space-y-2">
-                      <h5 className="text-[11px] font-bold text-[#166534] uppercase font-mono">
+                    <div className="p-3.5 rounded-xl bg-success-subtle border border-success-border space-y-2">
+                      <h5 className="text-[11px] font-bold text-success uppercase font-mono">
                         P0 Launch Baseline
                       </h5>
-                      <ul className="space-y-1 text-[11px] text-[#166534]">
+                      <ul className="space-y-1 text-[11px] text-success">
                         {briefData.scope?.p0Required
                           ?.slice(0, 5)
                           .map((item: string, idx: number) => (
@@ -1549,11 +1549,11 @@ export function RoadmapView({
                       </ul>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] space-y-2">
-                      <h5 className="text-[11px] font-bold text-[#1E40AF] uppercase font-mono">
+                    <div className="p-3.5 rounded-xl bg-accent-subtle border border-info-border space-y-2">
+                      <h5 className="text-[11px] font-bold text-accent uppercase font-mono">
                         P1 Secondary Scope
                       </h5>
-                      <ul className="space-y-1 text-[11px] text-[#1E40AF]">
+                      <ul className="space-y-1 text-[11px] text-accent">
                         {briefData.scope?.p1Secondary?.map(
                           (item: string, idx: number) => (
                             <li key={idx}>• {item}</li>
@@ -1562,11 +1562,11 @@ export function RoadmapView({
                       </ul>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-[#FEF2F2] border border-[#FEE2E2] space-y-2">
-                      <h5 className="text-[11px] font-bold text-[#991B1B] uppercase font-mono">
+                    <div className="p-3.5 rounded-xl bg-danger-subtle border border-danger-border space-y-2">
+                      <h5 className="text-[11px] font-bold text-danger uppercase font-mono">
                         Out of Scope
                       </h5>
-                      <ul className="space-y-1 text-[11px] text-[#991B1B]">
+                      <ul className="space-y-1 text-[11px] text-danger">
                         {briefData.scope?.outOfScope?.map(
                           (item: string, idx: number) => (
                             <li key={idx}>• {item}</li>
@@ -1581,7 +1581,7 @@ export function RoadmapView({
               {/* Tab 2: Sprints Schedule */}
               {briefTab === "sprints" && (
                 <div className="space-y-3">
-                  <div className="text-xs text-[#526174]">
+                  <div className="text-xs text-ts">
                     The source plan establishes 11 development sprints and a
                     production launch cutover window. Every sprint is fully
                     preserved and mapped to roadmap capabilities.
@@ -1590,22 +1590,22 @@ export function RoadmapView({
                     {briefData.sprintSchedule?.map((s: any) => (
                       <div
                         key={s.sprint}
-                        className="p-3.5 rounded-xl border border-[#E2E8F0] bg-white hover:bg-[#FDFDFE] text-xs space-y-1.5"
+                        className="p-3.5 rounded-xl border border-border bg-elevated hover:bg-elevated text-xs space-y-1.5"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#003049] text-white font-bold">
+                            <span className="font-mono text-xs px-2 py-0.5 rounded bg-accent text-canvas font-bold">
                               Sprint {s.sprint}
                             </span>
-                            <span className="font-bold text-[#17212B]">
+                            <span className="font-bold text-tp">
                               {s.name}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2.5 text-[11px] font-mono text-[#526174] flex-wrap">
+                          <div className="flex items-center gap-2.5 text-[11px] font-mono text-ts flex-wrap">
                             <span>
                               {s.start} to {s.end}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full bg-[#EFF5F9] text-[#003049] font-bold border border-[#669BBC]/30">
+                            <span className="px-2 py-0.5 rounded-full bg-accent-subtle text-accent font-bold border border-accent/30">
                               {s.candidateCount} tickets ({s.storyPoints} pts)
                             </span>
                             {canEdit && s.sprint !== "Release" && (
@@ -1614,7 +1614,7 @@ export function RoadmapView({
                                 variant="primary"
                                 isLoading={isGeneratingSprint === s.sprint}
                                 onClick={() => handleGenerateSprintTickets(s.sprint)}
-                                className="text-[11px] h-7 px-2.5 bg-[#003049] text-white hover:bg-[#002437]"
+                                className="text-[11px] h-7 px-2.5 bg-accent text-canvas hover:bg-accent-hover"
                                 title={`Generate developer tickets strictly for Sprint ${s.sprint}`}
                               >
                                 <Sparkles className="h-3 w-3 mr-1" />
@@ -1623,10 +1623,10 @@ export function RoadmapView({
                             )}
                           </div>
                         </div>
-                        <p className="text-[11px] text-[#526174]">
+                        <p className="text-[11px] text-ts">
                           <strong>Goal:</strong> {s.goal}
                         </p>
-                        <p className="text-[11px] text-[#526174]">
+                        <p className="text-[11px] text-ts">
                           <strong>Deliverables:</strong> {s.deliverables}
                         </p>
                       </div>
@@ -1639,44 +1639,44 @@ export function RoadmapView({
               {briefTab === "coverage" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                    <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
-                      <div className="text-xl font-bold font-mono text-[#003049]">
+                    <div className="p-3 rounded-xl bg-canvas border border-border">
+                      <div className="text-xl font-bold font-mono text-accent">
                         {briefData.sourceCoverage?.sprintsRepresented} /{" "}
                         {briefData.sourceCoverage?.sprintsDetected}
                       </div>
-                      <div className="text-[10px] text-[#526174] uppercase tracking-wider font-semibold mt-1">
+                      <div className="text-[10px] text-ts uppercase tracking-wider font-semibold mt-1">
                         Sprints Represented
                       </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
-                      <div className="text-xl font-bold font-mono text-[#003049]">
+                    <div className="p-3 rounded-xl bg-canvas border border-border">
+                      <div className="text-xl font-bold font-mono text-accent">
                         {briefData.sourceCoverage?.reconciledCandidates} /{" "}
                         {briefData.sourceCoverage?.sourceBacklogCandidates}
                       </div>
-                      <div className="text-[10px] text-[#526174] uppercase tracking-wider font-semibold mt-1">
+                      <div className="text-[10px] text-ts uppercase tracking-wider font-semibold mt-1">
                         Candidates Reconciled
                       </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0]">
-                      <div className="text-xl font-bold font-mono text-[#003049]">
+                    <div className="p-3 rounded-xl bg-canvas border border-border">
+                      <div className="text-xl font-bold font-mono text-accent">
                         {briefData.sourceCoverage?.featuresExtracted}
                       </div>
-                      <div className="text-[10px] text-[#526174] uppercase tracking-wider font-semibold mt-1">
+                      <div className="text-[10px] text-ts uppercase tracking-wider font-semibold mt-1">
                         Roadmap Features
                       </div>
                     </div>
-                    <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#DCFCE7]">
-                      <div className="text-xl font-bold font-mono text-[#166534]">
+                    <div className="p-3 rounded-xl bg-success-subtle border border-success-border">
+                      <div className="text-xl font-bold font-mono text-success">
                         100%
                       </div>
-                      <div className="text-[10px] text-[#166534] uppercase tracking-wider font-semibold mt-1">
+                      <div className="text-[10px] text-success uppercase tracking-wider font-semibold mt-1">
                         Validation Status
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-[#17212B]">
+                    <h4 className="text-xs font-bold text-tp">
                       Extraction Validation Checks
                     </h4>
                     <div className="space-y-1.5">
@@ -1684,16 +1684,16 @@ export function RoadmapView({
                         (r: any, idx: number) => (
                           <div
                             key={idx}
-                            className="p-3 rounded-xl bg-white border border-[#E2E8F0] flex items-center justify-between text-xs"
+                            className="p-3 rounded-xl bg-elevated border border-border flex items-center justify-between text-xs"
                           >
                             <div className="flex items-center gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-[#166534] shrink-0" />
-                              <span className="font-medium text-[#17212B]">
+                              <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                              <span className="font-medium text-tp">
                                 {r.rule}
                               </span>
                             </div>
                             {r.note && (
-                              <span className="text-[11px] font-mono text-[#526174]">
+                              <span className="text-[11px] font-mono text-ts">
                                 {r.note}
                               </span>
                             )}
@@ -1703,7 +1703,7 @@ export function RoadmapView({
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] text-[11px] text-[#526174] space-y-1">
+                  <div className="p-3 rounded-xl bg-canvas border border-border text-[11px] text-ts space-y-1">
                     <div>
                       <strong>Documents Parsed:</strong>{" "}
                       {briefData.sourceCoverage?.documentsDiscovered?.join(
@@ -1727,17 +1727,17 @@ export function RoadmapView({
               {/* Tab 4: Architecture & Roles */}
               {briefTab === "architecture" && (
                 <div className="space-y-4 text-xs">
-                  <div className="p-3.5 rounded-xl bg-[#F7F8FA] border border-[#E2E8F0] space-y-1">
-                    <strong className="text-[#17212B]">
+                  <div className="p-3.5 rounded-xl bg-canvas border border-border space-y-1">
+                    <strong className="text-tp">
                       Production Tech Stack:
                     </strong>
-                    <div className="font-mono text-[#003049] text-[11px]">
+                    <div className="font-mono text-accent text-[11px]">
                       {briefData.technicalArchitecture?.techStack}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <strong className="text-[#17212B]">
+                    <strong className="text-tp">
                       Microservice Boundaries:
                     </strong>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1745,7 +1745,7 @@ export function RoadmapView({
                         (s: string, idx: number) => (
                           <div
                             key={idx}
-                            className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] text-[11px]"
+                            className="p-2.5 rounded-lg bg-elevated border border-border text-[11px]"
                           >
                             • {s}
                           </div>
@@ -1755,7 +1755,7 @@ export function RoadmapView({
                   </div>
 
                   <div className="space-y-2">
-                    <strong className="text-[#17212B]">
+                    <strong className="text-tp">
                       User Personas & Operational Access:
                     </strong>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1763,12 +1763,12 @@ export function RoadmapView({
                         (p: any, idx: number) => (
                           <div
                             key={idx}
-                            className="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1"
+                            className="p-3 rounded-xl bg-elevated border border-border space-y-1"
                           >
-                            <span className="font-bold text-[#003049] block">
+                            <span className="font-bold text-accent block">
                               {p.role}
                             </span>
-                            <p className="text-[#526174] text-[11px]">
+                            <p className="text-ts text-[11px]">
                               {p.description}
                             </p>
                           </div>
@@ -1783,7 +1783,7 @@ export function RoadmapView({
               {briefTab === "risks" && (
                 <div className="space-y-4 text-xs">
                   <div className="space-y-2">
-                    <h5 className="font-bold text-[#17212B]">
+                    <h5 className="font-bold text-tp">
                       Production Launch Gates (
                       {briefData.launchChecklist?.length || 0})
                     </h5>
@@ -1791,18 +1791,18 @@ export function RoadmapView({
                       {briefData.launchChecklist?.map((g: any) => (
                         <div
                           key={g.id}
-                          className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] flex items-center justify-between text-[11px]"
+                          className="p-2.5 rounded-lg bg-elevated border border-border flex items-center justify-between text-[11px]"
                         >
                           <div>
-                            <span className="font-mono font-bold text-[#003049] mr-2">
+                            <span className="font-mono font-bold text-accent mr-2">
                               {g.id}
                             </span>
-                            <span className="font-semibold text-[#17212B]">
+                            <span className="font-semibold text-tp">
                               {g.gate}:
                             </span>{" "}
                             {g.passCriteria}
                           </div>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F7F8FA] text-[#526174] border border-[#E2E8F0] shrink-0">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-canvas text-ts border border-border shrink-0">
                             {g.ownerRole}
                           </span>
                         </div>
@@ -1811,7 +1811,7 @@ export function RoadmapView({
                   </div>
 
                   <div className="space-y-2">
-                    <h5 className="font-bold text-[#17212B]">
+                    <h5 className="font-bold text-tp">
                       Decisions & Launch Dependencies (
                       {briefData.risksAndDecisions?.length || 0})
                     </h5>
@@ -1820,20 +1820,20 @@ export function RoadmapView({
                         (r: any, idx: number) => (
                           <div
                             key={idx}
-                            className="p-2.5 rounded-lg bg-white border border-[#E2E8F0] text-[11px] space-y-0.5"
+                            className="p-2.5 rounded-lg bg-elevated border border-border text-[11px] space-y-0.5"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-[#17212B]">
+                              <span className="font-bold text-tp">
                                 {r.item}
                               </span>
-                              <span className="text-[10px] font-mono text-[#526174]">
+                              <span className="text-[10px] font-mono text-ts">
                                 {r.due} ({r.owner})
                               </span>
                             </div>
-                            <p className="text-[#526174]">
+                            <p className="text-ts">
                               <strong>Impact:</strong> {r.impact}
                             </p>
-                            <p className="text-[#003049]">
+                            <p className="text-accent">
                               <strong>Mitigation:</strong> {r.mitigation}
                             </p>
                           </div>
@@ -1844,8 +1844,8 @@ export function RoadmapView({
                 </div>
               )}
 
-              <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
-                <span className="text-[11px] text-[#526174]">
+              <div className="pt-3 border-t border-border flex items-center justify-between">
+                <span className="text-[11px] text-ts">
                   Coverage verified: 100% requirements & sprints mapped.
                 </span>
                 <Button
